@@ -1,9 +1,10 @@
 {
-  "name": "10x-astro-starter",
+  "name": "urlopy",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
+    "predev": "echo '\\n[urlopy] wrangler dev — Cloudflare Workers runtime. Do NOT run astro dev directly.\\n'",
+    "dev": "wrangler dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",

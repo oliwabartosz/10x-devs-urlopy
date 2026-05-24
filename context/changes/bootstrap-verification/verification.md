@@ -1,5 +1,5 @@
 ---
-bootstrapped_at: 2026-05-20T09:00:49Z
+bootstrapped_at: 2026-05-24T18:16:45Z
 starter_id: 10x-astro-starter
 starter_name: "10x Astro Starter (Astro + Supabase + Cloudflare)"
 project_name: urlopy
@@ -40,33 +40,42 @@ Urlopy is a small web app with a 3-week MVP window, email/password access contro
 
 ## Pre-scaffold verification
 
-| Signal | Value | Severity | Notes |
-| --- | --- | --- | --- |
-| npm package | not run | n/a | skipped because the starter command uses `git clone` rather than an npm create package |
-| GitHub repo | `przeprogramowani/10x-astro-starter` last pushed 2026-05-17T10:33:39Z | fresh | from card.docs_url |
+| Signal      | Value                                                                    | Severity | Notes                                                              |
+| ----------- | ------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------ |
+| npm package | not run                                                                  | n/a      | cmd_template starts with `git clone`; npm package check skipped    |
+| GitHub repo | `przeprogramowani/10x-astro-starter` last pushed 2026-05-17T10:33:39Z   | fresh    | from card.docs_url                                                 |
 
 ## Scaffold log
 
 **Resolved invocation**: `git clone https://github.com/przeprogramowani/10x-astro-starter .bootstrap-scaffold && cd .bootstrap-scaffold && npm install`
-**Strategy**: git-clone
+**Strategy**: git-clone (cloned starter repo, upstream `.git/` deleted before move-up)
 **Exit code**: 0
-**Files moved**: 20 top-level entries
-**Conflicts (.scaffold siblings)**: none
-**.gitignore handling**: moved silently
+**Files moved**: 1 (`node_modules/` — absent from cwd, moved silently)
+**Conflicts (.scaffold siblings)**: 48 files (all pre-existing from prior bootstrap run):
+`astro.config.mjs`, `CLAUDE.md`, `components.json`, `.env.example`, `eslint.config.js`,
+`.github/workflows/ci.yml`, `.husky/pre-commit`, `.nvmrc`, `package.json`, `package-lock.json`,
+`.prettierrc.json`, `public/.assetsignore`, `public/favicon.png`, `public/template.png`,
+`README.md`, `src/components/auth/FormField.tsx`, `src/components/auth/PasswordToggle.tsx`,
+`src/components/auth/ServerError.tsx`, `src/components/auth/SignInForm.tsx`,
+`src/components/auth/SignUpForm.tsx`, `src/components/auth/SubmitButton.tsx`,
+`src/components/Banner.astro`, `src/components/Topbar.astro`, `src/components/ui/button.tsx`,
+`src/components/ui/LibBadge.astro`, `src/components/Welcome.astro`, `src/env.d.ts`,
+`src/layouts/Layout.astro`, `src/lib/config-status.ts`, `src/lib/supabase.ts`,
+`src/lib/utils.ts`, `src/middleware.ts`, `src/pages/api/auth/signin.ts`,
+`src/pages/api/auth/signout.ts`, `src/pages/api/auth/signup.ts`,
+`src/pages/auth/confirm-email.astro`, `src/pages/auth/signin.astro`,
+`src/pages/auth/signup.astro`, `src/pages/dashboard.astro`, `src/pages/index.astro`,
+`src/styles/global.css`, `supabase/config.toml`, `supabase/.gitignore`, `tsconfig.json`,
+`.vscode/extensions.json`, `.vscode/launch.json`, `.vscode/settings.json`, `wrangler.jsonc`
+**.gitignore handling**: scaffold `.gitignore` identical to cwd — no lines appended
+**context/ handling**: no `context/` in scaffold; cwd `context/` preserved untouched
 **.bootstrap-scaffold cleanup**: deleted
-
-Notes:
-
-- The cloned `.bootstrap-scaffold/.git/` directory was deleted before files were moved up, so upstream starter history was not preserved.
-- `context/` in the current directory was preserved and not overwritten.
-- The first merge attempt failed before moving files because `zsh` treats unmatched hidden-file globs as errors.
-- The second merge attempt failed before moving files because `path` is a reserved zsh array tied to command lookup; rerun used `item` and absolute system command paths.
 
 ## Post-scaffold audit
 
 **Tool**: `npm audit --json`
-**Summary**: 0 CRITICAL, 1 HIGH, 10 MODERATE, 0 LOW
-**Direct vs transitive**: 0/0/3/0 direct of total 0/1/10/0
+**Summary**: 0 CRITICAL, 1 HIGH, 9 MODERATE, 0 LOW
+**Direct vs transitive**: 0 direct HIGH; 2 direct MODERATE (`wrangler`, `@astrojs/check`); remaining 7 MODERATE transitive
 
 #### CRITICAL findings
 
@@ -74,20 +83,23 @@ None.
 
 #### HIGH findings
 
-- `devalue`: Svelte devalue: DoS via sparse array deserialization. Advisory: GHSA-77vg-94rm-hx3p. Severity: high. Direct: no. Fix available: true.
+- **devalue** v5.6.3–5.8.0 (transitive, via tooling chain)
+  - Advisory: GHSA-77vg-94rm-hx3p — Svelte devalue: DoS via sparse array deserialization
+  - CVSS: 7.5 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H) | CWE-770
+  - Fix available: yes (`npm audit fix` covers this)
+  - Note: transitive Svelte dependency; not exercised in this Astro + React project at runtime
 
 #### MODERATE findings
 
-- `@astrojs/check`: affected via `@astrojs/language-server`. Direct: yes. Fix available: `@astrojs/check@0.9.2` with semver-major change.
-- `@astrojs/cloudflare`: affected via `@cloudflare/vite-plugin`, `wrangler`. Direct: yes. Fix available: `@astrojs/cloudflare@12.6.13` with semver-major change.
-- `@astrojs/language-server`: affected via `volar-service-yaml`. Direct: no. Fix available via `@astrojs/check@0.9.2` with semver-major change.
-- `@cloudflare/vite-plugin`: affected via `miniflare`, `wrangler`, `ws`. Direct: no. Fix available via `@astrojs/cloudflare@12.6.13` with semver-major change.
-- `miniflare`: affected via `ws`. Direct: no. Fix available via `@astrojs/cloudflare@12.6.13` with semver-major change.
-- `volar-service-yaml`: affected via `yaml-language-server`. Direct: no. Fix available via `@astrojs/check@0.9.2` with semver-major change.
-- `wrangler`: affected via `miniflare`. Direct: yes. Fix available: `wrangler@3.107.3` with semver-major change.
-- `ws`: Uninitialized memory disclosure. Advisory: GHSA-58qx-3vcg-4xpx. Direct: no. Fix available via `@astrojs/cloudflare@12.6.13` with semver-major change.
-- `yaml`: Stack overflow via deeply nested YAML collections. Advisory: GHSA-48c2-rrv3-qjmp. Direct: no. Fix available via `@astrojs/check@0.9.2` with semver-major change.
-- `yaml-language-server`: affected via `yaml`. Direct: no. Fix available via `@astrojs/check@0.9.2` with semver-major change.
+- **@astrojs/check** ≥0.9.3 (direct) — via `@astrojs/language-server` → `volar-service-yaml` → `yaml`; fix: downgrade to `@astrojs/check@0.9.2` (semver-major bump required)
+- **@astrojs/language-server** ≥2.14.0 (transitive) — via `volar-service-yaml`; fix tied to `@astrojs/check@0.9.2`
+- **@cloudflare/vite-plugin** 0.0.7–1.37.2 (transitive) — via `miniflare` + `wrangler` + `ws`; fix available
+- **miniflare** 3.20250204.0–4.20260518.0 (transitive) — via `ws`; fix available
+- **volar-service-yaml** ≤0.0.70 (transitive) — via `yaml-language-server`; fix tied to `@astrojs/check@0.9.2`
+- **wrangler** 3.108.0–4.93.0 (direct) — via `miniflare`; fix available
+- **ws** 8.0.0–8.20.0 (transitive) — GHSA-58qx-3vcg-4xpx: uninitialized memory disclosure; CVSS 4.4; fix available
+- **yaml** 2.0.0–2.8.2 (transitive) — GHSA-48c2-rrv3-qjmp: stack overflow via deeply nested YAML; CVSS 4.3; fix tied to `@astrojs/check@0.9.2`
+- **yaml-language-server** (transitive) — via `yaml`; fix tied to `@astrojs/check@0.9.2`
 
 #### LOW / INFO findings
 
@@ -95,28 +107,28 @@ None.
 
 ## Hints recorded but not acted on
 
-| Hint | Value |
-| --- | --- |
-| bootstrapper_confidence | first-class |
-| quality_override | false |
-| path_taken | standard |
-| self_check_answers | null |
-| team_size | solo |
-| deployment_target | cloudflare-pages |
-| ci_provider | github-actions |
-| ci_default_flow | auto-deploy-on-merge |
-| has_auth | true |
-| has_payments | false |
-| has_realtime | false |
-| has_ai | false |
-| has_background_jobs | false |
+| Hint                    | Value                 |
+| ----------------------- | --------------------- |
+| bootstrapper_confidence | first-class           |
+| quality_override        | false                 |
+| path_taken              | standard              |
+| self_check_answers      | null                  |
+| team_size               | solo                  |
+| deployment_target       | cloudflare-pages      |
+| ci_provider             | github-actions        |
+| ci_default_flow         | auto-deploy-on-merge  |
+| has_auth                | true                  |
+| has_payments            | false                 |
+| has_realtime            | false                 |
+| has_ai                  | false                 |
+| has_background_jobs     | false                 |
 
 ## Next steps
 
-Next: a future skill will set up agent context (CLAUDE.md, AGENTS.md). For now, your project is scaffolded and verified - happy hacking.
+Next: a future skill will set up agent context (CLAUDE.md, AGENTS.md). For now, your project is scaffolded and verified — happy hacking.
 
 Useful manual steps in the meantime:
-
-- `git init` if you have not already, to start your own repo history.
 - Review any `.scaffold` siblings the conflict policy created and decide which version of each file to keep.
-- Address audit findings per your project's risk tolerance - the full breakdown is in this log.
+- `npm audit fix` addresses the wrangler + miniflare + ws MODERATE chain and the `devalue` HIGH.
+- The `@astrojs/check`-chain MODERATEs require a semver-major downgrade (`@astrojs/check@0.9.2`) — decide based on your risk tolerance.
+- Address audit findings per your project's risk tolerance — the full breakdown is in this log.

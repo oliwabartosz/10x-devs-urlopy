@@ -4,7 +4,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 
 ## Commands
 
-- `npm run dev` — start dev server (Cloudflare workerd runtime)
+- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.dev.vars`, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory.
 - `npm run build` — production build (SSR via `@astrojs/cloudflare`)
 - `npm run preview` — preview production build
 - `npm run lint` — ESLint with type-checked rules
@@ -44,11 +44,47 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
+- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` — copy `.dev.vars.example` to `.dev.vars` (gitignored) for Cloudflare local dev; `.env.example` is for Node-based tooling only
 - Local Supabase: `npx supabase start` (requires Docker)
-- Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
-- Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth)
+- Cloudflare local dev: secrets go in `.dev.vars` (gitignored); `wrangler dev` reads this file automatically
+- Deploy: `npx wrangler pages deploy dist --project-name urlopy` (requires Cloudflare account + `wrangler login`)
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs lint + build on every push and PR to master. Requires `SUPABASE_URL` and `SUPABASE_KEY` repository secrets for the build step.
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR to `main`:
+- **`ci` job**: lint + build + bundle size dry-run. Requires `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+- **`deploy` job**: deploys to Cloudflare Workers on push to `main` only (not PRs). Runs a post-deploy health check against `/auth/signin`.
+
+## Deployment
+
+Production deploy is automated via the `deploy` CI job on every push to `main`.
+
+Manual deploy:
+```bash
+npx wrangler login
+npm run build
+npx wrangler deploy --config dist/server/wrangler.json
+```
+
+Set production secrets (run once after the Worker exists):
+```bash
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_KEY
+```
+
+**Rollback** — use the Cloudflare dashboard:
+`dash.cloudflare.com` → Workers & Pages → urlopy → Deployments → three-dot menu → "Rollback to this deployment"
+
+Or via the REST API:
+```bash
+# List deployments to find target ID
+curl -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/urlopy/deployments" \
+  | jq '.result[] | {id, created_on}'
+```
+
+**Log streaming:**
+```bash
+npx wrangler tail urlopy
+```
+Note: `wrangler tail` may drop connections. Re-run if it disconnects. For structured log queries from Claude Code, use the Cloudflare MCP server (`workers_observability` tool).

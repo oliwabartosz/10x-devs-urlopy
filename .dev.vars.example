@@ -1,0 +1,5 @@
+# Cloudflare local dev secrets — copy to .dev.vars (gitignored) and fill in real values.
+# wrangler dev reads .dev.vars automatically; astro dev does NOT read this file.
+# See: https://developers.cloudflare.com/workers/configuration/secrets/#local-development-with-dev-vars
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key-here
