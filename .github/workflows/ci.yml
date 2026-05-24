@@ -32,9 +32,8 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
       - name: Bundle size check (dry-run)
-        # Validates the bundle against Cloudflare's 25 MB compressed limit without uploading.
-        # Catches oversized bundles before they block a production deploy.
-        run: npx wrangler pages deploy dist --project-name urlopy --dry-run
+        # Validates the bundle against Cloudflare's limits without uploading.
+        run: npx wrangler deploy --config dist/server/wrangler.json --dry-run
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
