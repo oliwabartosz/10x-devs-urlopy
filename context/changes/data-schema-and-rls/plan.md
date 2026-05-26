@@ -335,20 +335,20 @@ With ~10 employees and ~200 absence entries per month, no indexes beyond the pri
 
 #### Automated
 
-- [x] 2.1 Both migrations apply in sequence: `npx supabase db reset`
-- [x] 2.2 `SELECT COUNT(*) FROM absence_types;` returns 6
+- [x] 2.1 Both migrations apply in sequence: `npx supabase db reset` — 5377bd9
+- [x] 2.2 `SELECT COUNT(*) FROM absence_types;` returns 6 — 5377bd9
 
 #### Manual
 
-- [x] 2.3 All six types visible in Studio with correct names and hex colors
+- [x] 2.3 All six types visible in Studio with correct names and hex colors — 5377bd9
 
 ### Phase 3: TypeScript Types
 
 #### Automated
 
-- [ ] 3.1 `npm run build` succeeds
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` succeeds
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 IDE autocomplete resolves all fields on `Employee`, `AbsenceType`, `Absence`
+- [x] 3.3 IDE autocomplete resolves all fields on `Employee`, `AbsenceType`, `Absence`
