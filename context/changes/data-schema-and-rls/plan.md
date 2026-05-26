@@ -320,27 +320,27 @@ With ~10 employees and ~200 absence entries per month, no indexes beyond the pri
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npx supabase db reset`
-- [x] 1.2 All three tables present in Studio schema view
-- [x] 1.3 `get_user_role()` function visible in Studio → Database → Functions
-- [x] 1.4 RLS enabled on all three tables
+- [x] 1.1 Migration applies cleanly: `npx supabase db reset` — ea4ab77
+- [x] 1.2 All three tables present in Studio schema view — ea4ab77
+- [x] 1.3 `get_user_role()` function visible in Studio → Database → Functions — ea4ab77
+- [x] 1.4 RLS enabled on all three tables — ea4ab77
 
 #### Manual
 
-- [x] 1.5 Employee smoke test: authenticated employee reads 0 absences (not an error), cannot insert absence for another employee
-- [x] 1.6 Moderator smoke test: authenticated moderator reads all employees and absences
-- [x] 1.7 Unauthenticated smoke test: anon client gets 0 rows on all tables
+- [x] 1.5 Employee smoke test: authenticated employee reads 0 absences (not an error), cannot insert absence for another employee — ea4ab77
+- [x] 1.6 Moderator smoke test: authenticated moderator reads all employees and absences — ea4ab77
+- [x] 1.7 Unauthenticated smoke test: anon client gets 0 rows on all tables — ea4ab77
 
 ### Phase 2: Seed Migration
 
 #### Automated
 
-- [ ] 2.1 Both migrations apply in sequence: `npx supabase db reset`
-- [ ] 2.2 `SELECT COUNT(*) FROM absence_types;` returns 6
+- [x] 2.1 Both migrations apply in sequence: `npx supabase db reset`
+- [x] 2.2 `SELECT COUNT(*) FROM absence_types;` returns 6
 
 #### Manual
 
-- [ ] 2.3 All six types visible in Studio with correct names and hex colors
+- [x] 2.3 All six types visible in Studio with correct names and hex colors
 
 ### Phase 3: TypeScript Types
 
