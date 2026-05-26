@@ -1,7 +1,7 @@
 ---
 change_id: data-schema-and-rls
 title: Database schema and RLS policies for employees, absences, and absence types
-status: implementing
+status: implemented
 created: 2026-05-26
 updated: 2026-05-26
 archived_at: null

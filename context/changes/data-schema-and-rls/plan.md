@@ -346,9 +346,9 @@ With ~10 employees and ~200 absence entries per month, no indexes beyond the pri
 
 #### Automated
 
-- [x] 3.1 `npm run build` succeeds
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` succeeds — dbbdf70
+- [x] 3.2 `npm run lint` passes — dbbdf70
 
 #### Manual
 
-- [x] 3.3 IDE autocomplete resolves all fields on `Employee`, `AbsenceType`, `Absence`
+- [x] 3.3 IDE autocomplete resolves all fields on `Employee`, `AbsenceType`, `Absence` — dbbdf70
