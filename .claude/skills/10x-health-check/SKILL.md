@@ -13,6 +13,14 @@ description: >
   "is my project healthy", "sprawdź projekt", "audyt projektu",
   "health-check", "project health".
   Use AFTER /10x-stack-assess (brownfield chain), BEFORE agent onboarding (m1-l4).
+argument-hint: "[path-to-stack-assessment]"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Health Check: Audit an Existing Project for Agent-Readiness
@@ -95,7 +103,7 @@ If no lockfile is found, flag as a finding:
 
 ```
 ⚠ No lockfile detected. Dependency versions are not pinned — builds are non-reproducible
-  and the AI assistant cannot reason about exact dependency state.
+  and the agent cannot reason about exact dependency state.
   Fix: run <package-manager lock command> to generate a lockfile.
 ```
 
@@ -188,7 +196,7 @@ Surface findings:
 
 - **Test runner detected + tests run**: report test count if available, note runner name
 - **Test runner detected + tests fail to run**: flag as a finding with the error
-- **No test runner detected**: flag as a significant finding — the AI assistant cannot verify its own changes
+- **No test runner detected**: flag as a significant finding — the agent cannot verify its own changes
 
 #### 2b. CI/CD configuration evaluation
 
@@ -229,7 +237,7 @@ Check for common development configuration:
 | `tsconfig.json` with `strict: true` (TS) | Type strictness | high (if TS project without strict) |
 | `.gitignore` | Tracked file exclusions | high |
 | `.env.example` / `.env.template` | Environment variable documentation | low |
-| `AGENTS.md` | AI assistant instruction files | Category B — covered in agent onboarding |
+| `CLAUDE.md` / `AGENTS.md` | Agent instruction files | Category B — covered in agent onboarding |
 
 Surface missing files grouped by severity.
 
@@ -251,7 +259,7 @@ In-check: test runner <detected/not detected>, CI <provider/not detected>,
 If `context/foundation/stack-assessment.md` exists, read it and link findings:
 
 - If stack-assess identified a quality-gate failure (e.g., "typed: fail"), and health-check found no type-checking in CI → reinforce: "the stack lacks type safety AND CI doesn't enforce types — compensation is doubly important"
-- If stack-assess identified compensation strategies → check whether the recommended instruction-file entries exist (are `AGENTS.md` present? Do they contain the recommended rules?)
+- If stack-assess identified compensation strategies → check whether the recommended instruction-file entries exist (are `CLAUDE.md` / `AGENTS.md` present? Do they contain the recommended rules?)
 - If stack-assess gave a `ready-with-compensation` verdict but the compensation entries are missing → flag as a gap
 
 #### 3b. Determine overall health status
@@ -260,24 +268,24 @@ Based on all findings:
 
 - **healthy**: no CRITICAL/HIGH audit findings, test runner detected and working, no high-severity configuration gaps in Category A.
 - **needs-attention**: some Category A findings but all addressable. Typical: a few HIGH audit advisories, missing formatter, or missing type strictness.
-- **critical-issues**: CRITICAL audit findings, no test runner, or multiple high-severity Category A gaps compounding. The AI assistant will struggle without preparation.
+- **critical-issues**: CRITICAL audit findings, no test runner, or multiple high-severity Category A gaps compounding. The agent will struggle without preparation.
 
 Category B findings (missing CI, missing AGENTS.md, missing deployment config) do **not** affect the verdict — they are expected at this stage and will be addressed in later lessons. A project can be `healthy` with no CI pipeline if it has a working test runner, clean dependencies, and good local configuration.
 
-The verdict is informational, not blocking. Even `critical-issues` means "invest time in Category A fixes before expecting smooth AI assistant collaboration," not "abandon the project."
+The verdict is informational, not blocking. Even `critical-issues` means "invest time in Category A fixes before expecting smooth agent collaboration," not "abandon the project."
 
 #### 3c. Prioritized fix list
 
 Split findings into two categories:
 
-**Category A — Fix before AI assistant work** (actionable now):
+**Category A — Fix before agent work** (actionable now):
 
-1. **Critical security vulnerabilities** — fix before any AI assistant-assisted work touches affected code paths
-2. **No test runner** — the AI assistant cannot verify its own changes; install and configure one
-3. **Missing lockfile** — non-reproducible builds undermine AI assistant reliability
+1. **Critical security vulnerabilities** — fix before any agent-assisted work touches affected code paths
+2. **No test runner** — the agent cannot verify its own changes; install and configure one
+3. **Missing lockfile** — non-reproducible builds undermine agent reliability
 4. **High audit findings** — review and patch or accept the risk
-5. **Missing type strictness** (TS without strict, Python without mypy) — AI assistant generates less reliable code
-6. **Missing formatter/linter** — AI assistant's output style will be inconsistent
+5. **Missing type strictness** (TS without strict, Python without mypy) — agent generates less reliable code
+6. **Missing formatter/linter** — agent's output style will be inconsistent
 7. **Outdated dependencies with major gaps** — potential breaking changes when updating
 8. **Missing .editorconfig / .env.example** — convenience, not blocking
 
@@ -285,8 +293,8 @@ Split findings into two categories:
 
 These findings are real but the learner will set them up in upcoming steps. Frame them as "coming up next," not as problems:
 
-- **No CI pipeline** → covered in the infrastructure/deployment lesson. Note the gap, point forward: "You'll set up CI in an upcoming lesson. For now, local test runner coverage is what matters for AI assistant collaboration."
-- **Missing AI assistant instruction files** (AGENTS.md) → covered in the AI assistant onboarding lesson. Do not recommend creating them now: "AI assistant onboarding walks you through building these with the right content. Generating a stub now would be premature."
+- **No CI pipeline** → covered in the infrastructure/deployment lesson. Note the gap, point forward: "You'll set up CI in an upcoming lesson. For now, local test runner coverage is what matters for agent collaboration."
+- **Missing agent instruction files** (CLAUDE.md / AGENTS.md) → covered in the agent onboarding lesson. Do not recommend creating them now: "Agent onboarding walks you through building these with the right content. Generating a stub now would be premature."
 - **Missing deployment configuration** → covered in the infrastructure lesson. Acknowledge, don't prioritize.
 
 When the health-check runs standalone (outside the course chain), all findings go into a single ranked list without the A/B split — the course-context framing only applies when the user is progressing through the brownfield chain. When running inside the 10xDevs course chain, enrich forward-references with lesson titles and links:
@@ -296,7 +304,7 @@ When the health-check runs standalone (outside the course chain), all findings g
 Each fix entry (in both categories) must include:
 
 - What is wrong (the finding)
-- Why it matters for AI assistant workflows (the impact)
+- Why it matters for agent workflows (the impact)
 - What to do about it (the concrete fix command or action, or the lesson that covers it)
 - Effort estimate: quick (< 5 min), moderate (15–30 min), significant (> 1 hour), or **upcoming lesson** for Category B items
 
@@ -310,7 +318,7 @@ test -f context/foundation/health-check.md
 
 If the file exists, ask:
 
-Ask the user:
+AskUserQuestion:
 - question: "context/foundation/health-check.md already exists. How would you like to proceed?"
   header: "Collision"
   options:
@@ -341,7 +349,7 @@ After the write, print the closing summary:
   Fixes:          <N> recommended (<Q> quick, <M> moderate, <S> significant)
 
   ► Report:       context/foundation/health-check.md
-  ► Next:         AI assistant onboarding — both greenfield and brownfield
+  ► Next:         Agent onboarding — both greenfield and brownfield
                   paths converge with equivalent context artifacts.
 ═══════════════════════════════════════════════════════════
 ```
@@ -364,7 +372,7 @@ Single file written: `context/foundation/health-check.md` (or `health-check-vN.m
 
 3. **WARN-AND-CONTINUE on every branch.** No finding halts the skill. CRITICAL security vulnerabilities, missing test runners, absent CI — all surface as findings with recommendations, never as blockers. The user decides what to fix and when.
 
-4. **Prioritize by AI assistant impact.** The fix list is ordered by impact on AI assistant workflows, not by generic severity. A missing test runner matters more to an AI assistant than a LOW audit advisory, because the AI assistant cannot verify its own changes without tests.
+4. **Prioritize by agent impact.** The fix list is ordered by impact on agent workflows, not by generic severity. A missing test runner matters more to an agent than a LOW audit advisory, because the agent cannot verify its own changes without tests.
 
 5. **Concrete fixes, not generic advice.** Every recommendation must include the specific command or action. "Add tests" is not a fix; "Run `npm init vitest@latest` to set up Vitest, then add a test script to package.json" is a fix.
 
@@ -372,6 +380,6 @@ Single file written: `context/foundation/health-check.md` (or `health-check-vN.m
 
 7. **Skill-internal labels stay internal.** When speaking to the user, never reference step numbers, gate names as technical terms, or internal field names. Use plain language: "dependency audit", "test infrastructure check", "overall health."
 
-8. **Course-context awareness.** The health-check sits in a learning path. Missing CI/CD, missing the project's AI configuration file (AGENTS.md), and missing deployment config are expected gaps at this stage — frame them as "coming up next," not as failures. The verdict must not penalize the learner for things they haven't been taught yet.
+8. **Course-context awareness.** The health-check sits in a learning path. Missing CI/CD, missing AGENTS.md, and missing deployment config are expected gaps at this stage — frame them as "coming up next," not as failures. The verdict must not penalize the learner for things they haven't been taught yet.
 
 9. **Universal language only.** No private vault paths or organization-specific branding in shipped content.

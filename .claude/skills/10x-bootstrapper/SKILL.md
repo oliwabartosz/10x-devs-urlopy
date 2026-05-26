@@ -12,6 +12,15 @@ description: >
   Use when the user says "bootstrap the project", "scaffold the app", "set up
   the codebase", "let's start the project", or naturally follows
   /10x-tech-stack-selector. Use AFTER /10x-tech-stack-selector.
+argument-hint: "[path-to-tech-stack]"
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Bootstrapper: From Tech Stack to Scaffolded Project
@@ -104,7 +113,7 @@ Hand-off received:
 
 Ask one confirmation:
 
-Ask the user:
+AskUserQuestion:
 - question: "Proceed with this hand-off, or correct something first?"
   header: "Hand-off"
   options:

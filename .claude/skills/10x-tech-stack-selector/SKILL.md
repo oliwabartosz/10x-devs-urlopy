@@ -10,6 +10,14 @@ description: >
   the user asks "what stack should I use", says "pick a stack", "choose
   framework", "co wybrać do projektu", or has a PRD on disk and is ready to
   scaffold. Use AFTER /10x-prd, BEFORE /10x-bootstrapper.
+argument-hint: "[path-to-prd]"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Tech Stack Selector: From PRD to Starter
@@ -107,7 +115,9 @@ PRD priors:
     - ...
 ```
 
-Ask the user:
+Ask one confirmation:
+
+AskUserQuestion:
 - question: "Are these priors correct, or do you want to correct anything before we proceed?"
   header: "Priors"
   options:
@@ -181,7 +191,9 @@ test -f context/foundation/tech-stack.md
 
 If the file does not exist, write `context/foundation/tech-stack.md` with the validated content.
 
-If the file exists, ask the user:
+If the file exists, ask:
+
+AskUserQuestion:
 - question: "context/foundation/tech-stack.md already exists. How would you like to proceed?"
   header: "Collision"
   options:

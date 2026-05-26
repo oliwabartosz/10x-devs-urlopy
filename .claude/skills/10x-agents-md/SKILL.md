@@ -9,6 +9,14 @@ description: >
   doc", "generate contributor guide for agents", or similar. The output is
   optimized to be small, precise, reference-heavy, and ordered with critical
   rules at the top — so a future agent reads it once and stays unblocked.
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+  - AskUserQuestion
 ---
 
 # 10x Agents MD
@@ -36,14 +44,14 @@ The same skill can produce two materially different documents depending on **whe
 
 **Directory-level scope.** Drop the repository-onboarding framing entirely. The reader already knows the repo; they need the rules of *this* directory. Reorient discovery and output:
 
-- **Discover locally first.** Inspect the files actually living next to the target: sibling source files, the nearest `index.*`/`mod.rs`/`__init__.py`, co-located tests, the parent directory's README if any, and any nested config (e.g. `tsconfig.json`, `.eslintrc`, route manifests) that overrides repo-level defaults. Only consult repo-root docs (`README.md`, `the project's AI configuration file (AGENTS.md)`) to **resolve conflicts** or pull a single canonical `@`-reference — not as the primary source.
+- **Discover locally first.** Inspect the files actually living next to the target: sibling source files, the nearest `index.*`/`mod.rs`/`__init__.py`, co-located tests, the parent directory's README if any, and any nested config (e.g. `tsconfig.json`, `.eslintrc`, route manifests) that overrides repo-level defaults. Only consult repo-root docs (`README.md`, `CLAUDE.md`) to **resolve conflicts** or pull a single canonical `@`-reference — not as the primary source.
 - **Infer the local pattern by reading siblings.** What shape do existing files in this directory take? Component file layout, naming (`PascalCase.tsx`, `kebab-case.ts`, `*.handler.ts`), default vs. named exports, prop/argument conventions, where types/styles/tests live relative to the unit, error-handling idioms, what gets imported from where. The AGENTS.md captures the convention you observed, not generic advice.
 - **Reframe sections around the local unit.** Replace repo-level sections with directory-relevant ones. Useful defaults (adapt to what's there):
   - *Adding a new \<unit\>* — concrete steps for the dominant artifact in this directory (component, route handler, migration, hook, worker, etc.), citing one existing sibling as the reference shape via `@./<sibling-file>`.
   - *File layout & naming* — naming pattern, co-location rules (test next to source? styles inline? types in a sibling file?), barrel-export policy if one exists.
   - *Local conventions* — props/args shape, state/data-flow rules, allowed imports (and forbidden ones — e.g. "components in this directory must not import from `src/server/`"), accessibility or i18n rules visible in siblings.
   - *Testing this unit* — the test pattern used by neighbors, how to run just this directory's tests.
-  - *Tripwires* — directory-specific "never do X" rules visible in siblings or a nearby AGENTS.md fragment.
+  - *Tripwires* — directory-specific "never do X" rules visible in siblings or a nearby CLAUDE.md fragment.
 - **Skip the repo-level sections.** No top-level project structure map, no monorepo package list, no global build/CI overview, no commit-convention recap — those belong in the root `AGENTS.md`. If the reader needs them, link once: `See @AGENTS.md at the repo root for repo-wide rules.`
 - **Length budget shrinks.** Aim for **120–250 words** of body for directory-level guides; the surface area is smaller, and padding here is worse than at the root.
 
@@ -53,7 +61,7 @@ The Quality guards still apply, with one substitution: guard 5 ("Critical rules 
 
 Whenever the procedure says *"ask the user"*, use whichever interactive-question tool the host agent exposes. The skill is host-agnostic; do not hard-code one tool name. Known equivalents (non-exhaustive):
 
-- your AI coding assistant → Ask the user:
+- Claude Code → `AskUserQuestion`
 - Cursor → `ask_question`
 - OpenAI Codex / Codex CLI → `request_user_input`
 - Other harnesses → look for any tool whose description mentions asking the user a structured question with options.
@@ -66,14 +74,14 @@ State which tool you selected (or that you fell back to plain chat) the first ti
 
 If the host exposes a subagent / task-spawn tool, the discovery and diff steps parallelize cleanly — they're mostly independent reads. Known equivalents (non-exhaustive):
 
-- your AI coding assistant → `Agent` (with `Explore`/`general-purpose` subagent types)
+- Claude Code → `Agent` (with `Explore`/`general-purpose` subagent types)
 - Cursor → background subagents
 - OpenAI Codex → task delegation tool (where available)
 - Other harnesses → look for any tool that spawns an isolated agent with its own context window and returns a summary.
 
 **Self-discovery rule.** Before kicking off discovery, check whether such a tool exists. If it does, fan out the independent reads in **one batched call** (multiple subagents in a single message, not sequentially):
 
-- one subagent reads `README.md`, `the project's AI configuration file (AGENTS.md)`, existing `AGENTS.md`, top-level `docs/` index;
+- one subagent reads `README.md`, `CLAUDE.md`, existing `AGENTS.md`, top-level `docs/` index;
 - one inspects the manifest + lint/format/type configs;
 - one inspects test config + CI workflows;
 - one runs the git-history queries (commit conventions, last-touch on AGENTS.md, diff range since `LAST_TOUCH`).
@@ -93,17 +101,17 @@ Each subagent should return a **short structured report** (≤200 words: facts o
 - Does not invent project facts. Every claim in the output must trace back to a file, command, or commit you actually inspected.
 - Does not embed multi-line code or config snippets. Use `@`-references to canonical files instead (e.g. `@package.json`, `@tsconfig.json`, `@docs/architecture.md`).
 - Does not write generic engineering advice ("write clean code", "follow best practices", "handle errors properly"). If a rule cannot be checked against a diff, drop it or rewrite it concretely.
-- Does not restate framework defaults, language tutorials, or anything the AI assistant already knows from training. Only project-specific knowledge earns a line.
+- Does not restate framework defaults, language tutorials, or anything the agent already knows from training. Only project-specific knowledge earns a line.
 - Does not edit unrelated files. The skill writes one markdown file and stops.
 
 ## Procedure
 
-**First, branch on existence.** Before discovering anything else, check whether the resolved target path already exists (use a file read operation or `ls`). If it does, follow the **Update path** below. If not, follow the **Create path**.
+**First, branch on existence.** Before discovering anything else, check whether the resolved target path already exists (use `Read` or `ls`). If it does, follow the **Update path** below. If not, follow the **Create path**.
 
 ### Create path
 
 1. **Discover.** Read in this order, skipping what doesn't exist:
-   - `README.md`, `the project's AI configuration file (AGENTS.md)`, existing `AGENTS.md`, top-level `docs/` index.
+   - `README.md`, `CLAUDE.md`, existing `AGENTS.md`, top-level `docs/` index.
    - Manifest: `package.json` (scripts, workspaces, engines), or `pyproject.toml` / `Cargo.toml` / `go.mod` / `Gemfile` / equivalent.
    - Lint/format/type configs: `.eslintrc*`, `oxlint*`, `biome.json`, `tsconfig.json`, `ruff.toml`, `.editorconfig`.
    - Test config: `vitest.config.*`, `jest.config.*`, `pytest.ini`, `playwright.config.*`, `*.test.*` locations.
@@ -113,18 +121,18 @@ Each subagent should return a **short structured report** (≤200 words: facts o
 2. **Extract.** From discovery, write down for yourself:
    - The 1–3 commands an agent runs most often (build, test, lint, dev server).
    - The handful of conventions a reviewer would actually flag in PR review (naming patterns, file layout, commit prefix style).
-   - Any hard "never do X" rule visible in `the project's AI configuration file (AGENTS.md)`, README, or CI validators.
+   - Any hard "never do X" rule visible in CLAUDE.md, README, or CI validators.
    - Where deeper docs live, so the AGENTS.md can point to them instead of duplicating.
 3. **Draft.** Write the file per "Output structure" below.
 4. **Self-check before writing.** Run the five guards in "Quality guards". If any fail, revise the draft, do not write yet.
-5. **Write.** Perform a single file write operation to the resolved path. Confirm the path and word count back to the user.
+5. **Write.** Single `Write` call to the resolved path. Confirm the path and word count back to the user.
 
 ### Update path
 
 Triggered when the target file already exists. The default is a **surgical edit**: keep what's still true, fix what's stale, fill what's missing, and remove what's been deleted from the repo. Do not rewrite from scratch unless the user asks.
 
 1. **Inventory the existing file.**
-   - Read the full file.
+   - `Read` the full file.
    - List its current sections (H1/H2/H3 headings) and the rules/commands under each.
    - Extract every `@`-reference and every relative path or filename it cites.
 
@@ -134,28 +142,28 @@ Triggered when the target file already exists. The default is a **surgical edit*
    - If the file is untracked (`git ls-files --error-unmatch <path>` fails), treat it as freshly authored: skip git-diff steps and run the full Create path discovery, but still preserve any obviously project-specific content the user wrote.
 
 3. **Diff repo state since `LAST_TOUCH`.** Use these checks (skip any whose target the file doesn't reference):
-   - `git diff --stat LAST_TOUCH..HEAD -- README.md the project's AI configuration file (AGENTS.md) docs/` — has top-level documentation moved or changed?
+   - `git diff --stat LAST_TOUCH..HEAD -- README.md CLAUDE.md docs/` — has top-level documentation moved or changed?
    - `git diff LAST_TOUCH..HEAD -- package.json pyproject.toml Cargo.toml go.mod` (whichever exists) — for **scripts**, **dependencies**, **engines**, **workspaces**. Pay closest attention to the `scripts` block: renamed/added/removed scripts are the most common source of stale AGENTS.md content.
    - `git diff LAST_TOUCH..HEAD -- .eslintrc* oxlint* biome.json tsconfig.json ruff.toml .editorconfig` — has the lint/format/type toolchain changed?
    - `git diff LAST_TOUCH..HEAD -- vitest.config.* jest.config.* pytest.ini playwright.config.*` — has the test stack or layout changed?
    - `git diff --stat LAST_TOUCH..HEAD -- .github/workflows/` — has the CI gate changed?
    - `git log --oneline LAST_TOUCH..HEAD -- <commit-conventions-relevant-area>` and `git log --oneline -n 30` — does the commit-style observation in the file still match recent history?
-   - For each `@`-reference and path the file mentions: perform a file system check or read operation on the path. If it no longer exists or has been renamed, that line is stale.
+   - For each `@`-reference and path the file mentions: `ls`/`Read` the path. If it no longer exists or has been renamed, that line is stale.
 
 4. **Classify each line of the existing file** into one of four buckets:
    - **KEEP** — still accurate; cited file/command/path still exists with the same shape.
    - **UPDATE** — directionally right but a detail is stale (renamed script, moved path, changed tool, version bump). Note the exact replacement.
-   - **REMOVE** — the underlying file/command/convention no longer exists, or the rule has been contradicted by a newer source (`the project's AI configuration file (AGENTS.md)`, README) that you trust more.
+   - **REMOVE** — the underlying file/command/convention no longer exists, or the rule has been contradicted by a newer source (CLAUDE.md, README) that you trust more.
    - **MISSING** — not currently in the file but should be (new top-level package, new required script, new "never do X" rule landed via CI validator, new commit convention visible in `git log`).
    Keep this classification as a short table you can show the user. Cite `path:line` (in the existing AGENTS.md) for every UPDATE/REMOVE entry, and cite the source-of-truth path (e.g. `package.json:42`) for every UPDATE/MISSING entry.
 
 5. **Confirm scope before editing.** Use the host's interactive-question tool once (see "Interactive prompts — host-agnostic" above) with these options:
-   - **Apply the proposed updates** — execute the UPDATE/REMOVE/MISSING list as targeted edit operations; KEEP lines are not touched.
+   - **Apply the proposed updates** — execute the UPDATE/REMOVE/MISSING list as targeted `Edit` calls; KEEP lines are not touched.
    - **Show me the change list first** — print the classification table to chat, no edits, then ask again.
    - **Full regenerate** — discard the existing file and run the Create path. Use only when the existing file is mostly stale or the user explicitly wants a clean slate.
    - **Cancel** — no changes.
 
-6. **Edit surgically.** For the "Apply" choice, prefer multiple small edit operations (one per UPDATE/REMOVE/MISSING entry) over a single file write rewrite. This preserves authorial voice in KEEP sections and produces a reviewable diff. If section ordering violates the "critical rules first" guard from the Quality guards and the user approved updates, you may move whole sections — but only sections, never re-author rule wording silently.
+6. **Edit surgically.** For the "Apply" choice, prefer multiple small `Edit` calls (one per UPDATE/REMOVE/MISSING entry) over a single `Write` rewrite. This preserves authorial voice in KEEP sections and produces a reviewable diff. If section ordering violates the "critical rules first" guard from the Quality guards and the user approved updates, you may move whole sections — but only sections, never re-author rule wording silently.
 
 7. **Re-run the Quality guards** on the updated file. The same five gates apply. If a guard now fails because of the update (e.g. body grew past 400 words after MISSING additions), trim KEEP content that has become low-leverage rather than dropping the new MISSING content.
 
@@ -178,7 +186,7 @@ Order sections by **leverage to a fresh agent**, not by tradition. Critical rule
 
 Open the file with one short paragraph (1–2 sentences) naming what the project is and the primary stack — enough that an agent landing in the repo for the first time has a frame. No mission statements, team intros, or values.
 
-## Quality guards (run before performing a file write operation)
+## Quality guards (run before `Write`)
 
 Each guard is a hard gate. If any fails, revise the draft.
 
@@ -207,7 +215,7 @@ Do not propose follow-ups unless the user asks.
 
 - **No `README.md` and no manifest detected.** Stop and tell the user the repo looks empty or unfamiliar; ask for a one-paragraph project description before drafting.
 - **Monorepo with per-package READMEs.** Write a root `AGENTS.md` that lists packages and `@`-references each package's README, rather than duplicating per-package detail. Suggest nested `packages/<name>/AGENTS.md` for any package with rules that materially differ.
-- **Existing rich `the project's AI configuration file (AGENTS.md)` in the repo.** Treat it as authoritative source material. The new `AGENTS.md` should be a tighter, agent-tool-agnostic distillation that points back to `@AGENTS.md` for depth, not a verbatim copy.
+- **Existing rich `CLAUDE.md` in the repo.** Treat it as authoritative source material. The new `AGENTS.md` should be a tighter, agent-tool-agnostic distillation that points back to `@CLAUDE.md` for depth, not a verbatim copy.
 - **Existing `AGENTS.md` was edited by hand after its last commit.** `git diff HEAD -- <path>` will show uncommitted changes. Read those changes first and treat them as KEEP unless they directly contradict a CI-enforced rule — the user is mid-edit and you must not clobber in-flight work.
 - **`LAST_TOUCH` is the initial commit of the repo.** Diff range becomes `LAST_TOUCH..HEAD` with no useful signal. Fall back to inspecting current repo state vs. the file's claims, line by line, without the git-diff shortcut.
 - **File exists but is empty or a stub.** Skip the Update path — run the Create path and overwrite, since there is no authorial content to preserve.

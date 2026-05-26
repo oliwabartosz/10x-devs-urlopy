@@ -2,10 +2,10 @@
   "package": "@przeprogramowani/10x-cli",
   "version": "1.6.1",
   "manifestVersion": 2,
-  "lastApplied": "2026-05-22T10:40:36.688Z",
-  "lessonId": "m1l5",
+  "lastApplied": "2026-05-25T11:20:53.576Z",
+  "lessonId": "m2l1",
   "course": "10xdevs3",
-  "tool": "generic",
+  "tool": "claude-code",
   "files": {
     "skills": {
       "10x-init": {
@@ -77,6 +77,11 @@
       "10x-infra-research": {
         "files": [
           "references/agent-friendly-criteria.md",
+          "SKILL.md"
+        ]
+      },
+      "10x-roadmap": {
+        "files": [
           "SKILL.md"
         ]
       }
