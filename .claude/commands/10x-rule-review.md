@@ -1,0 +1,1 @@
+../../.ai/skills/10x-rule-review/SKILL.md

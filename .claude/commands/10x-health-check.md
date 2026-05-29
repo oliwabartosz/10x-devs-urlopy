@@ -1,0 +1,1 @@
+../../.ai/skills/10x-health-check/SKILL.md

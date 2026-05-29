@@ -1,0 +1,1 @@
+../../.ai/skills/10x-init/SKILL.md

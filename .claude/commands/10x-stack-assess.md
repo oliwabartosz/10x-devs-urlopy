@@ -1,0 +1,1 @@
+../../.ai/skills/10x-stack-assess/SKILL.md
