@@ -479,21 +479,21 @@ No new migrations in this slice — F-01 provided all schema. No data migration 
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — 89ac00d
+- [x] 3.2 `npm run lint` passes — 89ac00d
 
 #### Manual
 
-- [x] 3.3 `/dashboard` without param shows current month
-- [x] 3.4 `/dashboard?month=2026-03` shows March 2026
-- [x] 3.5 User with no employee record sees friendly message
+- [x] 3.3 `/dashboard` without param shows current month — 89ac00d
+- [x] 3.4 `/dashboard?month=2026-03` shows March 2026 — 89ac00d
+- [x] 3.5 User with no employee record sees friendly message — 89ac00d
 
 ### Phase 4: React Components — Grid and Form Dialog
 
 #### Automated
 
-- [ ] 4.1 `npm run build` passes
-- [ ] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes
+- [x] 4.2 `npm run lint` passes
 
 #### Manual
 

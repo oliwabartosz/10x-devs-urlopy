@@ -8,8 +8,10 @@ import type { Employee, Absence, AbsenceType } from "@/types";
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
 const now = new Date();
-const year = monthParam ? parseInt(monthParam.split("-")[0]) : now.getFullYear();
-const month = monthParam ? parseInt(monthParam.split("-")[1]) : now.getMonth() + 1;
+// Normalize to null when format is invalid — prevents NaN propagating into date range queries
+const validMonthParam = monthParam != null && /^\d{4}-(?:0[1-9]|1[0-2])$/.test(monthParam) ? monthParam : null;
+const year = validMonthParam ? parseInt(validMonthParam.split("-")[0], 10) : now.getFullYear();
+const month = validMonthParam ? parseInt(validMonthParam.split("-")[1], 10) : now.getMonth() + 1;
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
@@ -21,13 +23,17 @@ if (!supabase) {
   return Astro.redirect("/auth/signin");
 }
 
-const { data: currentEmployee } = (await supabase
+type DbError = { code: string } | null;
+const { data: currentEmployee, error: employeeError } = (await supabase
   .from("employees")
   .select("*")
   .eq("user_id", Astro.locals.user.id)
   .is("deleted_at", null)
-  .single()) as { data: Employee | null; error: unknown };
+  .single()) as unknown as { data: Employee | null; error: DbError };
+// PGRST116 = "zero rows" — expected when user is not yet onboarded; other codes = real DB error
+const employeeDbError = employeeError != null && employeeError.code !== "PGRST116";
 
+let gridDbError = false;
 let employees: Employee[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
@@ -37,15 +43,28 @@ if (currentEmployee) {
   const nextMonthDate = new Date(year, month, 1); // JS month overflow handles Dec→Jan
   const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const [employeesResult, absencesResult, typesResult] = await Promise.all([
-    supabase.from("employees").select("*").is("deleted_at", null).order("last_name").order("first_name"),
+  const [employeesResult, absencesResult, typesResult] = (await Promise.all([
+    supabase
+      .from("employees")
+      .select("id, first_name, last_name, role")
+      .is("deleted_at", null)
+      .order("last_name")
+      .order("first_name"),
     supabase.from("absences").select("*").gte("date", firstDay).lt("date", firstDayNextMonth),
     supabase.from("absence_types").select("*").order("id"),
-  ]);
+  ])) as unknown as [
+    { data: Employee[]; error: DbError },
+    { data: Absence[]; error: DbError },
+    { data: AbsenceType[]; error: DbError },
+  ];
 
-  employees = ((employeesResult.data ?? []) as Employee[]);
-  absences = ((absencesResult.data ?? []) as Absence[]);
-  absenceTypes = ((typesResult.data ?? []) as AbsenceType[]);
+  if (employeesResult.error || absencesResult.error || typesResult.error) {
+    gridDbError = true;
+  } else {
+    employees = employeesResult.data;
+    absences = absencesResult.data;
+    absenceTypes = typesResult.data;
+  }
 }
 
 const prevMonth = new Date(year, month - 2, 1); // month-2 because month is 1-indexed
@@ -61,7 +80,11 @@ const nextMonthUrl = `?month=${nextMonth.getFullYear()}-${String(nextMonth.getMo
     </div>
 
     {
-      currentEmployee ? (
+      employeeDbError || gridDbError ? (
+        <div class="p-8 text-center text-red-600">
+          Błąd serwera. Spróbuj ponownie lub skontaktuj się z administratorem.
+        </div>
+      ) : currentEmployee ? (
         <AbsenceGrid
           client:load
           employees={employees}
@@ -75,8 +98,7 @@ const nextMonthUrl = `?month=${nextMonth.getFullYear()}-${String(nextMonth.getMo
         />
       ) : (
         <div class="p-8 text-center text-gray-600">
-          Twoje konto nie jest jeszcze powiązane z kontem pracownika. Skontaktuj się z
-          moderatorem.
+          Twoje konto nie jest jeszcze powiązane z kontem pracownika. Skontaktuj się z moderatorem.
         </div>
       )
     }
