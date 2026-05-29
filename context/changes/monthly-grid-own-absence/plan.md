@@ -492,21 +492,21 @@ No new migrations in this slice — F-01 provided all schema. No data migration 
 
 #### Automated
 
-- [x] 4.1 `npm run build` passes
-- [x] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes — 591a3d2
+- [x] 4.2 `npm run lint` passes — 591a3d2
 
 #### Manual
 
-- [ ] 4.3 Grid renders correct day count and weekday labels for current month
-- [ ] 4.4 Weekend rows are dimmed and non-clickable
-- [ ] 4.5 Own column header is visually highlighted
-- [ ] 4.6 Clicking empty cell in own column opens "Dodaj nieobecność" with correct date
-- [ ] 4.7 Save absence → dialog closes, page reloads, colored cell appears in grid
-- [ ] 4.8 Click existing absence → edit form opens with pre-filled values
-- [ ] 4.9 Edit and save → grid reflects change
-- [ ] 4.10 Delete absence → cell clears
-- [ ] 4.11 Duplicate absence on same day → toast error appears
-- [ ] 4.12 Hours input visible only when "Cały dzień" is unchecked
-- [ ] 4.13 Prev/next month navigation works correctly
-- [ ] 4.14 Other employees' cells are non-clickable
-- [ ] 4.15 End-to-end US-01 flow: log in → add absence → visible in grid
+- [x] 4.3 Grid renders correct day count and weekday labels for current month — 591a3d2
+- [x] 4.4 Weekend rows are dimmed and non-clickable — 591a3d2
+- [x] 4.5 Own column header is visually highlighted — 591a3d2
+- [x] 4.6 Clicking empty cell in own column opens "Dodaj nieobecność" with correct date — 591a3d2
+- [x] 4.7 Save absence → dialog closes, page reloads, colored cell appears in grid — 591a3d2
+- [x] 4.8 Click existing absence → edit form opens with pre-filled values — 591a3d2
+- [x] 4.9 Edit and save → grid reflects change — 591a3d2
+- [x] 4.10 Delete absence → cell clears — 591a3d2
+- [x] 4.11 Duplicate absence on same day → toast error appears — 591a3d2
+- [x] 4.12 Hours input visible only when "Cały dzień" is unchecked — 591a3d2
+- [x] 4.13 Prev/next month navigation works correctly — 591a3d2
+- [x] 4.14 Other employees' cells are non-clickable — 591a3d2
+- [x] 4.15 End-to-end US-01 flow: log in → add absence → visible in grid — 591a3d2
