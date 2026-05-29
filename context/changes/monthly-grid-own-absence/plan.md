@@ -451,29 +451,29 @@ No new migrations in this slice — F-01 provided all schema. No data migration 
 
 #### Automated
 
-- [x] 1.1 `npm run build` passes after all shadcn installs
-- [x] 1.2 `npm run lint` passes
-- [x] 1.3 All five component files exist in `src/components/ui/`
+- [x] 1.1 `npm run build` passes after all shadcn installs — 48312f7
+- [x] 1.2 `npm run lint` passes — 48312f7
+- [x] 1.3 All five component files exist in `src/components/ui/` — 48312f7
 
 #### Manual
 
-- [x] 1.4 No console errors on `/dashboard` after adding `<Toaster />`
+- [x] 1.4 No console errors on `/dashboard` after adding `<Toaster />` — 48312f7
 
 ### Phase 2: API Routes for Absence CRUD
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes (TypeScript compiles all three route exports)
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes (TypeScript compiles all three route exports)
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 POST `/api/absences` with valid body as authenticated employee → 201
-- [ ] 2.4 POST unauthenticated → 401
-- [ ] 2.5 PATCH as owner → 200
-- [ ] 2.6 PATCH for another employee's absence → 4xx (RLS blocked)
-- [ ] 2.7 DELETE as owner → 204
-- [ ] 2.8 POST with `is_full_day: false` and `hours: null` → 400
+- [x] 2.3 POST `/api/absences` with valid body as authenticated employee → 201
+- [x] 2.4 POST unauthenticated → 401
+- [x] 2.5 PATCH as owner → 200
+- [x] 2.6 PATCH for another employee's absence → 4xx (RLS blocked)
+- [x] 2.7 DELETE as owner → 204
+- [x] 2.8 POST with `is_full_day: false` and `hours: null` → 400
 
 ### Phase 3: Dashboard Astro Page — SSR Data Fetching
 

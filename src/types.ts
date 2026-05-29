@@ -28,3 +28,15 @@ export interface Absence {
   created_at: string;
   updated_at: string;
 }
+
+export interface AbsenceInsert {
+  employee_id: string;
+  absence_type_id: number;
+  date: string;
+  is_full_day: boolean;
+  hours: number | null;
+  comment: string | null;
+  substitute_employee_id: string | null;
+}
+
+export type AbsenceUpdate = Partial<Omit<AbsenceInsert, "employee_id">>;
