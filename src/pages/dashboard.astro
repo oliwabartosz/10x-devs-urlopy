@@ -1,27 +1,84 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import AbsenceGrid from "@/components/absence/AbsenceGrid";
+import { createClient } from "@/lib/supabase";
+import type { Employee, Absence, AbsenceType } from "@/types";
 
-const { user } = Astro.locals;
+// month is 1-indexed throughout (matches URL param and Postgres DATE month)
+const monthParam = Astro.url.searchParams.get("month");
+const now = new Date();
+const year = monthParam ? parseInt(monthParam.split("-")[0]) : now.getFullYear();
+const month = monthParam ? parseInt(monthParam.split("-")[1]) : now.getMonth() + 1;
+
+// Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
+if (!Astro.locals.user) {
+  return Astro.redirect("/auth/signin");
+}
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  return Astro.redirect("/auth/signin");
+}
+
+const { data: currentEmployee } = (await supabase
+  .from("employees")
+  .select("*")
+  .eq("user_id", Astro.locals.user.id)
+  .is("deleted_at", null)
+  .single()) as { data: Employee | null; error: unknown };
+
+let employees: Employee[] = [];
+let absences: Absence[] = [];
+let absenceTypes: AbsenceType[] = [];
+
+if (currentEmployee) {
+  const firstDay = `${year}-${String(month).padStart(2, "0")}-01`;
+  const nextMonthDate = new Date(year, month, 1); // JS month overflow handles Dec→Jan
+  const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
+
+  const [employeesResult, absencesResult, typesResult] = await Promise.all([
+    supabase.from("employees").select("*").is("deleted_at", null).order("last_name").order("first_name"),
+    supabase.from("absences").select("*").gte("date", firstDay).lt("date", firstDayNextMonth),
+    supabase.from("absence_types").select("*").order("id"),
+  ]);
+
+  employees = ((employeesResult.data ?? []) as Employee[]);
+  absences = ((absencesResult.data ?? []) as Absence[]);
+  absenceTypes = ((typesResult.data ?? []) as AbsenceType[]);
+}
+
+const prevMonth = new Date(year, month - 2, 1); // month-2 because month is 1-indexed
+const nextMonth = new Date(year, month, 1);
+const prevMonthUrl = `?month=${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+const nextMonthUrl = `?month=${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
 ---
 
-<Layout title="Dashboard">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Dashboard
-      </h1>
-      <p class="text-blue-100/80">
-        Welcome, <span class="font-semibold text-white">{user?.email}</span>
-      </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-        >
-          Sign out
-        </button>
-      </form>
+<Layout title="Urlopy — Ewidencja nieobecności">
+  <div class="min-h-screen bg-gray-50">
+    <div class="px-4 pt-4">
+      <Topbar />
     </div>
+
+    {
+      currentEmployee ? (
+        <AbsenceGrid
+          client:load
+          employees={employees}
+          absences={absences}
+          absenceTypes={absenceTypes}
+          currentEmployee={currentEmployee}
+          year={year}
+          month={month}
+          prevMonthUrl={prevMonthUrl}
+          nextMonthUrl={nextMonthUrl}
+        />
+      ) : (
+        <div class="p-8 text-center text-gray-600">
+          Twoje konto nie jest jeszcze powiązane z kontem pracownika. Skontaktuj się z
+          moderatorem.
+        </div>
+      )
+    }
   </div>
 </Layout>

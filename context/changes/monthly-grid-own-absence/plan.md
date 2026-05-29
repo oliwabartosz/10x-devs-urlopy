@@ -463,30 +463,30 @@ No new migrations in this slice — F-01 provided all schema. No data migration 
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes (TypeScript compiles all three route exports)
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes (TypeScript compiles all three route exports) — b4c24a5
+- [x] 2.2 `npm run lint` passes — b4c24a5
 
 #### Manual
 
-- [x] 2.3 POST `/api/absences` with valid body as authenticated employee → 201
-- [x] 2.4 POST unauthenticated → 401
-- [x] 2.5 PATCH as owner → 200
-- [x] 2.6 PATCH for another employee's absence → 4xx (RLS blocked)
-- [x] 2.7 DELETE as owner → 204
-- [x] 2.8 POST with `is_full_day: false` and `hours: null` → 400
+- [x] 2.3 POST `/api/absences` with valid body as authenticated employee → 201 — b4c24a5
+- [x] 2.4 POST unauthenticated → 401 — b4c24a5
+- [x] 2.5 PATCH as owner → 200 — b4c24a5
+- [x] 2.6 PATCH for another employee's absence → 4xx (RLS blocked) — b4c24a5
+- [x] 2.7 DELETE as owner → 204 — b4c24a5
+- [x] 2.8 POST with `is_full_day: false` and `hours: null` → 400 — b4c24a5
 
 ### Phase 3: Dashboard Astro Page — SSR Data Fetching
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 `/dashboard` without param shows current month
-- [ ] 3.4 `/dashboard?month=2026-03` shows March 2026
-- [ ] 3.5 User with no employee record sees friendly message
+- [x] 3.3 `/dashboard` without param shows current month
+- [x] 3.4 `/dashboard?month=2026-03` shows March 2026
+- [x] 3.5 User with no employee record sees friendly message
 
 ### Phase 4: React Components — Grid and Form Dialog
 
