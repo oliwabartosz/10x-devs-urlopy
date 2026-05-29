@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 # supabase local query scratchpad
 supabase/snippets/
+
+# LibreOffice temp files
+.xdp-*
