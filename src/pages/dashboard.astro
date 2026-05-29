@@ -26,10 +26,10 @@ if (!supabase) {
 type DbError = { code: string } | null;
 const { data: currentEmployee, error: employeeError } = (await supabase
   .from("employees")
-  .select("*")
+  .select("id, first_name, last_name, role")
   .eq("user_id", Astro.locals.user.id)
   .is("deleted_at", null)
-  .single()) as unknown as { data: Employee | null; error: DbError };
+  .single()) as unknown as { data: Pick<Employee, "id" | "first_name" | "last_name" | "role"> | null; error: DbError };
 // PGRST116 = "zero rows" — expected when user is not yet onboarded; other codes = real DB error
 const employeeDbError = employeeError != null && employeeError.code !== "PGRST116";
 
@@ -50,7 +50,11 @@ if (currentEmployee) {
       .is("deleted_at", null)
       .order("last_name")
       .order("first_name"),
-    supabase.from("absences").select("*").gte("date", firstDay).lt("date", firstDayNextMonth),
+    supabase
+      .from("absences")
+      .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id")
+      .gte("date", firstDay)
+      .lt("date", firstDayNextMonth),
     supabase.from("absence_types").select("*").order("id"),
   ])) as unknown as [
     { data: Employee[]; error: DbError },

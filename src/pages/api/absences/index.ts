@@ -3,14 +3,18 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import type { Absence } from "@/types";
 
-const AbsenceCreateSchema = z.object({
-  absence_type_id: z.number().int().positive(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  is_full_day: z.boolean(),
-  hours: z.number().positive().nullable(),
-  comment: z.string().nullable(),
-  substitute_employee_id: z.uuid().nullable(),
-});
+const AbsenceCreateSchema = z
+  .object({
+    absence_type_id: z.number().int().positive(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    is_full_day: z.boolean(),
+    hours: z.number().positive().nullable(),
+    comment: z.string().max(500).nullable(),
+    substitute_employee_id: z.uuid().nullable(),
+  })
+  .refine((d) => (d.is_full_day ? d.hours === null : d.hours !== null), {
+    message: "hours must be null when is_full_day is true, and set otherwise",
+  });
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -33,13 +37,13 @@ export const POST: APIRoute = async (context) => {
     .select("id")
     .eq("user_id", context.locals.user.id)
     .is("deleted_at", null)
-    .single()) as { data: { id: string } | null; error: { message: string } | null };
+    .single()) as { data: { id: string } | null; error: { code: string; message: string } | null };
 
+  if (employeeResult.error?.code === "PGRST116" || !employeeResult.data) {
+    return json({ error: "Employee record not found" }, 403);
+  }
   if (employeeResult.error) {
     return json({ error: "Database error" }, 503);
-  }
-  if (!employeeResult.data) {
-    return json({ error: "Employee record not found" }, 403);
   }
 
   let body: unknown;
@@ -64,7 +68,10 @@ export const POST: APIRoute = async (context) => {
     if (result.error.code === "23505") {
       return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
     }
-    return json({ error: result.error.message }, 400);
+    if (result.error.code === "23514") {
+      return json({ error: "Invalid hours/is_full_day combination" }, 400);
+    }
+    return json({ error: "Database error" }, 400);
   }
 
   return json(result.data, 201);

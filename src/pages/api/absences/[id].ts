@@ -9,10 +9,15 @@ const AbsenceUpdateSchema = z
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     is_full_day: z.boolean(),
     hours: z.number().positive().nullable(),
-    comment: z.string().nullable(),
+    comment: z.string().max(500).nullable(),
     substitute_employee_id: z.uuid().nullable(),
   })
   .partial();
+
+const AbsenceUpdateSchemaRefined = AbsenceUpdateSchema.refine(
+  (d) => d.is_full_day === undefined || d.hours === undefined || (d.is_full_day ? d.hours === null : d.hours !== null),
+  { message: "hours must be null when is_full_day is true, and set otherwise" },
+);
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -42,7 +47,7 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  const parsed = AbsenceUpdateSchema.safeParse(body);
+  const parsed = AbsenceUpdateSchemaRefined.safeParse(body);
   if (!parsed.success) {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
@@ -60,7 +65,8 @@ export const PATCH: APIRoute = async (context) => {
   if (result.error) {
     if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
     if (result.error.code === "PGRST116") return json({ error: "Not found" }, 404);
-    return json({ error: result.error.message }, 400);
+    if (result.error.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
+    return json({ error: "Database error" }, 400);
   }
 
   if (!result.data) {
@@ -92,9 +98,10 @@ export const DELETE: APIRoute = async (context) => {
 
   if (result.error) {
     if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
-    return json({ error: result.error.message }, 400);
+    return json({ error: "Database error" }, 400);
   }
 
+  // RLS-blocked deletes return empty data without an error code, indistinguishable from "not found".
   if (!result.data || result.data.length === 0) {
     return json({ error: "Not found" }, 404);
   }

@@ -111,7 +111,7 @@ export default function AbsenceGrid({
           <tbody>
             {days.map((date) => {
               const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-              const dateStr = date.toLocaleDateString("sv");
+              const dateStr = `${date.getFullYear().toString()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
               return (
                 <tr key={dateStr} className={isWeekend ? "bg-gray-100" : undefined}>

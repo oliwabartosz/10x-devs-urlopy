@@ -35,7 +35,7 @@ export function AbsenceFormDialog({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const dateStr = day.toLocaleDateString("sv");
+  const dateStr = `${day.getFullYear().toString()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
   const dateHeading = day.toLocaleDateString("pl-PL", {
     weekday: "long",
     day: "numeric",
