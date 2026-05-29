@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
-import type { Absence } from "@/types";
+import type { Absence, AbsenceUpdate } from "@/types";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -26,8 +26,8 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   const id = context.params.id;
-  if (!id) {
-    return json({ error: "Missing id" }, 400);
+  if (!id || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)) {
+    return json({ error: "Invalid id" }, 400);
   }
 
   const supabase = createClient(context.request.headers, context.cookies);
@@ -47,7 +47,12 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const result = (await supabase.from("absences").update(parsed.data).eq("id", id).select().single()) as {
+  const result = (await supabase
+    .from("absences")
+    .update(parsed.data as AbsenceUpdate)
+    .eq("id", id)
+    .select()
+    .single()) as {
     data: Absence | null;
     error: { code: string; message: string } | null;
   };
@@ -71,8 +76,8 @@ export const DELETE: APIRoute = async (context) => {
   }
 
   const id = context.params.id;
-  if (!id) {
-    return json({ error: "Missing id" }, 400);
+  if (!id || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)) {
+    return json({ error: "Invalid id" }, 400);
   }
 
   const supabase = createClient(context.request.headers, context.cookies);
@@ -80,14 +85,18 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Supabase is not configured" }, 503);
   }
 
-  const result = (await supabase.from("absences").delete().eq("id", id)) as {
-    data: unknown;
+  const result = (await supabase.from("absences").delete().eq("id", id).select()) as {
+    data: unknown[] | null;
     error: { code: string; message: string } | null;
   };
 
   if (result.error) {
     if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
     return json({ error: result.error.message }, 400);
+  }
+
+  if (!result.data || result.data.length === 0) {
+    return json({ error: "Not found" }, 404);
   }
 
   return new Response(null, { status: 204 });

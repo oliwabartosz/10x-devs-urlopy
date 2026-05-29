@@ -35,6 +35,9 @@ export const POST: APIRoute = async (context) => {
     .is("deleted_at", null)
     .single()) as { data: { id: string } | null; error: { message: string } | null };
 
+  if (employeeResult.error) {
+    return json({ error: "Database error" }, 503);
+  }
   if (!employeeResult.data) {
     return json({ error: "Employee record not found" }, 403);
   }
@@ -58,6 +61,9 @@ export const POST: APIRoute = async (context) => {
     .single()) as { data: Absence | null; error: { code: string; message: string } | null };
 
   if (result.error) {
+    if (result.error.code === "23505") {
+      return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+    }
     return json({ error: result.error.message }, 400);
   }
 
