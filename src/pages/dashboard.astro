@@ -37,7 +37,7 @@ const { data: currentEmployee, error: employeeError } = (await supabase
 // PGRST116 = "zero rows" — expected when user is not yet onboarded; other codes = real DB error
 const employeeDbError = employeeError != null && employeeError.code !== "PGRST116";
 
-let gridDbError = false;
+let dataDbError = false;
 let employees: Employee[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
@@ -67,7 +67,7 @@ if (currentEmployee) {
   ];
 
   if (employeesResult.error || absencesResult.error || typesResult.error) {
-    gridDbError = true;
+    dataDbError = true;
   } else {
     employees = employeesResult.data;
     absences = absencesResult.data;
@@ -99,7 +99,7 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
     </div>
 
     {
-      employeeDbError || gridDbError ? (
+      employeeDbError || dataDbError ? (
         <div class="p-8 text-center text-red-600">
           Błąd serwera. Spróbuj ponownie lub skontaktuj się z administratorem.
         </div>

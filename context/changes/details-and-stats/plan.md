@@ -407,16 +407,16 @@ No new migrations. The RLS fix (`20260529000001_fix_absences_select_rls.sql`) al
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes — 8dedf4b
+- [x] 2.2 `npm run lint` passes — 8dedf4b
 
 #### Manual
 
-- [x] 2.3 `/dashboard` shows grid with month nav and tab nav visible
-- [x] 2.4 Clicking "Szczegóły" tab navigates to `?tab=details`
-- [x] 2.5 Clicking "Statystyki" tab navigates to `?tab=stats`
-- [x] 2.6 Month prev/next on Szczegóły tab preserves `?tab=details`
-- [x] 2.7 Refreshing `?tab=stats` stays on stats tab
+- [x] 2.3 `/dashboard` shows grid with month nav and tab nav visible — 8dedf4b
+- [x] 2.4 Clicking "Szczegóły" tab navigates to `?tab=details` — 8dedf4b
+- [x] 2.5 Clicking "Statystyki" tab navigates to `?tab=stats` — 8dedf4b
+- [x] 2.6 Month prev/next on Szczegóły tab preserves `?tab=details` — 8dedf4b
+- [x] 2.7 Refreshing `?tab=stats` stays on stats tab — 8dedf4b
 
 ### Phase 3: Absence Details Table
 
