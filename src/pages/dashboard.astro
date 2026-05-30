@@ -3,6 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
+import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import { createClient } from "@/lib/supabase";
 import type { Employee, Absence, AbsenceType } from "@/types";
 
@@ -140,7 +141,9 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
                 month={month}
               />
             )}
-            {currentTab === "details" && <p class="text-gray-500">Szczegóły — wkrótce</p>}
+            {currentTab === "details" && (
+              <AbsenceDetailsTable client:load absences={absences} employees={employees} absenceTypes={absenceTypes} />
+            )}
             {currentTab === "stats" && <p class="text-gray-500">Statystyki — wkrótce</p>}
           </div>
         </div>

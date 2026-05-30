@@ -422,18 +422,18 @@ No new migrations. The RLS fix (`20260529000001_fix_absences_select_rls.sql`) al
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 Details table shows one row per absence for the month
-- [ ] 3.4 Default sort is by date ascending
-- [ ] 3.5 Column header clicks toggle sort direction
-- [ ] 3.6 Typ column shows colored square + name
-- [ ] 3.7 Zastępca column shows substitute name or "—"
-- [ ] 3.8 Godziny column shows "Cały dzień" or "N godz."
-- [ ] 3.9 New absence added via Grid tab appears in Details table on return
+- [x] 3.3 Details table shows one row per absence for the month
+- [x] 3.4 Default sort is by date ascending
+- [x] 3.5 Column header clicks toggle sort direction
+- [x] 3.6 Typ column shows colored square + name
+- [x] 3.7 Zastępca column shows substitute name or "—"
+- [x] 3.8 Godziny column shows "Cały dzień" or "N godz."
+- [x] 3.9 New absence added via Grid tab appears in Details table on return
 
 ### Phase 4: Statistics
 
