@@ -422,31 +422,31 @@ No new migrations. The RLS fix (`20260529000001_fix_absences_select_rls.sql`) al
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — f5a6182
+- [x] 3.2 `npm run lint` passes — f5a6182
 
 #### Manual
 
-- [x] 3.3 Details table shows one row per absence for the month
-- [x] 3.4 Default sort is by date ascending
-- [x] 3.5 Column header clicks toggle sort direction
-- [x] 3.6 Typ column shows colored square + name
-- [x] 3.7 Zastępca column shows substitute name or "—"
-- [x] 3.8 Godziny column shows "Cały dzień" or "N godz."
-- [x] 3.9 New absence added via Grid tab appears in Details table on return
+- [x] 3.3 Details table shows one row per absence for the month — f5a6182
+- [x] 3.4 Default sort is by date ascending — f5a6182
+- [x] 3.5 Column header clicks toggle sort direction — f5a6182
+- [x] 3.6 Typ column shows colored square + name — f5a6182
+- [x] 3.7 Zastępca column shows substitute name or "—" — f5a6182
+- [x] 3.8 Godziny column shows "Cały dzień" or "N godz." — f5a6182
+- [x] 3.9 New absence added via Grid tab appears in Details table on return — f5a6182
 
 ### Phase 4: Statistics
 
 #### Automated
 
-- [ ] 4.1 `npm run build` passes
-- [ ] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes
+- [x] 4.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 4.3 Monthly stats table renders immediately (no loading)
-- [ ] 4.4 Yearly stats section shows loading state then table
-- [ ] 4.5 Cells show "N dni", "N godz.", "N dni / N godz.", or "—" correctly
-- [ ] 4.6 Total row and column are correct
-- [ ] 4.7 Yearly totals match monthly totals for a month with all test data
-- [ ] 4.8 Stats reflect new absences when navigating to the tab after adding one
+- [x] 4.3 Monthly stats table renders immediately (no loading)
+- [x] 4.4 Yearly stats section shows loading state then table
+- [x] 4.5 Cells show "N dni", "N godz.", "N dni / N godz.", or "—" correctly
+- [x] 4.6 Total row and column are correct
+- [x] 4.7 Yearly totals match monthly totals for a month with all test data
+- [x] 4.8 Stats reflect new absences when navigating to the tab after adding one
