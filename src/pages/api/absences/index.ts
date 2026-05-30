@@ -3,6 +3,48 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import type { Absence } from "@/types";
 
+const json = (data: unknown, status: number) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+const YearSchema = z.string().regex(/^\d{4}$/);
+
+export const GET: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const yearParam = context.url.searchParams.get("year");
+  const yearParsed = YearSchema.safeParse(yearParam);
+  if (!yearParsed.success) {
+    return json({ error: "year param required (YYYY)" }, 400);
+  }
+
+  const supabase = createClient(context.request.headers, context.cookies);
+  if (!supabase) {
+    return json({ error: "Supabase is not configured" }, 503);
+  }
+
+  const year = yearParsed.data;
+  const from = `${year}-01-01`;
+  const to = `${year}-12-31`;
+
+  const result = (await supabase
+    .from("absences")
+    .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
+    .gte("date", from)
+    .lte("date", to)
+    .order("date")) as { data: Absence[] | null; error: { message: string } | null };
+
+  if (result.error) {
+    return json({ error: result.error.message }, 500);
+  }
+
+  return json(result.data ?? [], 200);
+};
+
 const AbsenceCreateSchema = z
   .object({
     absence_type_id: z.number().int().positive(),
@@ -14,12 +56,6 @@ const AbsenceCreateSchema = z
   })
   .refine((d) => (d.is_full_day ? d.hours === null : d.hours !== null), {
     message: "hours must be null when is_full_day is true, and set otherwise",
-  });
-
-const json = (data: unknown, status: number) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
   });
 
 export const POST: APIRoute = async (context) => {

@@ -52,7 +52,7 @@ if (currentEmployee) {
       .order("first_name"),
     supabase
       .from("absences")
-      .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id")
+      .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
       .gte("date", firstDay)
       .lt("date", firstDayNextMonth),
     supabase.from("absence_types").select("*").order("id"),
