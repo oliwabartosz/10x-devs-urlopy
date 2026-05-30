@@ -133,22 +133,25 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/absences?year=${year}`)
+    const controller = new AbortController();
+    fetch(`/api/absences?year=${year}`, { signal: controller.signal })
       .then((r) => {
         if (r.ok) return r.json() as Promise<Absence[]>;
-        return r.json().then((b: { error: string }) => {
-          throw new Error(b.error);
-        });
+        throw new Error(String(r.status));
       })
       .then((data) => {
         setYearlyAbsences(data);
       })
       .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Błąd ładowania statystyk rocznych");
       })
       .finally(() => {
         setLoading(false);
       });
+    return () => {
+      controller.abort();
+    };
   }, [year]);
 
   const monthlyTitle = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" }).format(

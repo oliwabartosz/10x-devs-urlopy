@@ -27,15 +27,28 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Supabase is not configured" }, 503);
   }
 
+  const employeeCheck = (await supabase
+    .from("employees")
+    .select("id")
+    .eq("user_id", context.locals.user.id)
+    .is("deleted_at", null)
+    .single()) as { data: { id: string } | null; error: { code: string } | null };
+  if (employeeCheck.error?.code === "PGRST116" || !employeeCheck.data) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (employeeCheck.error) {
+    return json({ error: "Database error" }, 503);
+  }
+
   const year = yearParsed.data;
   const from = `${year}-01-01`;
-  const to = `${year}-12-31`;
+  const to = `${String(Number(year) + 1)}-01-01`;
 
   const result = (await supabase
     .from("absences")
     .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
     .gte("date", from)
-    .lte("date", to)
+    .lt("date", to)
     .order("date")) as { data: Absence[] | null; error: { message: string } | null };
 
   if (result.error) {
@@ -107,7 +120,7 @@ export const POST: APIRoute = async (context) => {
     if (result.error.code === "23514") {
       return json({ error: "Invalid hours/is_full_day combination" }, 400);
     }
-    return json({ error: "Database error" }, 400);
+    return json({ error: "Database error" }, 500);
   }
 
   return json(result.data, 201);
