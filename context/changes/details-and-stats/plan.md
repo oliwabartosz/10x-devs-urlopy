@@ -394,29 +394,29 @@ No new migrations. The RLS fix (`20260529000001_fix_absences_select_rls.sql`) al
 
 #### Automated
 
-- [x] 1.1 `npm run build` passes
-- [x] 1.2 `npm run lint` passes
+- [x] 1.1 `npm run build` passes — 692d0fc
+- [x] 1.2 `npm run lint` passes — 692d0fc
 
 #### Manual
 
-- [x] 1.3 GET /api/absences?year=2026 (authenticated) returns JSON array with `created_at`
-- [x] 1.4 GET /api/absences (no year param) returns 400
-- [x] 1.5 GET /api/absences?year=2026 (unauthenticated) returns 401
+- [x] 1.3 GET /api/absences?year=2026 (authenticated) returns JSON array with `created_at` — 692d0fc
+- [x] 1.4 GET /api/absences (no year param) returns 400 — 692d0fc
+- [x] 1.5 GET /api/absences?year=2026 (unauthenticated) returns 401 — 692d0fc
 
 ### Phase 2: Navigation Refactor & Tab Wiring
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 `/dashboard` shows grid with month nav and tab nav visible
-- [ ] 2.4 Clicking "Szczegóły" tab navigates to `?tab=details`
-- [ ] 2.5 Clicking "Statystyki" tab navigates to `?tab=stats`
-- [ ] 2.6 Month prev/next on Szczegóły tab preserves `?tab=details`
-- [ ] 2.7 Refreshing `?tab=stats` stays on stats tab
+- [x] 2.3 `/dashboard` shows grid with month nav and tab nav visible
+- [x] 2.4 Clicking "Szczegóły" tab navigates to `?tab=details`
+- [x] 2.5 Clicking "Statystyki" tab navigates to `?tab=stats`
+- [x] 2.6 Month prev/next on Szczegóły tab preserves `?tab=details`
+- [x] 2.7 Refreshing `?tab=stats` stays on stats tab
 
 ### Phase 3: Absence Details Table
 

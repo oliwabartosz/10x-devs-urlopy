@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
+import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import { createClient } from "@/lib/supabase";
 import type { Employee, Absence, AbsenceType } from "@/types";
@@ -12,6 +13,9 @@ const now = new Date();
 const validMonthParam = monthParam != null && /^\d{4}-(?:0[1-9]|1[0-2])$/.test(monthParam) ? monthParam : null;
 const year = validMonthParam ? parseInt(validMonthParam.split("-")[0], 10) : now.getFullYear();
 const month = validMonthParam ? parseInt(validMonthParam.split("-")[1], 10) : now.getMonth() + 1;
+
+const tabParam = Astro.url.searchParams.get("tab");
+const currentTab = tabParam === "details" || tabParam === "stats" ? tabParam : "grid";
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
@@ -71,10 +75,21 @@ if (currentEmployee) {
   }
 }
 
-const prevMonth = new Date(year, month - 2, 1); // month-2 because month is 1-indexed
-const nextMonth = new Date(year, month, 1);
-const prevMonthUrl = `?month=${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-const nextMonthUrl = `?month=${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
+// Month param string used in URL construction (always present — fallback to current month)
+const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+
+// Month nav URLs preserve the active tab
+const prevMonthDate = new Date(year, month - 2, 1); // month-2 because month is 1-indexed
+const nextMonthDate = new Date(year, month, 1);
+const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
+const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
+const prevMonthUrl = `?month=${prevMonthStr}&tab=${currentTab}`;
+const nextMonthUrl = `?month=${nextMonthStr}&tab=${currentTab}`;
+
+// Tab nav URLs preserve the current month
+const gridTabUrl = `?month=${monthStr}&tab=grid`;
+const detailsTabUrl = `?month=${monthStr}&tab=details`;
+const statsTabUrl = `?month=${monthStr}&tab=stats`;
 ---
 
 <Layout title="Urlopy — Ewidencja nieobecności">
@@ -89,17 +104,46 @@ const nextMonthUrl = `?month=${nextMonth.getFullYear()}-${String(nextMonth.getMo
           Błąd serwera. Spróbuj ponownie lub skontaktuj się z administratorem.
         </div>
       ) : currentEmployee ? (
-        <AbsenceGrid
-          client:load
-          employees={employees}
-          absences={absences}
-          absenceTypes={absenceTypes}
-          currentEmployee={currentEmployee}
-          year={year}
-          month={month}
-          prevMonthUrl={prevMonthUrl}
-          nextMonthUrl={nextMonthUrl}
-        />
+        <div class="px-4 pt-4">
+          <MonthNav prevMonthUrl={prevMonthUrl} nextMonthUrl={nextMonthUrl} year={year} month={month} />
+
+          <nav class="mt-3 flex gap-1 border-b">
+            <a
+              href={gridTabUrl}
+              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "grid" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+            >
+              Siatka
+            </a>
+            <a
+              href={detailsTabUrl}
+              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "details" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+            >
+              Szczegóły
+            </a>
+            <a
+              href={statsTabUrl}
+              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "stats" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+            >
+              Statystyki
+            </a>
+          </nav>
+
+          <div class="mt-4">
+            {currentTab === "grid" && (
+              <AbsenceGrid
+                client:load
+                employees={employees}
+                absences={absences}
+                absenceTypes={absenceTypes}
+                currentEmployee={currentEmployee}
+                year={year}
+                month={month}
+              />
+            )}
+            {currentTab === "details" && <p class="text-gray-500">Szczegóły — wkrótce</p>}
+            {currentTab === "stats" && <p class="text-gray-500">Statystyki — wkrótce</p>}
+          </div>
+        </div>
       ) : (
         <div class="p-8 text-center text-gray-600">
           Twoje konto nie jest jeszcze powiązane z kontem pracownika. Skontaktuj się z moderatorem.

@@ -1,0 +1,25 @@
+---
+interface Props {
+  prevMonthUrl: string;
+  nextMonthUrl: string;
+  year: number;
+  month: number;
+}
+
+const { prevMonthUrl, nextMonthUrl, year, month } = Astro.props;
+
+const monthLabel = new Intl.DateTimeFormat("pl-PL", {
+  month: "long",
+  year: "numeric",
+}).format(new Date(year, month - 1));
+---
+
+<div class="flex items-center gap-4">
+  <a href={prevMonthUrl} class="rounded border px-3 py-1 text-sm hover:bg-gray-100" aria-label="Poprzedni miesiąc">
+    ‹
+  </a>
+  <span class="text-base font-semibold capitalize">{monthLabel}</span>
+  <a href={nextMonthUrl} class="rounded border px-3 py-1 text-sm hover:bg-gray-100" aria-label="Następny miesiąc">
+    ›
+  </a>
+</div>

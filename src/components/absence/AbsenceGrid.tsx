@@ -9,8 +9,6 @@ interface AbsenceGridProps {
   currentEmployee: Employee;
   year: number;
   month: number;
-  prevMonthUrl: string;
-  nextMonthUrl: string;
 }
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -30,8 +28,6 @@ export default function AbsenceGrid({
   currentEmployee,
   year,
   month,
-  prevMonthUrl,
-  nextMonthUrl,
 }: AbsenceGridProps) {
   const [dialogState, setDialogState] = useState<{
     day: Date;
@@ -50,39 +46,10 @@ export default function AbsenceGrid({
     absenceTypeMap.set(type.id, type);
   }
 
-  const monthLabel = new Intl.DateTimeFormat("pl-PL", {
-    month: "long",
-    year: "numeric",
-  }).format(new Date(year, month - 1));
-
   const weekdayFmt = new Intl.DateTimeFormat("pl-PL", { weekday: "short" });
 
   return (
     <div className="p-4">
-      <div className="mb-4 flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => {
-            window.location.href = prevMonthUrl;
-          }}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
-          aria-label="Poprzedni miesiąc"
-        >
-          ‹
-        </button>
-        <span className="text-base font-semibold capitalize">{monthLabel}</span>
-        <button
-          type="button"
-          onClick={() => {
-            window.location.href = nextMonthUrl;
-          }}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
-          aria-label="Następny miesiąc"
-        >
-          ›
-        </button>
-      </div>
-
       <div className="overflow-x-auto rounded border">
         <table className="border-collapse text-sm">
           <thead>

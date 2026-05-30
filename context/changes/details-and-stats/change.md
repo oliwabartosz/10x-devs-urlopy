@@ -4,6 +4,7 @@ title: "S-02: Tabela szczegółów i statystyki miesięczne/roczne"
 status: implementing
 created: 2026-05-30
 updated: 2026-05-30
+
 roadmap_id: S-02
 prd_refs:
   - FR-005
