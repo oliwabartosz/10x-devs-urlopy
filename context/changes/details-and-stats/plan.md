@@ -439,14 +439,14 @@ No new migrations. The RLS fix (`20260529000001_fix_absences_select_rls.sql`) al
 
 #### Automated
 
-- [x] 4.1 `npm run build` passes
-- [x] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes — 3bf503b
+- [x] 4.2 `npm run lint` passes — 3bf503b
 
 #### Manual
 
-- [x] 4.3 Monthly stats table renders immediately (no loading)
-- [x] 4.4 Yearly stats section shows loading state then table
-- [x] 4.5 Cells show "N dni", "N godz.", "N dni / N godz.", or "—" correctly
-- [x] 4.6 Total row and column are correct
-- [x] 4.7 Yearly totals match monthly totals for a month with all test data
-- [x] 4.8 Stats reflect new absences when navigating to the tab after adding one
+- [x] 4.3 Monthly stats table renders immediately (no loading) — 3bf503b
+- [x] 4.4 Yearly stats section shows loading state then table — 3bf503b
+- [x] 4.5 Cells show "N dni", "N godz.", "N dni / N godz.", or "—" correctly — 3bf503b
+- [x] 4.6 Total row and column are correct — 3bf503b
+- [x] 4.7 Yearly totals match monthly totals for a month with all test data — 3bf503b
+- [x] 4.8 Stats reflect new absences when navigating to the tab after adding one — 3bf503b

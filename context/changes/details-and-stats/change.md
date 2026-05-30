@@ -1,7 +1,7 @@
 ---
 id: details-and-stats
 title: "S-02: Tabela szczegółów i statystyki miesięczne/roczne"
-status: implementing
+status: implemented
 created: 2026-05-30
 updated: 2026-05-30
 
