@@ -25,6 +25,8 @@ const json = (data: unknown, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
+// Ownership is enforced by RLS (absences_update / absences_delete policies).
+// Employees may only mutate their own rows; moderators may mutate any row.
 export const PATCH: APIRoute = async (context) => {
   if (!context.locals.user) {
     return json({ error: "Unauthorized" }, 401);

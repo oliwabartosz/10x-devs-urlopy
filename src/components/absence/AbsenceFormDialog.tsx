@@ -50,8 +50,7 @@ export function AbsenceFormDialog({
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    const body = {
-      employee_id: targetEmployee.id,
+    const sharedFields = {
       absence_type_id: absenceTypeId,
       date: dateStr,
       is_full_day: isFullDay,
@@ -64,12 +63,12 @@ export function AbsenceFormDialog({
         ? await fetch(`/api/absences/${existingAbsence.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify(sharedFields),
           })
         : await fetch("/api/absences", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields }),
           });
       if (res.ok) {
         window.location.reload();

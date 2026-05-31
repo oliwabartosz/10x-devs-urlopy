@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-05-30
+updated: 2026-05-31
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -42,7 +42,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | F-01 | data-schema-and-rls          | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator | —             | FR-001, FR-002, FR-003, FR-004, FR-007      | ready    |
 | S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | ready |
 | S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
-| S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | proposed |
+| S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | done     |
 | S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | proposed |
 
 ## Streams
@@ -119,7 +119,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Uprawnienia moderatora są egzekwowane przez polityki RLS z F-01 — jeśli polityki są poprawne, S-03 to głównie zmiana warunkowego renderowania UI; jeśli polityki mają błąd, dane wszystkich pracowników są narażone.
-- **Status:** proposed
+- **Status:** done
 
 ### S-04: Zarządzanie pracownikami przez moderatora
 
@@ -160,3 +160,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 ## Done
 
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
+- **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31 → `context/changes/moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).

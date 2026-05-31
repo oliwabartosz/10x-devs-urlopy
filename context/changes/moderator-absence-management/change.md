@@ -1,7 +1,7 @@
 ---
 id: moderator-absence-management
 title: Moderator Absence Management
-status: implemented
+status: impl_reviewed
 slice: S-03
 created: 2026-05-31
 updated: 2026-05-31
