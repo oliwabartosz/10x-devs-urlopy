@@ -361,10 +361,10 @@ No new migrations. All RLS policies are already in place from F-01.
 
 #### Automated
 
-- [x] 4.1 `npm run build` passes
-- [x] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes — 46a8632
+- [x] 4.2 `npm run lint` passes — 46a8632
 
 #### Manual
 
-- [x] 4.3 Logged in as moderator → "Moderator" chip visible in Topbar
-- [x] 4.4 Logged in as employee → no chip in Topbar
+- [x] 4.3 Logged in as moderator → "Moderator" chip visible in Topbar — 46a8632
+- [x] 4.4 Logged in as employee → no chip in Topbar — 46a8632
