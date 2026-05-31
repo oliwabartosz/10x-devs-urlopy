@@ -344,18 +344,18 @@ No new migrations. All RLS policies are already in place from F-01.
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — 8d420f5
+- [x] 3.2 `npm run lint` passes — 8d420f5
 
 #### Manual
 
-- [x] 3.3 Moderator clicks another employee's cell → employee name shown in dialog
-- [x] 3.4 Moderator clicks own cell → no employee name shown
-- [x] 3.5 Moderator saves new absence for another employee → colored cell appears in their column
-- [x] 3.6 Moderator edits absence in another employee's column → cell updates
-- [x] 3.7 Moderator deletes absence from another employee's column → cell clears
-- [x] 3.8 Substitute selector excludes the target employee (not the moderator)
-- [x] 3.9 Employee flow unchanged: dialog shows no name, substitute excludes self
+- [x] 3.3 Moderator clicks another employee's cell → employee name shown in dialog — 8d420f5
+- [x] 3.4 Moderator clicks own cell → no employee name shown — 8d420f5
+- [x] 3.5 Moderator saves new absence for another employee → colored cell appears in their column — 8d420f5
+- [x] 3.6 Moderator edits absence in another employee's column → cell updates — 8d420f5
+- [x] 3.7 Moderator deletes absence from another employee's column → cell clears — 8d420f5
+- [x] 3.8 Substitute selector excludes the target employee (not the moderator) — 8d420f5
+- [x] 3.9 Employee flow unchanged: dialog shows no name, substitute excludes self — 8d420f5
 
 ### Phase 4: Topbar — moderator badge
 
