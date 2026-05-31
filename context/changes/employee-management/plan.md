@@ -395,29 +395,29 @@ No schema migration required. All schema prerequisites (soft-delete column, RLS 
 
 #### Automated
 
-- [x] 1.1 `npm run build` passes with new env var declared
-- [x] 1.2 `npm run lint` passes
+- [x] 1.1 `npm run build` passes with new env var declared — d6d63cb
+- [x] 1.2 `npm run lint` passes — d6d63cb
 
 #### Manual
 
-- [x] 1.3 Dev server starts without errors after adding `SUPABASE_SERVICE_KEY` to `.dev.vars`
+- [x] 1.3 Dev server starts without errors after adding `SUPABASE_SERVICE_KEY` to `.dev.vars` — d6d63cb
 
 ### Phase 2: Employee API Routes
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 `POST /api/employees` (valid, moderator) → 201, auth user + employee created
-- [ ] 2.4 `POST /api/employees` (duplicate email) → 409 with Polish error message
-- [ ] 2.5 `POST /api/employees` (non-moderator) → 403
-- [ ] 2.6 `PATCH /api/employees/:id` → 200, field updated
-- [ ] 2.7 `DELETE /api/employees/:id` (other employee) → 200, `deleted_at` set
-- [ ] 2.8 `DELETE /api/employees/:id` (own id) → 400
-- [ ] 2.9 `POST /api/employees/:id/restore` → 200, `deleted_at` cleared
+- [x] 2.3 `POST /api/employees` (valid, moderator) → 201, auth user + employee created
+- [x] 2.4 `POST /api/employees` (duplicate email) → 409 with Polish error message
+- [x] 2.5 `POST /api/employees` (non-moderator) → 403
+- [x] 2.6 `PATCH /api/employees/:id` → 200, field updated
+- [x] 2.7 `DELETE /api/employees/:id` (other employee) → 200, `deleted_at` set
+- [x] 2.8 `DELETE /api/employees/:id` (own id) → 400
+- [x] 2.9 `POST /api/employees/:id/restore` → 200, `deleted_at` cleared
 
 ### Phase 3: Dashboard — Date-Aware Employee Fetch
 
