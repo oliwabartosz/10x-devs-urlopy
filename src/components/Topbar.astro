@@ -7,23 +7,23 @@ const { role } = Astro.props;
 ---
 
 <div
-  class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80"
+  class="mb-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700"
 >
   {
     user ? (
       <>
         <div class="flex items-center gap-2">
-          <span class="text-blue-100/70">{user.email}</span>
+          <span class="text-gray-500">{user.email}</span>
           {role === "moderator" && (
-            <span class="rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-300">Moderator</span>
+            <span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">Moderator</span>
           )}
         </div>
         <div class="flex items-center gap-3">
-          <a href="/dashboard" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/dashboard" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
             Dashboard
           </a>
           <form method="POST" action="/api/auth/signout">
-            <button type="submit" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+            <button type="submit" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
               Sign out
             </button>
           </form>
@@ -31,12 +31,12 @@ const { role } = Astro.props;
       </>
     ) : (
       <>
-        <span class="text-blue-100/70">Not signed in</span>
+        <span class="text-gray-500">Not signed in</span>
         <div class="flex gap-3">
-          <a href="/auth/signin" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/auth/signin" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
             Sign in
           </a>
-          <a href="/auth/signup" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+          <a href="/auth/signup" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
             Sign up
           </a>
         </div>

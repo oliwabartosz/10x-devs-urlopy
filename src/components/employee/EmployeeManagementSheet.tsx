@@ -43,7 +43,7 @@ export function EmployeeManagementSheet({ employees, currentEmployee }: Employee
         onClick={() => {
           setSheetOpen(true);
         }}
-        className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10"
+        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
       >
         <Users className="h-4 w-4" />
         Pracownicy
