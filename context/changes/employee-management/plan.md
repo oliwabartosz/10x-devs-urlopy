@@ -435,17 +435,17 @@ No schema migration required. All schema prerequisites (soft-delete column, RLS 
 
 #### Automated
 
-- [x] 4.1 `npm run build` passes
-- [x] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes — 1dd9f9c
+- [x] 4.2 `npm run lint` passes — 1dd9f9c
 
 #### Manual
 
-- [x] 4.3 "Pracownicy" trigger visible for moderator, absent for non-moderator
-- [x] 4.4 Add employee → page reloads, new employee in grid
-- [x] 4.5 Duplicate email → inline error, no reload
-- [x] 4.6 Edit name/role → updates on reload
-- [x] 4.7 Dezaktywuj → confirmation dialog shown, employee deactivated on confirm
-- [x] 4.8 Moderator's own row: dezaktywuj action absent or disabled
-- [x] 4.9 Przywróć → employee returns to active section
-- [x] 4.10 New employee can log in with the temp password
-- [x] 4.11 Non-moderator: no panel trigger visible
+- [x] 4.3 "Pracownicy" trigger visible for moderator, absent for non-moderator — 1dd9f9c
+- [x] 4.4 Add employee → page reloads, new employee in grid — 1dd9f9c
+- [x] 4.5 Duplicate email → inline error, no reload — 1dd9f9c
+- [x] 4.6 Edit name/role → updates on reload — 1dd9f9c
+- [x] 4.7 Dezaktywuj → confirmation dialog shown, employee deactivated on confirm — 1dd9f9c
+- [x] 4.8 Moderator's own row: dezaktywuj action absent or disabled — 1dd9f9c
+- [x] 4.9 Przywróć → employee returns to active section — 1dd9f9c
+- [x] 4.10 New employee can log in with the temp password — 1dd9f9c
+- [x] 4.11 Non-moderator: no panel trigger visible — 1dd9f9c
