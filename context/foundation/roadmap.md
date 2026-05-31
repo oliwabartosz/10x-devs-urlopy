@@ -44,6 +44,9 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
 | S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | done     |
 | S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | done     |
+| S-05 | drizzle-migration            | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                      | S-04          | —                                           | proposed |
+| S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | proposed |
+| S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | proposed |
 
 ## Streams
 
@@ -51,10 +54,11 @@ Nawigacyjna pomoc — grupuje pozycje ze wspólnym łańcuchem zależności. Kan
 wciąż żyje w sekcjach Foundations + Slices; ta tabela to proponowana kolejność czytania
 przez równoległe tory.
 
-| Stream | Temat                    | Łańcuch                            | Uwaga                                                               |
-| ------ | ------------------------ | ---------------------------------- | ------------------------------------------------------------------- |
-| A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03` | Ścieżka must-have; S-02 i S-03 można realizować równolegle po S-01  |
-| B      | Zarządzanie pracownikami | `F-01` → `S-04`                    | Odgałęzienie od F-01 (Stream A); S-04 równolegle z S-01            |
+| Stream | Temat                    | Łańcuch                                  | Uwaga                                                                        |
+| ------ | ------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------- |
+| A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03`       | Ścieżka must-have; S-02 i S-03 można realizować równolegle po S-01           |
+| B      | Zarządzanie pracownikami | `F-01` → `S-04` → `S-07`                | S-07 wymaga S-04 (kolumna display_order na tabeli employees)                 |
+| C      | Post-MVP enhancements    | `S-02` → `S-06` / `S-04` → `S-05`       | S-05, S-06, S-07 można realizować równolegle; S-05 nie blokuje żadnego z nich |
 
 ## Baseline
 
@@ -133,6 +137,42 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** FR-007 wymaga "usunięcia bez usuwania historii" — strategia (pole `is_active`, `deleted_at`, czy FK z `ON DELETE RESTRICT`) musi być zdecydowana w F-01; jeśli schema nie przewidzi tego z góry, S-04 wymagałoby cofającej migracji schematu.
 - **Status:** done
 
+### S-05: Migracja Supabase JS → Drizzle ORM
+
+- **Outcome:** (tech) wszystkie zapytania do bazy danych używają Drizzle ORM zamiast klienta Supabase JS — typesafe queries, schemat bazy zdefiniowany w kodzie, migracje zarządzane przez Drizzle Kit. Żadna zmiana widoczna dla użytkownika.
+- **Change ID:** drizzle-migration
+- **PRD refs:** —
+- **Prerequisites:** S-04 (wszystkie slices MVP gotowe — migracja nie blokuje żadnej funkcji)
+- **Parallel with:** S-06, S-07
+- **Blockers:** —
+- **Unknowns:** Drizzle nie wspiera Supabase Auth admin API — `createAdminClient()` (Supabase JS) pozostaje dla operacji auth; tylko zapytania do tabel aplikacji przechodzą na Drizzle.
+- **Risk:** Duże ryzyko regresji — każde zapytanie musi być przetestowane. RLS nadal egzekwowane przez Supabase, ale Drizzle omija klienta Supabase JS, więc konfiguracja połączenia z row-level security wymaga weryfikacji (connection string z `?role=authenticated` lub service role).
+- **Status:** proposed
+
+### S-06: Zakładka Szczegóły — karty Dzisiaj / Miesięcznie / Rocznie
+
+- **Outcome:** pracownik otwiera zakładkę Szczegóły i widzi trzy osobne karty: "Dzisiaj" (nieobecności na bieżący dzień), "Miesięcznie" (bieżący miesiąc, jak dotychczas), "Rocznie" (agregat za bieżący rok kalendarzowy). Przełączanie kart nie powoduje przeładowania strony.
+- **Change ID:** details-subcards
+- **PRD refs:** FR-005, FR-006
+- **Prerequisites:** S-02
+- **Parallel with:** S-05, S-07
+- **Blockers:** —
+- **Unknowns:** Widok "Rocznie" wymaga danych z wielu miesięcy — dodatkowe zapytanie lub rozszerzenie istniejącego zakresu dat.
+- **Risk:** Niskie — rozszerzenie istniejącego komponentu `AbsenceDetailsTable`; brak zmian schematu.
+- **Status:** proposed
+
+### S-07: Moderator — zmiana kolejności pracowników w siatce
+
+- **Outcome:** moderator przeciąga kolumny pracowników w siatce miesięcznej i zmienia ich kolejność; nowa kolejność jest zapisywana i widoczna dla wszystkich użytkowników.
+- **Change ID:** employee-grid-order
+- **PRD refs:** FR-007
+- **Prerequisites:** S-04
+- **Parallel with:** S-05, S-06
+- **Blockers:** —
+- **Unknowns:** Persystencja kolejności — nowa kolumna `display_order` w tabeli `employees` (migracja) lub osobna tabela ustawień. Drag-and-drop w poziomie na siatce z zamrożoną pierwszą kolumną (dni) wymaga weryfikacji z wybraną biblioteką (np. `@dnd-kit/core`).
+- **Risk:** Średnie — drag-and-drop na siatce z poziomym scrollem może być złożony UX; warto zprototypować layout przed pełną implementacją.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                    | Sugerowany tytuł issue                                                | Gotowy na `/10x-plan` | Uwagi                                        |
@@ -142,6 +182,9 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-02       | details-and-stats            | [Urlopy] Tabela szczegółów i statystyki miesięczne/roczne             | no                    | Czeka na S-01                                |
 | S-03       | moderator-absence-management | [Urlopy] Moderator: edycja wpisów wszystkich pracowników              | no                    | Czeka na S-01                                |
 | S-04       | employee-management          | [Urlopy] Moderator: zarządzanie pracownikami (bez usuwania historii)  | no                    | Czeka na F-01; równolegle z S-01             |
+| S-05       | drizzle-migration            | [Urlopy] Migracja Supabase JS → Drizzle ORM                          | yes                   | Gotowy po S-04; równolegle z S-06, S-07      |
+| S-06       | details-subcards             | [Urlopy] Szczegóły: karty Dzisiaj / Miesięcznie / Rocznie            | yes                   | Gotowy po S-02; równolegle z S-05, S-07      |
+| S-07       | employee-grid-order          | [Urlopy] Moderator: zmiana kolejności kolumn pracowników w siatce    | yes                   | Gotowy po S-04; równolegle z S-05, S-06      |
 
 ## Open Roadmap Questions
 
