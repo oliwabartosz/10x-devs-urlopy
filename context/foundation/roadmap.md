@@ -39,11 +39,11 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 
 | ID   | Change ID                    | Outcome (użytkownik może …)                                                                                    | Prerequisites | PRD refs                                    | Status   |
 | ---- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------- | -------- |
-| F-01 | data-schema-and-rls          | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator | —             | FR-001, FR-002, FR-003, FR-004, FR-007      | ready    |
-| S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | ready |
+| F-01 | data-schema-and-rls          | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator | —             | FR-001, FR-002, FR-003, FR-004, FR-007      | done     |
+| S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | done     |
 | S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
 | S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | done     |
-| S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | proposed |
+| S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | done     |
 
 ## Streams
 
@@ -81,7 +81,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Schematy i polityki RLS decydują o bezpieczeństwie całej aplikacji; błąd tutaj przebija się przez wszystkie slices — lepiej zaprojektować je raz dobrze niż refaktorować przy każdym kolejnym slice. Strategia miękkiego usunięcia pracownika (FR-007) musi być zdecydowana tutaj, nie w S-04.
-- **Status:** ready
+- **Status:** done
 
 ## Slices
 
@@ -95,7 +95,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Siatka miesięczna jest najbardziej wizualnie złożonym elementem produktu (responsywność na desktopie, kolory, wybór miesiąca, interaktywny formularz komórki); to główne ryzyko UX w projekcie. Implementować jako najwcześniejszy slice, żeby wykryć problemy z layoutem zanim pozostałe slices na niej polegają.
-- **Status:** ready
+- **Status:** done
 
 ### S-02: Tabela szczegółów i statystyki miesięczne/roczne
 
@@ -131,7 +131,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** FR-007 wymaga "usunięcia bez usuwania historii" — strategia (pole `is_active`, `deleted_at`, czy FK z `ON DELETE RESTRICT`) musi być zdecydowana w F-01; jeśli schema nie przewidzi tego z góry, S-04 wymagałoby cofającej migracji schematu.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
