@@ -423,13 +423,13 @@ No schema migration required. All schema prerequisites (soft-delete column, RLS 
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — eacbc5e
+- [x] 3.2 `npm run lint` passes — eacbc5e
 
 #### Manual
 
-- [x] 3.3 Past month grid shows deleted employee column; current month does not
-- [x] 3.4 Non-moderator sees same historically accurate past-month grid
+- [x] 3.3 Past month grid shows deleted employee column; current month does not — eacbc5e
+- [x] 3.4 Non-moderator sees same historically accurate past-month grid — eacbc5e
 
 ### Phase 4: Employee Management UI
 

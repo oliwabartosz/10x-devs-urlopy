@@ -81,7 +81,11 @@ if (currentEmployee) {
   } else {
     allEmployees = employeesResult.data;
     gridEmployees = adminSupabase
-      ? allEmployees.filter((e) => e.deleted_at === null || new Date(e.deleted_at) >= new Date(firstDay))
+      ? allEmployees.filter(
+          (e) =>
+            new Date(e.created_at) <= new Date(firstDayNextMonth) &&
+            (e.deleted_at === null || new Date(e.deleted_at) >= new Date(firstDay)),
+        )
       : allEmployees;
     absences = absencesResult.data;
     absenceTypes = typesResult.data;
