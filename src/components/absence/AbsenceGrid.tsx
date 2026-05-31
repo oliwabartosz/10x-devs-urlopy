@@ -29,9 +29,12 @@ export default function AbsenceGrid({
   year,
   month,
 }: AbsenceGridProps) {
+  const isModerator = currentEmployee.role === "moderator";
+
   const [dialogState, setDialogState] = useState<{
     day: Date;
     absence: Absence | null;
+    targetEmployee: Employee;
   } | null>(null);
 
   const days = getDaysInMonth(year, month);
@@ -92,7 +95,7 @@ export default function AbsenceGrid({
                     const isOwn = emp.id === currentEmployee.id;
                     const absence = absenceMap.get(`${emp.id}_${dateStr}`);
                     const absenceType = absence ? absenceTypeMap.get(absence.absence_type_id) : undefined;
-                    const clickable = isOwn && !isWeekend;
+                    const clickable = (isOwn || isModerator) && !isWeekend;
 
                     return (
                       <td
@@ -101,7 +104,7 @@ export default function AbsenceGrid({
                         onClick={
                           clickable
                             ? () => {
-                                setDialogState({ day: date, absence: absence ?? null });
+                                setDialogState({ day: date, absence: absence ?? null, targetEmployee: emp });
                               }
                             : undefined
                         }

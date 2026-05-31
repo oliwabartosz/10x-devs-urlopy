@@ -317,28 +317,28 @@ No new migrations. All RLS policies are already in place from F-01.
 
 #### Automated
 
-- [x] 1.1 `npm run build` passes (updated POST handler)
-- [x] 1.2 `npm run lint` passes
+- [x] 1.1 `npm run build` passes (updated POST handler) — f97020b
+- [x] 1.2 `npm run lint` passes — f97020b
 
 #### Manual
 
-- [x] 1.3 POST as moderator with valid other-employee's ID → 201, correct employee_id in row
-- [x] 1.4 POST as moderator without employee_id → 201, uses moderator's own employee ID
-- [x] 1.5 POST as moderator with non-existent employee_id → 404
-- [x] 1.6 POST as employee with another employee's ID in body → own employee_id used
+- [x] 1.3 POST as moderator with valid other-employee's ID → 201, correct employee_id in row — f97020b
+- [x] 1.4 POST as moderator without employee_id → 201, uses moderator's own employee ID — f97020b
+- [x] 1.5 POST as moderator with non-existent employee_id → 404 — f97020b
+- [x] 1.6 POST as employee with another employee's ID in body → own employee_id used — f97020b
 
 ### Phase 2: AbsenceGrid — unlock cells for moderators
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 As moderator: all non-weekend cells in all columns are clickable
-- [ ] 2.4 As employee: only own column cells are clickable (unchanged)
-- [ ] 2.5 Clicking another employee's cell as moderator opens the dialog
+- [x] 2.3 As moderator: all non-weekend cells in all columns are clickable
+- [x] 2.4 As employee: only own column cells are clickable (unchanged)
+- [x] 2.5 Clicking another employee's cell as moderator opens the dialog
 
 ### Phase 3: AbsenceFormDialog — target employee UX + POST body
 
