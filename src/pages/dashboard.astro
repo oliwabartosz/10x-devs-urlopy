@@ -97,7 +97,7 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
 <Layout title="Urlopy — Ewidencja nieobecności">
   <div class="min-h-screen bg-gray-50">
     <div class="px-4 pt-4">
-      <Topbar />
+      <Topbar role={currentEmployee?.role} />
     </div>
 
     {

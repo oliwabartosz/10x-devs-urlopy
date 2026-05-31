@@ -1,5 +1,9 @@
 ---
+interface Props {
+  role?: "employee" | "moderator";
+}
 const { user } = Astro.locals;
+const { role } = Astro.props;
 ---
 
 <div
@@ -8,7 +12,12 @@ const { user } = Astro.locals;
   {
     user ? (
       <>
-        <span class="text-blue-100/70">{user.email}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-blue-100/70">{user.email}</span>
+          {role === "moderator" && (
+            <span class="rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-300">Moderator</span>
+          )}
+        </div>
         <div class="flex items-center gap-3">
           <a href="/dashboard" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
             Dashboard

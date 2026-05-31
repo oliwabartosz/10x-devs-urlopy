@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-05-25
+updated: 2026-05-30
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -40,8 +40,8 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | ID   | Change ID                    | Outcome (użytkownik może …)                                                                                    | Prerequisites | PRD refs                                    | Status   |
 | ---- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------- | -------- |
 | F-01 | data-schema-and-rls          | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator | —             | FR-001, FR-002, FR-003, FR-004, FR-007      | ready    |
-| S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | proposed |
-| S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | proposed |
+| S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | ready |
+| S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
 | S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | proposed |
 | S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | proposed |
 
@@ -95,7 +95,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Siatka miesięczna jest najbardziej wizualnie złożonym elementem produktu (responsywność na desktopie, kolory, wybór miesiąca, interaktywny formularz komórki); to główne ryzyko UX w projekcie. Implementować jako najwcześniejszy slice, żeby wykryć problemy z layoutem zanim pozostałe slices na niej polegają.
-- **Status:** proposed
+- **Status:** ready
 
 ### S-02: Tabela szczegółów i statystyki miesięczne/roczne
 
@@ -107,7 +107,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Statystyki roczne wymagają danych z wielu miesięcy — dla weryfikacji MVP może brakować realnych danych; weryfikacja może wymagać ręcznego wprowadzenia seed data. Poza tym slice jest relatywnie prosty (odczyt + agregacja).
-- **Status:** proposed
+- **Status:** done
 
 ### S-03: Uprawnienia moderatora — edycja wpisów wszystkich pracowników
 
@@ -159,4 +159,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Done
 
-(Puste przy pierwszym generowaniu. `/10x-archive` dopisuje tutaj po archiwizacji zmiany.)
+- **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
