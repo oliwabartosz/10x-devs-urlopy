@@ -406,30 +406,30 @@ No schema migration required. All schema prerequisites (soft-delete column, RLS 
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes — 36fb9ac
+- [x] 2.2 `npm run lint` passes — 36fb9ac
 
 #### Manual
 
-- [x] 2.3 `POST /api/employees` (valid, moderator) → 201, auth user + employee created
-- [x] 2.4 `POST /api/employees` (duplicate email) → 409 with Polish error message
-- [x] 2.5 `POST /api/employees` (non-moderator) → 403
-- [x] 2.6 `PATCH /api/employees/:id` → 200, field updated
-- [x] 2.7 `DELETE /api/employees/:id` (other employee) → 200, `deleted_at` set
-- [x] 2.8 `DELETE /api/employees/:id` (own id) → 400
-- [x] 2.9 `POST /api/employees/:id/restore` → 200, `deleted_at` cleared
+- [x] 2.3 `POST /api/employees` (valid, moderator) → 201, auth user + employee created — 36fb9ac
+- [x] 2.4 `POST /api/employees` (duplicate email) → 409 with Polish error message — 36fb9ac
+- [x] 2.5 `POST /api/employees` (non-moderator) → 403 — 36fb9ac
+- [x] 2.6 `PATCH /api/employees/:id` → 200, field updated — 36fb9ac
+- [x] 2.7 `DELETE /api/employees/:id` (other employee) → 200, `deleted_at` set — 36fb9ac
+- [x] 2.8 `DELETE /api/employees/:id` (own id) → 400 — 36fb9ac
+- [x] 2.9 `POST /api/employees/:id/restore` → 200, `deleted_at` cleared — 36fb9ac
 
 ### Phase 3: Dashboard — Date-Aware Employee Fetch
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 Past month grid shows deleted employee column; current month does not
-- [ ] 3.4 Non-moderator sees same historically accurate past-month grid
+- [x] 3.3 Past month grid shows deleted employee column; current month does not
+- [x] 3.4 Non-moderator sees same historically accurate past-month grid
 
 ### Phase 4: Employee Management UI
 

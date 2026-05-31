@@ -6,6 +6,7 @@ import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase-admin";
 import type { Employee, Absence, AbsenceType } from "@/types";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
@@ -29,6 +30,8 @@ if (!supabase) {
   return Astro.redirect("/auth/signin");
 }
 
+const adminSupabase = createAdminClient();
+
 type DbError = { code: string } | null;
 const { data: currentEmployee, error: employeeError } = (await supabase
   .from("employees")
@@ -40,7 +43,8 @@ const { data: currentEmployee, error: employeeError } = (await supabase
 const employeeDbError = employeeError != null && employeeError.code !== "PGRST116";
 
 let dataDbError = false;
-let employees: Employee[] = [];
+let allEmployees: Employee[] = [];
+let gridEmployees: Employee[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
 
@@ -49,13 +53,17 @@ if (currentEmployee) {
   const nextMonthDate = new Date(year, month, 1); // JS month overflow handles Dec→Jan
   const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
 
+  const employeesQuery = adminSupabase
+    ? adminSupabase.from("employees").select("*").order("last_name").order("first_name")
+    : supabase
+        .from("employees")
+        .select("id, first_name, last_name, role")
+        .is("deleted_at", null)
+        .order("last_name")
+        .order("first_name");
+
   const [employeesResult, absencesResult, typesResult] = (await Promise.all([
-    supabase
-      .from("employees")
-      .select("id, first_name, last_name, role")
-      .is("deleted_at", null)
-      .order("last_name")
-      .order("first_name"),
+    employeesQuery,
     supabase
       .from("absences")
       .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
@@ -71,7 +79,10 @@ if (currentEmployee) {
   if (employeesResult.error || absencesResult.error || typesResult.error) {
     dataDbError = true;
   } else {
-    employees = employeesResult.data;
+    allEmployees = employeesResult.data;
+    gridEmployees = adminSupabase
+      ? allEmployees.filter((e) => e.deleted_at === null || new Date(e.deleted_at) >= new Date(firstDay))
+      : allEmployees;
     absences = absencesResult.data;
     absenceTypes = typesResult.data;
   }
@@ -134,7 +145,7 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
             {currentTab === "grid" && (
               <AbsenceGrid
                 client:load
-                employees={employees}
+                employees={gridEmployees}
                 absences={absences}
                 absenceTypes={absenceTypes}
                 currentEmployee={currentEmployee}
@@ -143,13 +154,18 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
               />
             )}
             {currentTab === "details" && (
-              <AbsenceDetailsTable client:load absences={absences} employees={employees} absenceTypes={absenceTypes} />
+              <AbsenceDetailsTable
+                client:load
+                absences={absences}
+                employees={gridEmployees}
+                absenceTypes={absenceTypes}
+              />
             )}
             {currentTab === "stats" && (
               <AbsenceStats
                 client:load
                 monthlyAbsences={absences}
-                employees={employees}
+                employees={gridEmployees}
                 absenceTypes={absenceTypes}
                 year={year}
                 month={month}
