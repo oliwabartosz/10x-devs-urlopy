@@ -44,6 +44,8 @@ export const GET: APIRoute = async (context) => {
   const from = `${year}-01-01`;
   const to = `${String(Number(year) + 1)}-01-01`;
 
+  // No employee_id filter — absences_select RLS allows all authenticated users to read
+  // all absences so the team grid can display every employee's column.
   const result = (await supabase
     .from("absences")
     .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
@@ -121,10 +123,13 @@ export const POST: APIRoute = async (context) => {
       .eq("id", requestedEmployeeId)
       .is("deleted_at", null)
       .single()) as { data: { id: string } | null; error: { code: string; message: string } | null };
-    if (!targetResult.data) {
+    if (targetResult.error?.code === "PGRST116" || !targetResult.data) {
       return json({ error: "Pracownik nie został znaleziony." }, 404);
     }
-    targetEmployeeId = requestedEmployeeId;
+    if (targetResult.error) {
+      return json({ error: "Database error" }, 503);
+    }
+    targetEmployeeId = targetResult.data.id;
   }
 
   const result = (await supabase
@@ -134,8 +139,9 @@ export const POST: APIRoute = async (context) => {
     .single()) as { data: Absence | null; error: { code: string; message: string } | null };
 
   if (result.error) {
+    if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
     if (result.error.code === "23505") {
-      return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+      return json({ error: "You already have an absence entry for this day." }, 409);
     }
     if (result.error.code === "23514") {
       return json({ error: "Invalid hours/is_full_day combination" }, 400);
