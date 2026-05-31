@@ -153,6 +153,7 @@ export default function AbsenceGrid({
           absenceTypes={absenceTypes}
           employees={employees}
           currentEmployee={currentEmployee}
+          targetEmployee={dialogState.targetEmployee}
         />
       )}
     </div>

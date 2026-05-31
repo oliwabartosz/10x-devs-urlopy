@@ -15,6 +15,7 @@ interface AbsenceFormDialogProps {
   absenceTypes: AbsenceType[];
   employees: Employee[];
   currentEmployee: Employee;
+  targetEmployee: Employee;
 }
 
 export function AbsenceFormDialog({
@@ -25,6 +26,7 @@ export function AbsenceFormDialog({
   absenceTypes,
   employees,
   currentEmployee,
+  targetEmployee,
 }: AbsenceFormDialogProps) {
   const [absenceTypeId, setAbsenceTypeId] = useState<number | null>(existingAbsence?.absence_type_id ?? null);
   const [isFullDay, setIsFullDay] = useState(existingAbsence?.is_full_day ?? true);
@@ -44,11 +46,12 @@ export function AbsenceFormDialog({
 
   const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!hours || parseFloat(hours) <= 0));
 
-  const otherEmployees = employees.filter((e) => e.id !== currentEmployee.id);
+  const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
 
   const handleSave = async () => {
     setIsSubmitting(true);
     const body = {
+      employee_id: targetEmployee.id,
       absence_type_id: absenceTypeId,
       date: dateStr,
       is_full_day: isFullDay,
@@ -105,6 +108,11 @@ export function AbsenceFormDialog({
         <DialogHeader>
           <DialogTitle>{existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}</DialogTitle>
           <p className="text-muted-foreground text-sm capitalize">{dateHeading}</p>
+          {targetEmployee.id !== currentEmployee.id && (
+            <p className="text-sm font-medium text-blue-600">
+              {targetEmployee.first_name} {targetEmployee.last_name}
+            </p>
+          )}
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

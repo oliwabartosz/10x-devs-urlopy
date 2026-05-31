@@ -331,31 +331,31 @@ No new migrations. All RLS policies are already in place from F-01.
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes — 3b2e784
+- [x] 2.2 `npm run lint` passes — 3b2e784
 
 #### Manual
 
-- [x] 2.3 As moderator: all non-weekend cells in all columns are clickable
-- [x] 2.4 As employee: only own column cells are clickable (unchanged)
-- [x] 2.5 Clicking another employee's cell as moderator opens the dialog
+- [x] 2.3 As moderator: all non-weekend cells in all columns are clickable — 3b2e784
+- [x] 2.4 As employee: only own column cells are clickable (unchanged) — 3b2e784
+- [x] 2.5 Clicking another employee's cell as moderator opens the dialog — 3b2e784
 
 ### Phase 3: AbsenceFormDialog — target employee UX + POST body
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 Moderator clicks another employee's cell → employee name shown in dialog
-- [ ] 3.4 Moderator clicks own cell → no employee name shown
-- [ ] 3.5 Moderator saves new absence for another employee → colored cell appears in their column
-- [ ] 3.6 Moderator edits absence in another employee's column → cell updates
-- [ ] 3.7 Moderator deletes absence from another employee's column → cell clears
-- [ ] 3.8 Substitute selector excludes the target employee (not the moderator)
-- [ ] 3.9 Employee flow unchanged: dialog shows no name, substitute excludes self
+- [x] 3.3 Moderator clicks another employee's cell → employee name shown in dialog
+- [x] 3.4 Moderator clicks own cell → no employee name shown
+- [x] 3.5 Moderator saves new absence for another employee → colored cell appears in their column
+- [x] 3.6 Moderator edits absence in another employee's column → cell updates
+- [x] 3.7 Moderator deletes absence from another employee's column → cell clears
+- [x] 3.8 Substitute selector excludes the target employee (not the moderator)
+- [x] 3.9 Employee flow unchanged: dialog shows no name, substitute excludes self
 
 ### Phase 4: Topbar — moderator badge
 
