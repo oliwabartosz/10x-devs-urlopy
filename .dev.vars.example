@@ -3,3 +3,4 @@
 # See: https://developers.cloudflare.com/workers/configuration/secrets/#local-development-with-dev-vars
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key-here
+SUPABASE_SERVICE_KEY=your-service-role-key-here
