@@ -60,6 +60,7 @@ export const GET: APIRoute = async (context) => {
 
 const AbsenceCreateSchema = z
   .object({
+    employee_id: z.uuid().optional(),
     absence_type_id: z.number().int().positive(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     is_full_day: z.boolean(),
@@ -83,10 +84,13 @@ export const POST: APIRoute = async (context) => {
 
   const employeeResult = (await supabase
     .from("employees")
-    .select("id")
+    .select("id, role")
     .eq("user_id", context.locals.user.id)
     .is("deleted_at", null)
-    .single()) as { data: { id: string } | null; error: { code: string; message: string } | null };
+    .single()) as {
+    data: { id: string; role: "employee" | "moderator" } | null;
+    error: { code: string; message: string } | null;
+  };
 
   if (employeeResult.error?.code === "PGRST116" || !employeeResult.data) {
     return json({ error: "Employee record not found" }, 403);
@@ -107,9 +111,25 @@ export const POST: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
+  const { employee_id: requestedEmployeeId, ...absenceData } = parsed.data;
+  let targetEmployeeId = employeeResult.data.id;
+
+  if (employeeResult.data.role === "moderator" && requestedEmployeeId) {
+    const targetResult = (await supabase
+      .from("employees")
+      .select("id")
+      .eq("id", requestedEmployeeId)
+      .is("deleted_at", null)
+      .single()) as { data: { id: string } | null; error: { code: string; message: string } | null };
+    if (!targetResult.data) {
+      return json({ error: "Pracownik nie został znaleziony." }, 404);
+    }
+    targetEmployeeId = requestedEmployeeId;
+  }
+
   const result = (await supabase
     .from("absences")
-    .insert({ employee_id: employeeResult.data.id, ...parsed.data })
+    .insert({ employee_id: targetEmployeeId, ...absenceData })
     .select()
     .single()) as { data: Absence | null; error: { code: string; message: string } | null };
 
