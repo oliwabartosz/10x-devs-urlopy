@@ -71,8 +71,12 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   // Moderator RLS policy (employees_select_moderator_all) lets us see all employees incl. deleted
-  const targetResult = (await supabase.from("employees").select("id, deleted_at").eq("id", idParsed.data).single()) as {
-    data: { id: string; deleted_at: string | null } | null;
+  const targetResult = (await supabase
+    .from("employees")
+    .select("id, role, deleted_at")
+    .eq("id", idParsed.data)
+    .single()) as {
+    data: { id: string; role: "employee" | "moderator"; deleted_at: string | null } | null;
     error: { code: string; message: string } | null;
   };
 
@@ -84,6 +88,17 @@ export const PATCH: APIRoute = async (context) => {
   }
   if (targetResult.data.deleted_at !== null) {
     return json({ error: "Cannot update a deactivated employee" }, 409);
+  }
+
+  if (parsed.data.role === "employee" && targetResult.data.role === "moderator") {
+    const { count } = await supabase
+      .from("employees")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "moderator")
+      .is("deleted_at", null);
+    if ((count ?? 0) <= 1) {
+      return json({ error: "Nie możesz zdegradować ostatniego moderatora." }, 409);
+    }
   }
 
   const updateResult = (await supabase
@@ -152,7 +167,7 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Database error" }, 503);
   }
   if (targetResult.data.deleted_at !== null) {
-    return json({ error: "Employee is already deactivated" }, 404);
+    return json({ error: "Employee is already deactivated" }, 409);
   }
 
   const updateResult = (await supabase

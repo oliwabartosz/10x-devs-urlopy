@@ -7,6 +7,7 @@ import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import { createClient } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import type { Employee, Absence, AbsenceType } from "@/types";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
@@ -54,7 +55,11 @@ if (currentEmployee) {
   const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
 
   const employeesQuery = adminSupabase
-    ? adminSupabase.from("employees").select("*").order("last_name").order("first_name")
+    ? adminSupabase
+        .from("employees")
+        .select("id, first_name, last_name, role, deleted_at, created_at")
+        .order("last_name")
+        .order("first_name")
     : supabase
         .from("employees")
         .select("id, first_name, last_name, role")
@@ -113,6 +118,13 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
   <div class="min-h-screen bg-gray-50">
     <div class="px-4 pt-4">
       <Topbar role={currentEmployee?.role} />
+      {
+        currentEmployee?.role === "moderator" && (
+          <div class="mt-2">
+            <EmployeeManagementSheet client:load employees={allEmployees} currentEmployee={currentEmployee} />
+          </div>
+        )
+      }
     </div>
 
     {

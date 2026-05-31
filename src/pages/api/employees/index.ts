@@ -4,6 +4,50 @@ import { createClient } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase-admin";
 import type { Employee } from "@/types";
 
+export const GET: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const supabase = createClient(context.request.headers, context.cookies);
+  if (!supabase) {
+    return json({ error: "Supabase is not configured" }, 503);
+  }
+
+  const callerResult = (await supabase
+    .from("employees")
+    .select("id, role")
+    .eq("user_id", context.locals.user.id)
+    .is("deleted_at", null)
+    .single()) as { data: { id: string; role: "employee" | "moderator" } | null; error: { code: string } | null };
+
+  if (!callerResult.data) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+
+  if (callerResult.data.role === "moderator") {
+    const adminClient = createAdminClient();
+    if (adminClient) {
+      const { data, error } = await adminClient
+        .from("employees")
+        .select("id, first_name, last_name, role, deleted_at, created_at")
+        .order("last_name")
+        .order("first_name");
+      if (error) return json({ error: "Database error" }, 500);
+      return json(data, 200);
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, first_name, last_name, role, deleted_at, created_at")
+    .is("deleted_at", null)
+    .order("last_name")
+    .order("first_name");
+  if (error) return json({ error: "Database error" }, 500);
+  return json(data, 200);
+};
+
 export const prerender = false;
 
 const json = (data: unknown, status: number) =>
@@ -76,7 +120,7 @@ export const POST: APIRoute = async (context) => {
   });
 
   if (authError) {
-    if (authError.message.toLowerCase().includes("already") || authError.status === 422) {
+    if (authError.status === 422) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     }
     return json({ error: "Failed to create auth user" }, 500);
@@ -89,6 +133,8 @@ export const POST: APIRoute = async (context) => {
     .single()) as { data: Employee | null; error: { code: string; message: string } | null };
 
   if (insertError) {
+    // compensating delete: prevent orphaned auth user when the DB insert fails
+    await adminClient.auth.admin.deleteUser(authData.user.id).catch(() => undefined);
     return json({ error: "Failed to create employee record" }, 500);
   }
 
