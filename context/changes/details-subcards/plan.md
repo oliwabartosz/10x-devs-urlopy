@@ -274,28 +274,28 @@ Internal structure:
 
 #### Automated
 
-- [x] 2.1 TypeScript compile passes: `npm run build`
-- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.1 TypeScript compile passes: `npm run build` — 28e948b
+- [x] 2.2 Lint passes: `npm run lint` — 28e948b
 
 #### Manual
 
-- [ ] 2.3 `?tab=details` (no subcard) renders with Today subcard active
-- [ ] 2.4 `?tab=details&subcard=monthly` renders with Monthly active, URL preserved on F5
-- [ ] 2.5 Month nav while on Details preserves subcard in new URL
-- [ ] 2.6 Clicking Stats/Grid and returning to Details shows `?subcard=today`
+- [x] 2.3 `?tab=details` (no subcard) renders with Today subcard active — 28e948b
+- [x] 2.4 `?tab=details&subcard=monthly` renders with Monthly active, URL preserved on F5 — 28e948b
+- [x] 2.5 Month nav while on Details preserves subcard in new URL — 28e948b
+- [x] 2.6 Clicking Stats/Grid and returning to Details shows `?subcard=today` — 28e948b
 
 ### Phase 3: AbsenceDetailsSubcards component
 
 #### Automated
 
-- [ ] 3.1 TypeScript compile passes: `npm run build`
-- [ ] 3.2 Lint passes: `npm run lint`
+- [x] 3.1 TypeScript compile passes: `npm run build`
+- [x] 3.2 Lint passes: `npm run lint`
 
 #### Manual
 
-- [ ] 3.3 Dzisiaj section shows only today's absences; Ten tydzień and Następny tydzień show Mon–Fri rows
-- [ ] 3.4 Boundary-spanning weeks show complete data from both months
-- [ ] 3.5 Monthly subcard: same rows as old Details tab, sorting works
-- [ ] 3.6 Yearly: loading placeholder on first activation, no re-fetch on return
-- [ ] 3.7 Subcard switching instant; URL sync works; F5 restores correct subcard
-- [ ] 3.8 No console warnings on unmount while fetch in progress
+- [x] 3.3 Dzisiaj section shows only today's absences; Ten tydzień and Następny tydzień show Mon–Fri rows
+- [x] 3.4 Boundary-spanning weeks show complete data from both months
+- [x] 3.5 Monthly subcard: same rows as old Details tab, sorting works
+- [x] 3.6 Yearly: loading placeholder on first activation, no re-fetch on return
+- [x] 3.7 Subcard switching instant; URL sync works; F5 restores correct subcard
+- [x] 3.8 No console warnings on unmount while fetch in progress

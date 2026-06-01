@@ -33,6 +33,10 @@ export const GET: APIRoute = async (context) => {
   const fromParsed = DateSchema.safeParse(fromParam);
   const toParsed = DateSchema.safeParse(toParam);
 
+  if (yearParam !== null && (fromParam !== null || toParam !== null)) {
+    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD, not both" }, 400);
+  }
+
   const useYearMode = yearParsed.success;
   const useDateRangeMode = !useYearMode && fromParsed.success && toParsed.success;
 
@@ -64,7 +68,7 @@ export const GET: APIRoute = async (context) => {
   if (useYearMode) {
     const year = yearParsed.data;
     from = `${year}-01-01`;
-    to = `${String(Number(year) + 1)}-01-01`;
+    to = `${(parseInt(year, 10) + 1).toString().padStart(4, "0")}-01-01`;
   } else if (fromParsed.success && toParsed.success) {
     from = fromParsed.data;
     if (new Date(from) > new Date(toParsed.data)) {

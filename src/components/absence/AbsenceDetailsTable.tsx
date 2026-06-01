@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
 import type { Absence, Employee, AbsenceType } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface AbsenceDetailsTableProps {
   absences: Absence[];
   employees: Employee[];
   absenceTypes: AbsenceType[];
+  className?: string;
 }
 
 type SortColumn = "date" | "employee" | "type" | "created_at";
@@ -24,7 +26,12 @@ function formatHours(absence: Absence): string {
   return `${absence.hours ?? 0} godz.`;
 }
 
-export default function AbsenceDetailsTable({ absences, employees, absenceTypes }: AbsenceDetailsTableProps) {
+export default function AbsenceDetailsTable({
+  absences,
+  employees,
+  absenceTypes,
+  className,
+}: AbsenceDetailsTableProps) {
   const [sort, setSort] = useState<{ column: SortColumn; direction: "asc" | "desc" }>({
     column: "date",
     direction: "asc",
@@ -81,7 +88,7 @@ export default function AbsenceDetailsTable({ absences, employees, absenceTypes 
   const tdClass = "border-b px-3 py-2 text-sm text-gray-700";
 
   return (
-    <div className="overflow-x-auto rounded border">
+    <div className={cn("overflow-x-auto rounded border", className)}>
       <table className="w-full border-collapse text-sm">
         <thead className="bg-gray-50">
           <tr>
