@@ -71,7 +71,7 @@ export const GET: APIRoute = async (context) => {
     to = `${(parseInt(year, 10) + 1).toString().padStart(4, "0")}-01-01`;
   } else if (fromParsed.success && toParsed.success) {
     from = fromParsed.data;
-    if (new Date(from) > new Date(toParsed.data)) {
+    if (new Date(from + "T00:00:00Z") > new Date(toParsed.data + "T00:00:00Z")) {
       return json({ error: "from must be ≤ to" }, 400);
     }
     const toDate = new Date(toParsed.data + "T00:00:00Z");

@@ -212,7 +212,12 @@ export default function AbsenceDetailsSubcards({
       {activeSubcard === "monthly" && (
         <div>
           <h3 className="mb-2 text-sm font-semibold text-gray-700">{capitalizedMonth}</h3>
-          <AbsenceDetailsTable absences={absences} employees={employees} absenceTypes={absenceTypes} />
+          <AbsenceDetailsTable
+            absences={absences}
+            employees={employees}
+            absenceTypes={absenceTypes}
+            emptyLabel="Brak nieobecności w tym miesiącu"
+          />
         </div>
       )}
 

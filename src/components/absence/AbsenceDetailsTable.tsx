@@ -7,6 +7,7 @@ interface AbsenceDetailsTableProps {
   employees: Employee[];
   absenceTypes: AbsenceType[];
   className?: string;
+  emptyLabel?: string;
 }
 
 type SortColumn = "date" | "employee" | "type" | "created_at";
@@ -31,6 +32,7 @@ export default function AbsenceDetailsTable({
   employees,
   absenceTypes,
   className,
+  emptyLabel = "Brak nieobecności",
 }: AbsenceDetailsTableProps) {
   const [sort, setSort] = useState<{ column: SortColumn; direction: "asc" | "desc" }>({
     column: "date",
@@ -145,7 +147,7 @@ export default function AbsenceDetailsTable({
           {sorted.length === 0 ? (
             <tr>
               <td colSpan={7} className="px-3 py-6 text-center text-gray-400">
-                Brak nieobecności w tym miesiącu
+                {emptyLabel}
               </td>
             </tr>
           ) : (
