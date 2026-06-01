@@ -10,6 +10,7 @@ const json = (data: unknown, status: number) =>
   });
 
 const YearSchema = z.string().regex(/^\d{4}$/);
+const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -17,9 +18,18 @@ export const GET: APIRoute = async (context) => {
   }
 
   const yearParam = context.url.searchParams.get("year");
+  const fromParam = context.url.searchParams.get("from");
+  const toParam = context.url.searchParams.get("to");
+
   const yearParsed = YearSchema.safeParse(yearParam);
-  if (!yearParsed.success) {
-    return json({ error: "year param required (YYYY)" }, 400);
+  const fromParsed = DateSchema.safeParse(fromParam);
+  const toParsed = DateSchema.safeParse(toParam);
+
+  const useYearMode = yearParsed.success;
+  const useDateRangeMode = !useYearMode && fromParsed.success && toParsed.success;
+
+  if (!useYearMode && !useDateRangeMode) {
+    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
   }
 
   const supabase = createClient(context.request.headers, context.cookies);
@@ -40,9 +50,21 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Database error" }, 503);
   }
 
-  const year = yearParsed.data;
-  const from = `${year}-01-01`;
-  const to = `${String(Number(year) + 1)}-01-01`;
+  let from: string;
+  let to: string;
+
+  if (useYearMode) {
+    const year = yearParsed.data;
+    from = `${year}-01-01`;
+    to = `${String(Number(year) + 1)}-01-01`;
+  } else if (fromParsed.success && toParsed.success) {
+    from = fromParsed.data;
+    const toDate = new Date(toParsed.data + "T00:00:00Z");
+    toDate.setUTCDate(toDate.getUTCDate() + 1);
+    to = toDate.toISOString().slice(0, 10);
+  } else {
+    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
+  }
 
   // No employee_id filter — absences_select RLS allows all authenticated users to read
   // all absences so the team grid can display every employee's column.
