@@ -540,14 +540,14 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [x] 1.1 `npm install` completes without errors
-- [x] 1.2 `npm run build` passes with DATABASE_URL in env schema
-- [x] 1.3 `npm run lint` passes on `src/db/schema.ts` and `src/db/index.ts`
+- [x] 1.1 `npm install` completes without errors — 5a2c03d
+- [x] 1.2 `npm run build` passes with DATABASE_URL in env schema — 5a2c03d
+- [x] 1.3 `npm run lint` passes on `src/db/schema.ts` and `src/db/index.ts` — 5a2c03d
 
 #### Manual
 
-- [x] 1.4 `npm run dev` starts without errors; dashboard loads (Supabase JS still active)
-- [x] 1.5 `npm run db:studio` connects and shows three tables
+- [x] 1.4 `npm run dev` starts without errors; dashboard loads (Supabase JS still active) — 5a2c03d
+- [x] 1.5 `npm run db:studio` connects and shows three tables — 5a2c03d
 
 ### Phase 2: Migrate Absences Routes
 

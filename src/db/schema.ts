@@ -27,6 +27,7 @@ export const employees = pgTable("employees", {
 export const absence_types = pgTable("absence_types", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  // DB-level CHECK: color ~ '^#[0-9a-fA-F]{6}$' — not represented in Drizzle; re-add manually after any db:generate diff
   color: text("color").notNull(),
 });
 
@@ -42,11 +43,13 @@ export const absences = pgTable(
       .references(() => absence_types.id),
     date: date("date").notNull(),
     is_full_day: boolean("is_full_day").notNull().default(true),
+    // DB-level CHECK: is_full_day OR hours IS NOT NULL — not represented in Drizzle; re-add manually after any db:generate diff
     hours: numeric("hours", { precision: 4, scale: 2 }),
     comment: text("comment"),
     substitute_employee_id: uuid("substitute_employee_id").references(() => employees.id),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updated_at: timestamp("updated_at", { withTimezone: true }).notNull(),
+    // DB sets this via DEFAULT NOW() + AFTER UPDATE trigger; .defaultNow() here covers $inferInsert type correctness
+    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique().on(table.employee_id, table.date)],
 );

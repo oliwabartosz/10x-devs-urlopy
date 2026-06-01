@@ -7,5 +7,6 @@ export { schema };
 export * from "./schema";
 
 export function createDb(databaseUrl: string) {
+  if (!databaseUrl) throw new Error("DATABASE_URL is required");
   return drizzle(neon(databaseUrl), { schema });
 }

@@ -1,6 +1,6 @@
 # Rules for AI
 
-This file provides guidance to AI Agent when working with code in this repository.
+This file provides guidance to AI Agent when working with code in this repository. Extended project conventions (database layer, Drizzle ORM, migration discipline, UI) are documented in `AGENTS.md` — read it alongside this file.
 
 ## Commands
 

@@ -24,6 +24,50 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 - Use `@/*` imports for `src/*`. Shared helpers belong in `src/lib/`; UI primitives live in `src/components/ui/` per `@components.json`.
 - Keep static/layout markup in `.astro` files and use React components for hydrated interactivity, as the current auth forms do with `client:load`.
 
+## Database (Drizzle ORM)
+
+All application table queries use Drizzle ORM with the `@neondatabase/serverless` / `neon-http` driver. Supabase JS clients (`src/lib/supabase.ts`, `src/lib/supabase-admin.ts`) are kept only for auth operations and must not be removed.
+
+### Schema and client
+
+- `src/db/schema.ts` — Drizzle schema; the single source of truth for TypeScript table types. Do not write to this file without also reviewing the corresponding Supabase migration.
+- `src/db/index.ts` — exports `createDb(databaseUrl: string)` factory. Call it once at the top of each request handler (Astro frontmatter block or exported `GET`/`POST`/etc. function):
+  ```ts
+  import { createDb } from "@/db/index";
+  import { DATABASE_URL } from "astro:env/server";
+  // inside a handler or frontmatter:
+  const db = createDb(DATABASE_URL);
+  ```
+  Do **not** call `createDb` at module top level — `astro:env/server` values are only available inside request handler scope.
+
+### Connection strings
+
+- `DATABASE_URL` — Transaction Mode pooler (port 6543), service role password. Set in `.dev.vars` for `wrangler dev`; set as a Cloudflare Worker Secret for production. Used at runtime.
+- `DATABASE_URL_DIRECT` — Direct connection (port 5432). Set in `.env` for `drizzle-kit` Node.js tooling only; never injected into the Worker runtime.
+
+### npm scripts
+
+- `npm run db:generate` — generate a migration diff from schema changes (outputs to `supabase/migrations/`).
+- `npm run db:migrate` — apply pending migrations via drizzle-kit.
+- `npm run db:studio` — open Drizzle Studio connected to the direct DB.
+
+### Migration discipline
+
+`drizzle-kit` outputs to `supabase/migrations/` alongside hand-authored Supabase CLI migrations. **Always manually review the generated diff before running `db:migrate`** — the Drizzle schema intentionally omits some DB-level constraints (CHECK constraints on `absence_types.color` and `absences.hours`; the `auth.users` FK cascade) because they cannot be represented in Drizzle. A generated migration will not include them, so any future schema change must re-add them manually after inspecting the diff.
+
+### Authorization
+
+The `DATABASE_URL` uses the service role key, which bypasses Supabase RLS. All row-level authorization must be enforced explicitly in handler code (ownership checks, role checks against `context.locals.user`). Do not rely on RLS as a safety net for Drizzle queries.
+
+### Runtime type gotcha
+
+`NUMERIC` columns (e.g. `absences.hours`) return **strings** from the neon-http driver, not numbers. Cast in every SELECT that includes `hours`:
+```ts
+import { sql } from "drizzle-orm";
+// inside .select({ ... }):
+hours: sql<number | null>`${absences.hours}::float`
+```
+
 ## Style And UI Conventions
 
 - Node is pinned to `22.14.0` in `@.nvmrc`; package manager is npm.
