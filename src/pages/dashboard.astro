@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
-import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
+import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import { createClient } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase-admin";
@@ -20,6 +20,10 @@ const month = validMonthParam ? parseInt(validMonthParam.split("-")[1], 10) : no
 
 const tabParam = Astro.url.searchParams.get("tab");
 const currentTab = tabParam === "details" || tabParam === "stats" ? tabParam : "grid";
+
+const subcardParam = Astro.url.searchParams.get("subcard");
+const currentSubcard: "today" | "monthly" | "yearly" =
+  subcardParam === "monthly" || subcardParam === "yearly" ? subcardParam : "today";
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
@@ -105,12 +109,18 @@ const prevMonthDate = new Date(year, month - 2, 1); // month-2 because month is 
 const nextMonthDate = new Date(year, month, 1);
 const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
 const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
-const prevMonthUrl = `?month=${prevMonthStr}&tab=${currentTab}`;
-const nextMonthUrl = `?month=${nextMonthStr}&tab=${currentTab}`;
+const prevMonthUrl =
+  currentTab === "details"
+    ? `?month=${prevMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
+    : `?month=${prevMonthStr}&tab=${currentTab}`;
+const nextMonthUrl =
+  currentTab === "details"
+    ? `?month=${nextMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
+    : `?month=${nextMonthStr}&tab=${currentTab}`;
 
 // Tab nav URLs preserve the current month
 const gridTabUrl = `?month=${monthStr}&tab=grid`;
-const detailsTabUrl = `?month=${monthStr}&tab=details`;
+const detailsTabUrl = `?month=${monthStr}&tab=details&subcard=today`;
 const statsTabUrl = `?month=${monthStr}&tab=stats`;
 ---
 
@@ -170,11 +180,14 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
               />
             )}
             {currentTab === "details" && (
-              <AbsenceDetailsTable
+              <AbsenceDetailsSubcards
                 client:load
                 absences={absences}
                 employees={gridEmployees}
                 absenceTypes={absenceTypes}
+                year={year}
+                month={month}
+                initialSubcard={currentSubcard}
               />
             )}
             {currentTab === "stats" && (

@@ -259,23 +259,23 @@ Internal structure:
 
 #### Automated
 
-- [x] 1.1 TypeScript compile passes: `npm run build`
-- [x] 1.2 Lint passes: `npm run lint`
+- [x] 1.1 TypeScript compile passes: `npm run build` — 00a3e21
+- [x] 1.2 Lint passes: `npm run lint` — 00a3e21
 
 #### Manual
 
-- [x] 1.3 `GET /api/absences?from=2026-06-01&to=2026-06-07` returns absences in that range
-- [x] 1.4 `GET /api/absences?year=2026` still works unchanged
-- [x] 1.5 `GET /api/absences` (no params) returns 400
-- [x] 1.6 `GET /api/absences?from=2026-06-01` (missing `to`) returns 400
-- [x] 1.7 Unauthenticated request returns 401
+- [x] 1.3 `GET /api/absences?from=2026-06-01&to=2026-06-07` returns absences in that range — 00a3e21
+- [x] 1.4 `GET /api/absences?year=2026` still works unchanged — 00a3e21
+- [x] 1.5 `GET /api/absences` (no params) returns 400 — 00a3e21
+- [x] 1.6 `GET /api/absences?from=2026-06-01` (missing `to`) returns 400 — 00a3e21
+- [x] 1.7 Unauthenticated request returns 401 — 00a3e21
 
 ### Phase 2: dashboard.astro — subcard param + navigation wiring
 
 #### Automated
 
-- [ ] 2.1 TypeScript compile passes: `npm run build`
-- [ ] 2.2 Lint passes: `npm run lint`
+- [x] 2.1 TypeScript compile passes: `npm run build`
+- [x] 2.2 Lint passes: `npm run lint`
 
 #### Manual
 

@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
@@ -10,7 +12,13 @@ const json = (data: unknown, status: number) =>
   });
 
 const YearSchema = z.string().regex(/^\d{4}$/);
-const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const DateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((v) => {
+    const d = new Date(v + "T00:00:00Z");
+    return !isNaN(d.getTime()) && d.toISOString().startsWith(v);
+  }, "Invalid calendar date");
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -59,9 +67,16 @@ export const GET: APIRoute = async (context) => {
     to = `${String(Number(year) + 1)}-01-01`;
   } else if (fromParsed.success && toParsed.success) {
     from = fromParsed.data;
+    if (new Date(from) > new Date(toParsed.data)) {
+      return json({ error: "from must be ≤ to" }, 400);
+    }
     const toDate = new Date(toParsed.data + "T00:00:00Z");
     toDate.setUTCDate(toDate.getUTCDate() + 1);
     to = toDate.toISOString().slice(0, 10);
+    const spanMs = new Date(to + "T00:00:00Z").getTime() - new Date(from + "T00:00:00Z").getTime();
+    if (spanMs > 90 * 24 * 60 * 60 * 1000) {
+      return json({ error: "Date range exceeds maximum of 90 days" }, 400);
+    }
   } else {
     return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
   }
@@ -76,7 +91,7 @@ export const GET: APIRoute = async (context) => {
     .order("date")) as { data: Absence[] | null; error: { message: string } | null };
 
   if (result.error) {
-    return json({ error: result.error.message }, 500);
+    return json({ error: "Database error" }, 500);
   }
 
   return json(result.data ?? [], 200);
