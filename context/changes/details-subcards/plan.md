@@ -288,14 +288,14 @@ Internal structure:
 
 #### Automated
 
-- [x] 3.1 TypeScript compile passes: `npm run build`
-- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.1 TypeScript compile passes: `npm run build` — 52c3b61
+- [x] 3.2 Lint passes: `npm run lint` — 52c3b61
 
 #### Manual
 
-- [x] 3.3 Dzisiaj section shows only today's absences; Ten tydzień and Następny tydzień show Mon–Fri rows
-- [x] 3.4 Boundary-spanning weeks show complete data from both months
-- [x] 3.5 Monthly subcard: same rows as old Details tab, sorting works
-- [x] 3.6 Yearly: loading placeholder on first activation, no re-fetch on return
-- [x] 3.7 Subcard switching instant; URL sync works; F5 restores correct subcard
-- [x] 3.8 No console warnings on unmount while fetch in progress
+- [x] 3.3 Dzisiaj section shows only today's absences; Ten tydzień and Następny tydzień show Mon–Fri rows — 52c3b61
+- [x] 3.4 Boundary-spanning weeks show complete data from both months — 52c3b61
+- [x] 3.5 Monthly subcard: same rows as old Details tab, sorting works — 52c3b61
+- [x] 3.6 Yearly: loading placeholder on first activation, no re-fetch on return — 52c3b61
+- [x] 3.7 Subcard switching instant; URL sync works; F5 restores correct subcard — 52c3b61
+- [x] 3.8 No console warnings on unmount while fetch in progress — 52c3b61
