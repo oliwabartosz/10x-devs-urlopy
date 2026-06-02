@@ -26,7 +26,7 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 
 ## Database (Drizzle ORM)
 
-All application table queries use Drizzle ORM with the `@neondatabase/serverless` / `neon-http` driver. Supabase JS clients (`src/lib/supabase.ts`, `src/lib/supabase-admin.ts`) are kept only for auth operations and must not be removed.
+All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js` driver backed by the `postgres` npm package. The `@neondatabase/serverless` package is still installed but **must not be used for query execution** — `neon()` / `neon-http` is Neon-specific (it POSTs to `https://<host>/sql`) and does not work with Supabase's connection pooler. Supabase JS clients (`src/lib/supabase.ts`, `src/lib/supabase-admin.ts`) are kept only for auth operations and must not be removed.
 
 ### Schema and client
 
@@ -61,12 +61,28 @@ The `DATABASE_URL` uses the service role key, which bypasses Supabase RLS. All r
 
 ### Runtime type gotcha
 
-`NUMERIC` columns (e.g. `absences.hours`) return **strings** from the neon-http driver, not numbers. Cast in every SELECT that includes `hours`:
+`NUMERIC` columns (e.g. `absences.hours`) return **strings** from postgres-js, not numbers. Cast in every SELECT and RETURNING clause that includes `hours`:
 ```ts
 import { sql } from "drizzle-orm";
-// inside .select({ ... }):
+// inside .select({ ... }) or .returning({ ... }):
 hours: sql<number | null>`${absences.hours}::float`
 ```
+
+### Error handling
+
+Drizzle wraps driver errors in `DrizzleQueryError`. The PostgreSQL error code is **not** on `err.code` — it is on `err.cause.code`. Always access it via:
+```ts
+} catch (err) {
+  const e = err as { code?: string; cause?: { code?: string } };
+  const code = e.code ?? e.cause?.code;
+  if (code === "23505") return json({ error: "Duplicate" }, 409);
+  // ...
+}
+```
+
+### Local dev limitation
+
+`wrangler dev` (workerd) rejects Supabase's PostgreSQL TLS certificate at the C++ level regardless of the `ssl` option passed to postgres-js. **Drizzle queries will not work in `wrangler dev`.** Run manual verification against the production (or preview) Cloudflare Workers deployment instead. Auth flows and static pages are unaffected — those do not use Drizzle.
 
 ## Style And UI Conventions
 

@@ -4,7 +4,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 
 ## Commands
 
-- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.dev.vars`, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory.
+- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.dev.vars`, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory. **Drizzle database queries will fail in `wrangler dev`** — workerd's C++ TLS layer rejects Supabase's certificate regardless of the `ssl` option; auth and static pages still work. Test Drizzle-backed API routes against the production deployment.
 - `npm run build` — production build (SSR via `@astrojs/cloudflare`)
 - `npm run preview` — preview production build
 - `npm run lint` — ESLint with type-checked rules
