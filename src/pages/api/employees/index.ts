@@ -1,9 +1,10 @@
+export const prerender = false;
+
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { createDb } from "@/db/index";
+import { createDb, employees } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
-import { employees } from "@/db/index";
 import { eq, isNull, and, asc } from "drizzle-orm";
 
 export const GET: APIRoute = async (context) => {
@@ -50,8 +51,6 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Database error" }, 500);
   }
 };
-
-export const prerender = false;
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -110,11 +109,18 @@ export const POST: APIRoute = async (context) => {
 
   const { first_name, last_name, email, role, password } = parsed.data;
 
-  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
+  let createUserResult: Awaited<ReturnType<typeof adminClient.auth.admin.createUser>>;
+  try {
+    createUserResult = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+  } catch {
+    return json({ error: "Failed to create auth user" }, 500);
+  }
+
+  const { data: authData, error: authError } = createUserResult;
 
   if (authError) {
     if (authError.status === 422) {

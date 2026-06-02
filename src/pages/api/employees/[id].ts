@@ -162,9 +162,9 @@ export const DELETE: APIRoute = async (context) => {
     const rows = await db
       .update(employees)
       .set({ deleted_at: new Date() })
-      .where(eq(employees.id, idParsed.data))
+      .where(and(eq(employees.id, idParsed.data), isNull(employees.deleted_at)))
       .returning({ id: employees.id });
-    if (rows.length === 0) return json({ error: "Employee not found" }, 404);
+    if (rows.length === 0) return json({ error: "Employee is already deactivated" }, 409);
     return json({ success: true }, 200);
   } catch {
     return json({ error: "Database error" }, 500);
