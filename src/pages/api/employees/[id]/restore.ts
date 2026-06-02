@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
-import type { Employee } from "@/types";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { employees } from "@/db/index";
+import { eq, isNull, and } from "drizzle-orm";
 
 export const prerender = false;
 
@@ -18,28 +20,22 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const callerResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator" } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (callerResult.error?.code === "PGRST116" || !callerResult.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (callerResult.error) {
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (callerResult.data.role !== "moderator") {
+  if (!caller) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (caller.role !== "moderator") {
     return json({ error: "Forbidden" }, 403);
   }
 
@@ -48,33 +44,33 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Invalid employee ID" }, 400);
   }
 
-  // Moderator RLS policy (employees_select_moderator_all) lets us see soft-deleted employees
-  const targetResult = (await supabase.from("employees").select("id, deleted_at").eq("id", idParsed.data).single()) as {
-    data: { id: string; deleted_at: string | null } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (targetResult.error?.code === "PGRST116" || !targetResult.data) {
-    return json({ error: "Employee not found" }, 404);
-  }
-  if (targetResult.error) {
+  // Service role sees all rows — no isNull filter needed to read soft-deleted employees
+  let target: { id: string; deleted_at: Date | null } | undefined;
+  try {
+    target = await db
+      .select({ id: employees.id, deleted_at: employees.deleted_at })
+      .from(employees)
+      .where(eq(employees.id, idParsed.data))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (targetResult.data.deleted_at === null) {
+  if (!target) {
+    return json({ error: "Employee not found" }, 404);
+  }
+  if (target.deleted_at === null) {
     return json({ error: "Employee is already active" }, 409);
   }
 
-  const updateResult = (await supabase
-    .from("employees")
-    .update({ deleted_at: null })
-    .eq("id", idParsed.data)
-    .select()
-    .single()) as { data: Employee | null; error: { code: string; message: string } | null };
-
-  if (updateResult.error) {
-    if (updateResult.error.code === "42501") return json({ error: "Forbidden" }, 403);
+  try {
+    const rows = await db
+      .update(employees)
+      .set({ deleted_at: null })
+      .where(eq(employees.id, idParsed.data))
+      .returning();
+    if (rows.length === 0) return json({ error: "Employee not found" }, 404);
+    return json(rows[0], 200);
+  } catch {
     return json({ error: "Database error" }, 500);
   }
-
-  return json(updateResult.data, 200);
 };

@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
-import type { Employee } from "@/types";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { employees } from "@/db/index";
+import { eq, isNull, and, count } from "drizzle-orm";
 
 export const prerender = false;
 
@@ -28,28 +30,22 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const callerResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator" } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (callerResult.error?.code === "PGRST116" || !callerResult.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (callerResult.error) {
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (callerResult.data.role !== "moderator") {
+  if (!caller) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (caller.role !== "moderator") {
     return json({ error: "Forbidden" }, 403);
   }
 
@@ -70,50 +66,45 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  // Moderator RLS policy (employees_select_moderator_all) lets us see all employees incl. deleted
-  const targetResult = (await supabase
-    .from("employees")
-    .select("id, role, deleted_at")
-    .eq("id", idParsed.data)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator"; deleted_at: string | null } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (targetResult.error?.code === "PGRST116" || !targetResult.data) {
-    return json({ error: "Employee not found" }, 404);
-  }
-  if (targetResult.error) {
+  // Service role sees all rows — no isNull filter needed to read deleted employees
+  let target: { id: string; role: "employee" | "moderator"; deleted_at: Date | null } | undefined;
+  try {
+    target = await db
+      .select({ id: employees.id, role: employees.role, deleted_at: employees.deleted_at })
+      .from(employees)
+      .where(eq(employees.id, idParsed.data))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (targetResult.data.deleted_at !== null) {
+  if (!target) {
+    return json({ error: "Employee not found" }, 404);
+  }
+  if (target.deleted_at !== null) {
     return json({ error: "Cannot update a deactivated employee" }, 409);
   }
 
-  if (parsed.data.role === "employee" && targetResult.data.role === "moderator") {
-    const { count } = await supabase
-      .from("employees")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "moderator")
-      .is("deleted_at", null);
-    if ((count ?? 0) <= 1) {
-      return json({ error: "Nie możesz zdegradować ostatniego moderatora." }, 409);
+  if (parsed.data.role === "employee" && target.role === "moderator") {
+    try {
+      const [{ value }] = await db
+        .select({ value: count() })
+        .from(employees)
+        .where(and(eq(employees.role, "moderator"), isNull(employees.deleted_at)));
+      if (value <= 1) {
+        return json({ error: "Nie możesz zdegradować ostatniego moderatora." }, 409);
+      }
+    } catch {
+      return json({ error: "Database error" }, 503);
     }
   }
 
-  const updateResult = (await supabase
-    .from("employees")
-    .update(parsed.data)
-    .eq("id", idParsed.data)
-    .select()
-    .single()) as { data: Employee | null; error: { code: string; message: string } | null };
-
-  if (updateResult.error) {
-    if (updateResult.error.code === "42501") return json({ error: "Forbidden" }, 403);
+  try {
+    const rows = await db.update(employees).set(parsed.data).where(eq(employees.id, idParsed.data)).returning();
+    if (rows.length === 0) return json({ error: "Employee not found" }, 404);
+    return json(rows[0], 200);
+  } catch {
     return json({ error: "Database error" }, 500);
   }
-
-  return json(updateResult.data, 200);
 };
 
 export const DELETE: APIRoute = async (context) => {
@@ -121,28 +112,22 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const callerResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator" } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (callerResult.error?.code === "PGRST116" || !callerResult.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (callerResult.error) {
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (callerResult.data.role !== "moderator") {
+  if (!caller) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (caller.role !== "moderator") {
     return json({ error: "Forbidden" }, 403);
   }
 
@@ -151,36 +136,37 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Invalid employee ID" }, 400);
   }
 
-  if (idParsed.data === callerResult.data.id) {
+  if (idParsed.data === caller.id) {
     return json({ error: "Nie możesz usunąć własnego konta." }, 400);
   }
 
-  const targetResult = (await supabase.from("employees").select("id, deleted_at").eq("id", idParsed.data).single()) as {
-    data: { id: string; deleted_at: string | null } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (targetResult.error?.code === "PGRST116" || !targetResult.data) {
-    return json({ error: "Employee not found" }, 404);
-  }
-  if (targetResult.error) {
+  // Service role sees all rows — no isNull filter needed
+  let target: { id: string; deleted_at: Date | null } | undefined;
+  try {
+    target = await db
+      .select({ id: employees.id, deleted_at: employees.deleted_at })
+      .from(employees)
+      .where(eq(employees.id, idParsed.data))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (targetResult.data.deleted_at !== null) {
+  if (!target) {
+    return json({ error: "Employee not found" }, 404);
+  }
+  if (target.deleted_at !== null) {
     return json({ error: "Employee is already deactivated" }, 409);
   }
 
-  const updateResult = (await supabase
-    .from("employees")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", idParsed.data)
-    .select()
-    .single()) as { data: unknown; error: { code: string; message: string } | null };
-
-  if (updateResult.error) {
-    if (updateResult.error.code === "42501") return json({ error: "Forbidden" }, 403);
+  try {
+    const rows = await db
+      .update(employees)
+      .set({ deleted_at: new Date() })
+      .where(eq(employees.id, idParsed.data))
+      .returning({ id: employees.id });
+    if (rows.length === 0) return json({ error: "Employee not found" }, 404);
+    return json({ success: true }, 200);
+  } catch {
     return json({ error: "Database error" }, 500);
   }
-
-  return json({ success: true }, 200);
 };

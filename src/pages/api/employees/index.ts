@@ -1,51 +1,54 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase-admin";
-import type { Employee } from "@/types";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { employees } from "@/db/index";
+import { eq, isNull, and, asc } from "drizzle-orm";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
+  const db = createDb(DATABASE_URL);
+
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
+    return json({ error: "Database error" }, 503);
   }
-
-  const callerResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as { data: { id: string; role: "employee" | "moderator" } | null; error: { code: string } | null };
-
-  if (!callerResult.data) {
+  if (!caller) {
     return json({ error: "Employee record not found" }, 403);
   }
 
-  if (callerResult.data.role === "moderator") {
-    const adminClient = createAdminClient();
-    if (adminClient) {
-      const { data, error } = await adminClient
-        .from("employees")
-        .select("id, first_name, last_name, role, deleted_at, created_at")
-        .order("last_name")
-        .order("first_name");
-      if (error) return json({ error: "Database error" }, 500);
-      return json(data, 200);
-    }
-  }
+  const cols = {
+    id: employees.id,
+    first_name: employees.first_name,
+    last_name: employees.last_name,
+    role: employees.role,
+    deleted_at: employees.deleted_at,
+    created_at: employees.created_at,
+  };
 
-  const { data, error } = await supabase
-    .from("employees")
-    .select("id, first_name, last_name, role, deleted_at, created_at")
-    .is("deleted_at", null)
-    .order("last_name")
-    .order("first_name");
-  if (error) return json({ error: "Database error" }, 500);
-  return json(data, 200);
+  try {
+    const rows =
+      caller.role === "moderator"
+        ? await db.select(cols).from(employees).orderBy(asc(employees.last_name), asc(employees.first_name))
+        : await db
+            .select(cols)
+            .from(employees)
+            .where(isNull(employees.deleted_at))
+            .orderBy(asc(employees.last_name), asc(employees.first_name));
+    return json(rows, 200);
+  } catch {
+    return json({ error: "Database error" }, 500);
+  }
 };
 
 export const prerender = false;
@@ -69,28 +72,22 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const callerResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator" } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (callerResult.error?.code === "PGRST116" || !callerResult.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (callerResult.error) {
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
   }
-  if (callerResult.data.role !== "moderator") {
+  if (!caller) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (caller.role !== "moderator") {
     return json({ error: "Forbidden" }, 403);
   }
 
@@ -126,17 +123,18 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Failed to create auth user" }, 500);
   }
 
-  const { data: employee, error: insertError } = (await adminClient
-    .from("employees")
-    .insert({ user_id: authData.user.id, first_name, last_name, role })
-    .select()
-    .single()) as { data: Employee | null; error: { code: string; message: string } | null };
-
-  if (insertError) {
+  try {
+    const [employee] = await db
+      .insert(employees)
+      .values({ user_id: authData.user.id, first_name, last_name, role })
+      .returning();
+    return json(employee, 201);
+  } catch (err) {
     // compensating delete: prevent orphaned auth user when the DB insert fails
     await adminClient.auth.admin.deleteUser(authData.user.id).catch(() => undefined);
+    const e = err as { code?: string; cause?: { code?: string } };
+    const code = e.code ?? e.cause?.code;
+    if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     return json({ error: "Failed to create employee record" }, 500);
   }
-
-  return json(employee, 201);
 };

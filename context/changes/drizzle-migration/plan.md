@@ -566,8 +566,8 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes on all three employees route files
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes on all three employees route files
 
 #### Manual
 
