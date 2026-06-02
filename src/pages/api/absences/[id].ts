@@ -71,9 +71,10 @@ export const PATCH: APIRoute = async (context) => {
     if (rows.length === 0) return json({ error: "Not found" }, 404);
     return json(rows[0], 200);
   } catch (err) {
-    const pgError = err as { code?: string };
-    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
-    if (pgError.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
+    const e = err as { code?: string; cause?: { code?: string } };
+    const code = e.code ?? e.cause?.code;
+    if (code === "42501") return json({ error: "Forbidden" }, 403);
+    if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 400);
   }
 };

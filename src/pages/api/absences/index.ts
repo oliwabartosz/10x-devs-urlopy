@@ -192,11 +192,11 @@ export const POST: APIRoute = async (context) => {
       });
     return json(absenceRow, 201);
   } catch (err) {
-    const pgError = err as { code?: unknown };
-    console.error("[POST /api/absences] insert error:", JSON.stringify({ code: pgError.code, type: typeof pgError.code, msg: String(err) }));
-    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
-    if (pgError.code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
-    if (pgError.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
+    const e = err as { code?: string; cause?: { code?: string } };
+    const code = e.code ?? e.cause?.code;
+    if (code === "42501") return json({ error: "Forbidden" }, 403);
+    if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
+    if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 500);
   }
 };
