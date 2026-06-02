@@ -6,7 +6,9 @@ import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import { createClient } from "@/lib/supabase";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createDb, employees as employeesTable, absence_types, absences as absencesTable } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import type { Employee, Absence, AbsenceType } from "@/types";
 
@@ -35,17 +37,26 @@ if (!supabase) {
   return Astro.redirect("/auth/signin");
 }
 
-const adminSupabase = createAdminClient();
+const db = createDb(DATABASE_URL);
 
-type DbError = { code: string } | null;
-const { data: currentEmployee, error: employeeError } = (await supabase
-  .from("employees")
-  .select("id, first_name, last_name, role")
-  .eq("user_id", Astro.locals.user.id)
-  .is("deleted_at", null)
-  .single()) as unknown as { data: Pick<Employee, "id" | "first_name" | "last_name" | "role"> | null; error: DbError };
-// PGRST116 = "zero rows" — expected when user is not yet onboarded; other codes = real DB error
-const employeeDbError = employeeError != null && employeeError.code !== "PGRST116";
+let employeeDbError = false;
+let currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role"> | null = null;
+
+try {
+  const row = await db
+    .select({
+      id: employeesTable.id,
+      first_name: employeesTable.first_name,
+      last_name: employeesTable.last_name,
+      role: employeesTable.role,
+    })
+    .from(employeesTable)
+    .where(and(eq(employeesTable.user_id, Astro.locals.user.id), isNull(employeesTable.deleted_at)))
+    .then((r) => r.at(0) ?? null);
+  currentEmployee = row;
+} catch {
+  employeeDbError = true;
+}
 
 let dataDbError = false;
 let allEmployees: Employee[] = [];
@@ -58,46 +69,54 @@ if (currentEmployee) {
   const nextMonthDate = new Date(year, month, 1); // JS month overflow handles Dec→Jan
   const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const employeesQuery = adminSupabase
-    ? adminSupabase
-        .from("employees")
-        .select("id, first_name, last_name, role, deleted_at, created_at")
-        .order("last_name")
-        .order("first_name")
-    : supabase
-        .from("employees")
-        .select("id, first_name, last_name, role")
-        .is("deleted_at", null)
-        .order("last_name")
-        .order("first_name");
+  const empCols = {
+    id: employeesTable.id,
+    first_name: employeesTable.first_name,
+    last_name: employeesTable.last_name,
+    role: employeesTable.role,
+    deleted_at: employeesTable.deleted_at,
+    created_at: employeesTable.created_at,
+  };
 
-  const [employeesResult, absencesResult, typesResult] = (await Promise.all([
-    employeesQuery,
-    supabase
-      .from("absences")
-      .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
-      .gte("date", firstDay)
-      .lt("date", firstDayNextMonth),
-    supabase.from("absence_types").select("*").order("id"),
-  ])) as unknown as [
-    { data: Employee[]; error: DbError },
-    { data: Absence[]; error: DbError },
-    { data: AbsenceType[]; error: DbError },
-  ];
+  try {
+    const [employeesResult, absencesResult, typesResult] = await Promise.all([
+      currentEmployee.role === "moderator"
+        ? db.select(empCols).from(employeesTable).orderBy(asc(employeesTable.last_name), asc(employeesTable.first_name))
+        : db
+            .select(empCols)
+            .from(employeesTable)
+            .where(isNull(employeesTable.deleted_at))
+            .orderBy(asc(employeesTable.last_name), asc(employeesTable.first_name)),
+      db
+        .select({
+          id: absencesTable.id,
+          employee_id: absencesTable.employee_id,
+          absence_type_id: absencesTable.absence_type_id,
+          date: absencesTable.date,
+          is_full_day: absencesTable.is_full_day,
+          hours: sql<number | null>`${absencesTable.hours}::float`,
+          comment: absencesTable.comment,
+          substitute_employee_id: absencesTable.substitute_employee_id,
+          created_at: absencesTable.created_at,
+        })
+        .from(absencesTable)
+        .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
+      db.select().from(absence_types).orderBy(asc(absence_types.id)),
+    ]);
 
-  if (employeesResult.error || absencesResult.error || typesResult.error) {
+    allEmployees = employeesResult as unknown as Employee[];
+    gridEmployees =
+      currentEmployee.role === "moderator"
+        ? (employeesResult.filter(
+            (e) =>
+              e.created_at <= new Date(firstDayNextMonth) &&
+              (e.deleted_at === null || e.deleted_at >= new Date(firstDay)),
+          ) as unknown as Employee[])
+        : allEmployees;
+    absences = absencesResult as unknown as Absence[];
+    absenceTypes = typesResult;
+  } catch {
     dataDbError = true;
-  } else {
-    allEmployees = employeesResult.data;
-    gridEmployees = adminSupabase
-      ? allEmployees.filter(
-          (e) =>
-            new Date(e.created_at) <= new Date(firstDayNextMonth) &&
-            (e.deleted_at === null || new Date(e.deleted_at) >= new Date(firstDay)),
-        )
-      : allEmployees;
-    absences = absencesResult.data;
-    absenceTypes = typesResult.data;
   }
 }
 

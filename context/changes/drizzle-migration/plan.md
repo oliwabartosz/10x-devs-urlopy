@@ -580,8 +580,8 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [ ] 4.1 `npm run build` passes
-- [ ] 4.2 `npm run lint` passes on `dashboard.astro`
+- [x] 4.1 `npm run build` passes
+- [x] 4.2 `npm run lint` passes on `dashboard.astro`
 
 #### Manual
 
