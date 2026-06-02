@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 export type Db = ReturnType<typeof createDb>;
@@ -8,5 +8,6 @@ export * from "./schema";
 
 export function createDb(databaseUrl: string) {
   if (!databaseUrl) throw new Error("DATABASE_URL is required");
-  return drizzle(neon(databaseUrl), { schema });
+  // prepare: false required for PgBouncer Transaction Mode (port 6543)
+  return drizzle(postgres(databaseUrl, { ssl: false, prepare: false }), { schema });
 }

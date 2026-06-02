@@ -2,8 +2,10 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
-import type { Absence } from "@/types";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { employees, absences } from "@/db/index";
+import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -44,22 +46,20 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const employeeCheck = (await supabase
-    .from("employees")
-    .select("id")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as { data: { id: string } | null; error: { code: string } | null };
-  if (employeeCheck.error?.code === "PGRST116" || !employeeCheck.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (employeeCheck.error) {
+  let employeeRow: { id: string } | undefined;
+  try {
+    employeeRow = await db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
+  }
+  if (!employeeRow) {
+    return json({ error: "Employee record not found" }, 403);
   }
 
   let from: string;
@@ -85,20 +85,26 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
   }
 
-  // No employee_id filter — absences_select RLS allows all authenticated users to read
-  // all absences so the team grid can display every employee's column.
-  const result = (await supabase
-    .from("absences")
-    .select("id, employee_id, absence_type_id, date, is_full_day, hours, comment, substitute_employee_id, created_at")
-    .gte("date", from)
-    .lt("date", to)
-    .order("date")) as { data: Absence[] | null; error: { message: string } | null };
-
-  if (result.error) {
+  try {
+    const data = await db
+      .select({
+        id: absences.id,
+        employee_id: absences.employee_id,
+        absence_type_id: absences.absence_type_id,
+        date: absences.date,
+        is_full_day: absences.is_full_day,
+        hours: sql<number | null>`${absences.hours}::float`,
+        comment: absences.comment,
+        substitute_employee_id: absences.substitute_employee_id,
+        created_at: absences.created_at,
+      })
+      .from(absences)
+      .where(and(gte(absences.date, from), lt(absences.date, to)))
+      .orderBy(asc(absences.date));
+    return json(data, 200);
+  } catch {
     return json({ error: "Database error" }, 500);
   }
-
-  return json(result.data ?? [], 200);
 };
 
 const AbsenceCreateSchema = z
@@ -120,26 +126,20 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const employeeResult = (await supabase
-    .from("employees")
-    .select("id, role")
-    .eq("user_id", context.locals.user.id)
-    .is("deleted_at", null)
-    .single()) as {
-    data: { id: string; role: "employee" | "moderator" } | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (employeeResult.error?.code === "PGRST116" || !employeeResult.data) {
-    return json({ error: "Employee record not found" }, 403);
-  }
-  if (employeeResult.error) {
+  let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    employeeRow = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
     return json({ error: "Database error" }, 503);
+  }
+  if (!employeeRow) {
+    return json({ error: "Employee record not found" }, 403);
   }
 
   let body: unknown;
@@ -155,40 +155,47 @@ export const POST: APIRoute = async (context) => {
   }
 
   const { employee_id: requestedEmployeeId, ...absenceData } = parsed.data;
-  let targetEmployeeId = employeeResult.data.id;
+  let targetEmployeeId = employeeRow.id;
 
-  if (employeeResult.data.role === "moderator" && requestedEmployeeId) {
-    const targetResult = (await supabase
-      .from("employees")
-      .select("id")
-      .eq("id", requestedEmployeeId)
-      .is("deleted_at", null)
-      .single()) as { data: { id: string } | null; error: { code: string; message: string } | null };
-    if (targetResult.error?.code === "PGRST116" || !targetResult.data) {
-      return json({ error: "Pracownik nie został znaleziony." }, 404);
-    }
-    if (targetResult.error) {
+  if (employeeRow.role === "moderator" && requestedEmployeeId) {
+    let targetRow: { id: string } | undefined;
+    try {
+      targetRow = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(and(eq(employees.id, requestedEmployeeId), isNull(employees.deleted_at)))
+        .then((r) => r[0]);
+    } catch {
       return json({ error: "Database error" }, 503);
     }
-    targetEmployeeId = targetResult.data.id;
+    if (!targetRow) {
+      return json({ error: "Pracownik nie został znaleziony." }, 404);
+    }
+    targetEmployeeId = targetRow.id;
   }
 
-  const result = (await supabase
-    .from("absences")
-    .insert({ employee_id: targetEmployeeId, ...absenceData })
-    .select()
-    .single()) as { data: Absence | null; error: { code: string; message: string } | null };
-
-  if (result.error) {
-    if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
-    if (result.error.code === "23505") {
-      return json({ error: "You already have an absence entry for this day." }, 409);
-    }
-    if (result.error.code === "23514") {
-      return json({ error: "Invalid hours/is_full_day combination" }, 400);
-    }
+  try {
+    const [absenceRow] = await db
+      .insert(absences)
+      .values({ employee_id: targetEmployeeId, ...absenceData })
+      .returning({
+        id: absences.id,
+        employee_id: absences.employee_id,
+        absence_type_id: absences.absence_type_id,
+        date: absences.date,
+        is_full_day: absences.is_full_day,
+        hours: sql<number | null>`${absences.hours}::float`,
+        comment: absences.comment,
+        substitute_employee_id: absences.substitute_employee_id,
+        created_at: absences.created_at,
+        updated_at: absences.updated_at,
+      });
+    return json(absenceRow, 201);
+  } catch (err) {
+    const pgError = err as { code?: string };
+    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
+    if (pgError.code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
+    if (pgError.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 500);
   }
-
-  return json(result.data, 201);
 };

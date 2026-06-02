@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
-import type { Absence, AbsenceUpdate } from "@/types";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { absences } from "@/db/index";
+import { eq, sql } from "drizzle-orm";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -25,8 +27,6 @@ const json = (data: unknown, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
-// Ownership is enforced by RLS (absences_update / absences_delete policies).
-// Employees may only mutate their own rows; moderators may mutate any row.
 export const PATCH: APIRoute = async (context) => {
   if (!context.locals.user) {
     return json({ error: "Unauthorized" }, 401);
@@ -35,11 +35,6 @@ export const PATCH: APIRoute = async (context) => {
   const id = context.params.id;
   if (!id || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)) {
     return json({ error: "Invalid id" }, 400);
-  }
-
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
   }
 
   let body: unknown;
@@ -54,28 +49,33 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const result = (await supabase
-    .from("absences")
-    .update(parsed.data as AbsenceUpdate)
-    .eq("id", id)
-    .select()
-    .single()) as {
-    data: Absence | null;
-    error: { code: string; message: string } | null;
-  };
+  const db = createDb(DATABASE_URL);
 
-  if (result.error) {
-    if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
-    if (result.error.code === "PGRST116") return json({ error: "Not found" }, 404);
-    if (result.error.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
+  try {
+    const rows = await db
+      .update(absences)
+      .set(parsed.data)
+      .where(eq(absences.id, id))
+      .returning({
+        id: absences.id,
+        employee_id: absences.employee_id,
+        absence_type_id: absences.absence_type_id,
+        date: absences.date,
+        is_full_day: absences.is_full_day,
+        hours: sql<number | null>`${absences.hours}::float`,
+        comment: absences.comment,
+        substitute_employee_id: absences.substitute_employee_id,
+        created_at: absences.created_at,
+        updated_at: absences.updated_at,
+      });
+    if (rows.length === 0) return json({ error: "Not found" }, 404);
+    return json(rows[0], 200);
+  } catch (err) {
+    const pgError = err as { code?: string };
+    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
+    if (pgError.code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 400);
   }
-
-  if (!result.data) {
-    return json({ error: "Not found" }, 404);
-  }
-
-  return json(result.data, 200);
 };
 
 export const DELETE: APIRoute = async (context) => {
@@ -88,25 +88,15 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Invalid id" }, 400);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
+  const db = createDb(DATABASE_URL);
 
-  const result = (await supabase.from("absences").delete().eq("id", id).select()) as {
-    data: unknown[] | null;
-    error: { code: string; message: string } | null;
-  };
-
-  if (result.error) {
-    if (result.error.code === "42501") return json({ error: "Forbidden" }, 403);
+  try {
+    const deleted = await db.delete(absences).where(eq(absences.id, id)).returning({ id: absences.id });
+    if (deleted.length === 0) return json({ error: "Not found" }, 404);
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    const pgError = err as { code?: string };
+    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
     return json({ error: "Database error" }, 400);
   }
-
-  // RLS-blocked deletes return empty data without an error code, indistinguishable from "not found".
-  if (!result.data || result.data.length === 0) {
-    return json({ error: "Not found" }, 404);
-  }
-
-  return new Response(null, { status: 204 });
 };

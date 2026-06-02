@@ -553,8 +553,8 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes on `api/absences/index.ts` and `api/absences/[id].ts`
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes on `api/absences/index.ts` and `api/absences/[id].ts`
 
 #### Manual
 
