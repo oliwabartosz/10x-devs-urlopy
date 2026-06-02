@@ -566,15 +566,15 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes on all three employees route files
+- [x] 3.1 `npm run build` passes — c48871b
+- [x] 3.2 `npm run lint` passes on all three employees route files — c48871b
 
 #### Manual
 
-- [ ] 3.3 `GET /api/employees` returns active employees (user) and all incl. deleted (moderator)
-- [ ] 3.4 `POST /api/employees` creates auth user + employee record
-- [ ] 3.5 `PATCH /api/employees/:id` updates employee; last-moderator demotion returns 409
-- [ ] 3.6 `DELETE /api/employees/:id` soft-deletes; `POST /api/employees/:id/restore` restores
+- [x] 3.3 `GET /api/employees` returns active employees (user) and all incl. deleted (moderator) — c48871b
+- [x] 3.4 `POST /api/employees` creates auth user + employee record — c48871b
+- [x] 3.5 `PATCH /api/employees/:id` updates employee; last-moderator demotion returns 409 — c48871b
+- [x] 3.6 `DELETE /api/employees/:id` soft-deletes; `POST /api/employees/:id/restore` restores — c48871b
 
 ### Phase 4: Migrate Dashboard
 
