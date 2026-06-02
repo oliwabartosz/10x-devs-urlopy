@@ -1,9 +1,11 @@
+export const prerender = false;
+
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
-import { absences } from "@/db/index";
-import { eq, sql } from "drizzle-orm";
+import { employees, absences } from "@/db/index";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -51,11 +53,29 @@ export const PATCH: APIRoute = async (context) => {
 
   const db = createDb(DATABASE_URL);
 
+  let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    employeeRow = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
+    return json({ error: "Database error" }, 503);
+  }
+  if (!employeeRow) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+
   try {
     const rows = await db
       .update(absences)
       .set(parsed.data)
-      .where(eq(absences.id, id))
+      .where(
+        employeeRow.role === "moderator"
+          ? eq(absences.id, id)
+          : and(eq(absences.id, id), eq(absences.employee_id, employeeRow.id)),
+      )
       .returning({
         id: absences.id,
         employee_id: absences.employee_id,
@@ -74,8 +94,9 @@ export const PATCH: APIRoute = async (context) => {
     const e = err as { code?: string; cause?: { code?: string } };
     const code = e.code ?? e.cause?.code;
     if (code === "42501") return json({ error: "Forbidden" }, 403);
+    if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
     if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
-    return json({ error: "Database error" }, 400);
+    return json({ error: "Database error" }, 500);
   }
 };
 
@@ -91,13 +112,35 @@ export const DELETE: APIRoute = async (context) => {
 
   const db = createDb(DATABASE_URL);
 
+  let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
-    const deleted = await db.delete(absences).where(eq(absences.id, id)).returning({ id: absences.id });
+    employeeRow = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
+    return json({ error: "Database error" }, 503);
+  }
+  if (!employeeRow) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+
+  try {
+    const deleted = await db
+      .delete(absences)
+      .where(
+        employeeRow.role === "moderator"
+          ? eq(absences.id, id)
+          : and(eq(absences.id, id), eq(absences.employee_id, employeeRow.id)),
+      )
+      .returning({ id: absences.id });
     if (deleted.length === 0) return json({ error: "Not found" }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
-    const pgError = err as { code?: string };
-    if (pgError.code === "42501") return json({ error: "Forbidden" }, 403);
-    return json({ error: "Database error" }, 400);
+    const e = err as { code?: string; cause?: { code?: string } };
+    const code = e.code ?? e.cause?.code;
+    if (code === "42501") return json({ error: "Forbidden" }, 403);
+    return json({ error: "Database error" }, 500);
   }
 };
