@@ -553,14 +553,14 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes
-- [x] 2.2 `npm run lint` passes on `api/absences/index.ts` and `api/absences/[id].ts`
+- [x] 2.1 `npm run build` passes — 1113e13
+- [x] 2.2 `npm run lint` passes on `api/absences/index.ts` and `api/absences/[id].ts` — 1113e13
 
 #### Manual
 
-- [ ] 2.3 `GET /api/absences?year=2026` returns correct list
-- [ ] 2.4 `POST /api/absences` creates absence; `hours` is number not string in response
-- [ ] 2.5 `PATCH` and `DELETE /api/absences/:id` work; non-existent ID returns 404
+- [x] 2.3 `GET /api/absences?year=2026` returns correct list — a57f5a1
+- [x] 2.4 `POST /api/absences` creates absence; `hours` is number not string in response — a57f5a1
+- [x] 2.5 `PATCH` and `DELETE /api/absences/:id` work; non-existent ID returns 404 — a57f5a1
 
 ### Phase 3: Migrate Employees Routes
 
