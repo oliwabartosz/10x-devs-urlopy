@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees } from "@/db/index";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, isNull, isNotNull, and } from "drizzle-orm";
 
 export const prerender = false;
 
@@ -66,7 +66,7 @@ export const POST: APIRoute = async (context) => {
     const rows = await db
       .update(employees)
       .set({ deleted_at: null })
-      .where(eq(employees.id, idParsed.data))
+      .where(and(eq(employees.id, idParsed.data), isNotNull(employees.deleted_at)))
       .returning();
     if (rows.length === 0) return json({ error: "Employee not found" }, 404);
     return json(rows[0], 200);

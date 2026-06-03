@@ -6,6 +6,7 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
+import { DateSchema } from "@/lib/validators";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -14,13 +15,6 @@ const json = (data: unknown, status: number) =>
   });
 
 const YearSchema = z.string().regex(/^\d{4}$/);
-const DateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((v) => {
-    const d = new Date(v + "T00:00:00Z");
-    return !isNaN(d.getTime()) && d.toISOString().startsWith(v);
-  }, "Invalid calendar date");
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -99,8 +93,13 @@ export const GET: APIRoute = async (context) => {
         created_at: absences.created_at,
       })
       .from(absences)
+      // No employee_id filter: RLS policy intentionally allows all authenticated users to
+      // read all employees' absences (see migration 20260529000001_fix_absences_select_rls.sql).
+      // Required for the team grid which displays every employee's absences to all users.
+      .innerJoin(employees, and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at)))
       .where(and(gte(absences.date, from), lt(absences.date, to)))
-      .orderBy(asc(absences.date));
+      .orderBy(asc(absences.date))
+      .limit(5000);
     return json(data, 200);
   } catch {
     return json({ error: "Database error" }, 500);
@@ -195,6 +194,7 @@ export const POST: APIRoute = async (context) => {
     const e = err as { code?: string; cause?: { code?: string } };
     const code = e.code ?? e.cause?.code;
     if (code === "42501") return json({ error: "Forbidden" }, 403);
+    if (code === "23503") return json({ error: "Substitute employee not found." }, 422);
     if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
     if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 500);

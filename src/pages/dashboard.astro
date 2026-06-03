@@ -5,7 +5,6 @@ import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
-import { createClient } from "@/lib/supabase";
 import { createDb, employees as employeesTable, absence_types, absences as absencesTable } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
@@ -29,11 +28,6 @@ const currentSubcard: "today" | "monthly" | "yearly" =
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
-  return Astro.redirect("/auth/signin");
-}
-
-const supabase = createClient(Astro.request.headers, Astro.cookies);
-if (!supabase) {
   return Astro.redirect("/auth/signin");
 }
 
@@ -102,6 +96,7 @@ if (currentEmployee) {
           updated_at: absencesTable.updated_at,
         })
         .from(absencesTable)
+        .innerJoin(employeesTable, and(eq(absencesTable.employee_id, employeesTable.id), isNull(employeesTable.deleted_at)))
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
       db.select().from(absence_types).orderBy(asc(absence_types.id)),
     ]);

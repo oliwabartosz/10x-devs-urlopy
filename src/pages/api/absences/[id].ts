@@ -6,11 +6,12 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { DateSchema } from "@/lib/validators";
 
 const AbsenceUpdateSchema = z
   .object({
     absence_type_id: z.number().int().positive(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    date: DateSchema,
     is_full_day: z.boolean(),
     hours: z.number().positive().nullable(),
     comment: z.string().max(500).nullable(),
