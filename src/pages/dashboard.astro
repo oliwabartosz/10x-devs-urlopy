@@ -96,7 +96,12 @@ if (currentEmployee) {
           updated_at: absencesTable.updated_at,
         })
         .from(absencesTable)
-        .innerJoin(employeesTable, and(eq(absencesTable.employee_id, employeesTable.id), isNull(employeesTable.deleted_at)))
+        .innerJoin(
+          employeesTable,
+          currentEmployee.role === "moderator"
+            ? eq(absencesTable.employee_id, employeesTable.id)
+            : and(eq(absencesTable.employee_id, employeesTable.id), isNull(employeesTable.deleted_at)),
+        )
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
       db.select().from(absence_types).orderBy(asc(absence_types.id)),
     ]);

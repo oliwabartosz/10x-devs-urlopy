@@ -96,7 +96,13 @@ export const GET: APIRoute = async (context) => {
       // No employee_id filter: RLS policy intentionally allows all authenticated users to
       // read all employees' absences (see migration 20260529000001_fix_absences_select_rls.sql).
       // Required for the team grid which displays every employee's absences to all users.
-      .innerJoin(employees, and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at)))
+      // Moderators fetch absences for deactivated employees too (historical data preservation).
+      .innerJoin(
+        employees,
+        employeeRow.role === "moderator"
+          ? eq(absences.employee_id, employees.id)
+          : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at)),
+      )
       .where(and(gte(absences.date, from), lt(absences.date, to)))
       .orderBy(asc(absences.date))
       .limit(5000);
