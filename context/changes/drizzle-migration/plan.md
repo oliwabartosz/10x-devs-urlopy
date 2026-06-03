@@ -593,10 +593,10 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [x] 5.1 `npm run lint` passes with zero type errors
-- [x] 5.2 `npm run build` passes
+- [x] 5.1 `npm run lint` passes with zero type errors — e70bcd8
+- [x] 5.2 `npm run build` passes — e70bcd8
 
 #### Manual
 
-- [x] 5.3 Full end-to-end smoke test: all CRUD flows pass
-- [x] 5.4 `supabase.ts` and `supabase-admin.ts` still used by middleware and auth routes (no accidental removal)
+- [x] 5.3 Full end-to-end smoke test: all CRUD flows pass — e70bcd8
+- [x] 5.4 `supabase.ts` and `supabase-admin.ts` still used by middleware and auth routes (no accidental removal) — e70bcd8
