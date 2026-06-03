@@ -44,9 +44,10 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
 | S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | done     |
 | S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | done     |
-| S-05 | drizzle-migration            | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                      | S-04          | —                                           | proposed |
+| S-05 | drizzle-migration            | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                      | S-04          | —                                           | done     |
 | S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | done     |
 | S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | proposed |
+| S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
 
 ## Streams
 
@@ -59,6 +60,7 @@ przez równoległe tory.
 | A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03`       | Ścieżka must-have; S-02 i S-03 można realizować równolegle po S-01           |
 | B      | Zarządzanie pracownikami | `F-01` → `S-04` → `S-07`                | S-07 wymaga S-04 (kolumna display_order na tabeli employees)                 |
 | C      | Post-MVP enhancements    | `S-02` → `S-06` / `S-04` → `S-05`       | S-05, S-06, S-07 można realizować równolegle; S-05 nie blokuje żadnego z nich |
+| D      | Bugfixy integralności    | `S-03` + `S-04` → `S-08`                | Bug odkryty podczas S-03; wymaga S-04 (is_active/deleted_at na employees)    |
 
 ## Baseline
 
@@ -161,6 +163,18 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** Niskie — rozszerzenie istniejącego komponentu `AbsenceDetailsTable`; brak zmian schematu.
 - **Status:** done
 
+### S-08: Siatka miesięczna — historyczne nieobecności zdezaktywowanych pracowników
+
+- **Outcome:** moderator widzi w siatce miesięcznej historyczne nieobecności pracowników, których konto zostało zdezaktywowane — wpisy nie znikają po dezaktywacji konta.
+- **Change ID:** deactivated-employee-grid
+- **PRD refs:** FR-003, FR-007
+- **Prerequisites:** S-03 (moderator grid), S-04 (employee deactivation logic)
+- **Parallel with:** S-07
+- **Blockers:** —
+- **Unknowns:** Czy kolumna zdezaktywowanego pracownika powinna pozostać widoczna (ze wskaźnikiem nieaktywności), czy być ukryta dla nowych miesięcy, ale widoczna dla historycznych? Wymaga decyzji UX przed implementacją.
+- **Risk:** Niskie — prawdopodobnie zmiana filtra zapytania grid z `is_active = true` na `is_active = true OR has_absences_in_month`; nie wymaga zmian schematu jeśli F-01 już ma `is_active`.
+- **Status:** done
+
 ### S-07: Moderator — zmiana kolejności pracowników w siatce
 
 - **Outcome:** moderator przeciąga kolumny pracowników w siatce miesięcznej i zmienia ich kolejność; nowa kolejność jest zapisywana i widoczna dla wszystkich użytkowników.
@@ -182,9 +196,10 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-02       | details-and-stats            | [Urlopy] Tabela szczegółów i statystyki miesięczne/roczne             | no                    | Czeka na S-01                                |
 | S-03       | moderator-absence-management | [Urlopy] Moderator: edycja wpisów wszystkich pracowników              | no                    | Czeka na S-01                                |
 | S-04       | employee-management          | [Urlopy] Moderator: zarządzanie pracownikami (bez usuwania historii)  | no                    | Czeka na F-01; równolegle z S-01             |
-| S-05       | drizzle-migration            | [Urlopy] Migracja Supabase JS → Drizzle ORM                          | yes                   | Gotowy po S-04; równolegle z S-06, S-07      |
-| S-06       | details-subcards             | [Urlopy] Szczegóły: karty Dzisiaj / Miesięcznie / Rocznie            | yes                   | Gotowy po S-02; równolegle z S-05, S-07      |
-| S-07       | employee-grid-order          | [Urlopy] Moderator: zmiana kolejności kolumn pracowników w siatce    | yes                   | Gotowy po S-04; równolegle z S-05, S-06      |
+| S-05       | drizzle-migration            | [Urlopy] Migracja Supabase JS → Drizzle ORM                          | done                  | Zaimplementowane                             |
+| S-06       | details-subcards             | [Urlopy] Szczegóły: karty Dzisiaj / Miesięcznie / Rocznie            | done                  | Zaimplementowane                             |
+| S-07       | employee-grid-order          | [Urlopy] Moderator: zmiana kolejności kolumn pracowników w siatce    | yes                   | Gotowy po S-04; równolegle z S-08            |
+| S-08       | deactivated-employee-grid    | [Urlopy] Bugfix: historyczne nieobecności zdezaktywowanych pracowników | yes                 | Bug odkryty w S-03; wymaga decyzji UX (widoczność kolumny) |
 
 ## Open Roadmap Questions
 
@@ -205,3 +220,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
 - **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31 → `context/changes/moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).
 - **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
+- **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Implemented 2026-06-03 → `context/changes/deactivated-employee-grid/`. Role-conditional innerJoin in dashboard.astro and GET /api/absences; AbsenceGrid column header indicator "(nakt.)" + non-clickable cells for deactivated employees. Known limitation: yearly subcard name resolution for deactivated employees from non-viewed months is a follow-up.
