@@ -197,24 +197,24 @@ No performance impact — removing the `isNull` join predicate for moderators me
 
 #### Automated
 
-- [x] 1.1 Build passes: npm run build
-- [x] 1.2 Lint passes: npm run lint
+- [x] 1.1 Build passes: npm run build — 1685886
+- [x] 1.2 Lint passes: npm run lint — 1685886
 
 #### Manual
 
-- [x] 1.3 Moderator sees deactivated employee's absence colors in the grid for the month they were active
-- [x] 1.4 Regular employee view unchanged — no deactivated employee columns or absences visible
+- [x] 1.3 Moderator sees deactivated employee's absence colors in the grid for the month they were active — 1685886
+- [x] 1.4 Regular employee view unchanged — no deactivated employee columns or absences visible — 1685886
 
 ### Phase 2: AbsenceGrid Visual Indicator and Read-Only Cells
 
 #### Automated
 
-- [ ] 2.1 Build passes: npm run build
-- [ ] 2.2 Lint passes: npm run lint
+- [x] 2.1 Build passes: npm run build
+- [x] 2.2 Lint passes: npm run lint
 
 #### Manual
 
-- [ ] 2.3 Deactivated column header shows gray background and "(nakt.)" suffix
-- [ ] 2.4 Clicking deactivated employee's cell opens no dialog; no "+" on hover
-- [ ] 2.5 Absence colors still render on deactivated employee cells
-- [ ] 2.6 Active employee columns unaffected
+- [x] 2.3 Deactivated column header shows gray background and "(nakt.)" suffix
+- [x] 2.4 Clicking deactivated employee's cell opens no dialog; no "+" on hover
+- [x] 2.5 Absence colors still render on deactivated employee cells
+- [x] 2.6 Active employee columns unaffected

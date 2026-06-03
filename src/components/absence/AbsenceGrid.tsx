@@ -62,16 +62,18 @@ export default function AbsenceGrid({
               </th>
               {employees.map((emp) => {
                 const isOwn = emp.id === currentEmployee.id;
+                const isInactive = !!emp.deleted_at;
                 return (
                   <th
                     key={emp.id}
-                    className={`max-w-[50px] min-w-[40px] border-r border-b ${isOwn ? "bg-blue-50" : "bg-gray-50"}`}
+                    className={`max-w-[50px] min-w-[40px] border-r border-b ${isInactive ? "bg-gray-100" : isOwn ? "bg-blue-50" : "bg-gray-50"}`}
                   >
                     <span
                       className="block px-1 py-2 text-xs font-medium whitespace-nowrap"
                       style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
                     >
                       {emp.first_name} {emp.last_name}
+                      {isInactive ? " (nakt.)" : ""}
                     </span>
                   </th>
                 );
@@ -93,9 +95,10 @@ export default function AbsenceGrid({
                   </td>
                   {employees.map((emp) => {
                     const isOwn = emp.id === currentEmployee.id;
+                    const isInactive = !!emp.deleted_at;
                     const absence = absenceMap.get(`${emp.id}_${dateStr}`);
                     const absenceType = absence ? absenceTypeMap.get(absence.absence_type_id) : undefined;
-                    const clickable = (isOwn || isModerator) && !isWeekend;
+                    const clickable = (isOwn || isModerator) && !isWeekend && !isInactive;
 
                     return (
                       <td
