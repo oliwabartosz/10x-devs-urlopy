@@ -209,12 +209,12 @@ No performance impact — removing the `isNull` join predicate for moderators me
 
 #### Automated
 
-- [x] 2.1 Build passes: npm run build
-- [x] 2.2 Lint passes: npm run lint
+- [x] 2.1 Build passes: npm run build — cc768af
+- [x] 2.2 Lint passes: npm run lint — cc768af
 
 #### Manual
 
-- [x] 2.3 Deactivated column header shows gray background and "(nakt.)" suffix
-- [x] 2.4 Clicking deactivated employee's cell opens no dialog; no "+" on hover
-- [x] 2.5 Absence colors still render on deactivated employee cells
-- [x] 2.6 Active employee columns unaffected
+- [x] 2.3 Deactivated column header shows gray background and "(nakt.)" suffix — cc768af
+- [x] 2.4 Clicking deactivated employee's cell opens no dialog; no "+" on hover — cc768af
+- [x] 2.5 Absence colors still render on deactivated employee cells — cc768af
+- [x] 2.6 Active employee columns unaffected — cc768af
