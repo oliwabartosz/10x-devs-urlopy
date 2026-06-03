@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-05-31
+updated: 2026-06-03
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -220,4 +220,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
 - **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31 → `context/changes/moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).
 - **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
-- **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Implemented 2026-06-03 → `context/changes/deactivated-employee-grid/`. Role-conditional innerJoin in dashboard.astro and GET /api/absences; AbsenceGrid column header indicator "(nakt.)" + non-clickable cells for deactivated employees. Known limitation: yearly subcard name resolution for deactivated employees from non-viewed months is a follow-up.
+- **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.

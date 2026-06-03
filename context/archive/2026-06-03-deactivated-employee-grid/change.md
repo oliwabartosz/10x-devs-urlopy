@@ -1,7 +1,8 @@
 ---
 id: deactivated-employee-grid
 title: "Bugfix: historyczne nieobecności zdezaktywowanych pracowników w siatce"
-status: impl_reviewed
+status: archived
+archived_at: 2026-06-03T09:51:27Z
 created: 2026-06-03
 updated: 2026-06-03
 roadmap_id: S-08
