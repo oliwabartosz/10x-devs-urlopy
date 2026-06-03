@@ -42,10 +42,10 @@ export const GET: APIRoute = async (context) => {
 
   const db = createDb(DATABASE_URL);
 
-  let employeeRow: { id: string } | undefined;
+  let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
     employeeRow = await db
-      .select({ id: employees.id })
+      .select({ id: employees.id, role: employees.role })
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
@@ -79,6 +79,11 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
   }
 
+  const joinCondition =
+    employeeRow.role === "moderator"
+      ? eq(absences.employee_id, employees.id)
+      : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at));
+
   try {
     const data = await db
       .select({
@@ -93,16 +98,10 @@ export const GET: APIRoute = async (context) => {
         created_at: absences.created_at,
       })
       .from(absences)
-      // No employee_id filter: RLS policy intentionally allows all authenticated users to
-      // read all employees' absences (see migration 20260529000001_fix_absences_select_rls.sql).
-      // Required for the team grid which displays every employee's absences to all users.
-      // Moderators fetch absences for deactivated employees too (historical data preservation).
-      .innerJoin(
-        employees,
-        employeeRow.role === "moderator"
-          ? eq(absences.employee_id, employees.id)
-          : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at)),
-      )
+      // No employee_id filter: the team grid shows all employees' absences to every user.
+      // Regular employees: only active employees' absences (isNull guard on deleted_at).
+      // Moderators: all absences including deactivated employees (historical data preservation).
+      .innerJoin(employees, joinCondition)
       .where(and(gte(absences.date, from), lt(absences.date, to)))
       .orderBy(asc(absences.date))
       .limit(5000);
