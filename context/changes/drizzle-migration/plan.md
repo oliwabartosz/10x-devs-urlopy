@@ -580,23 +580,23 @@ Both connection strings use the **database password** from Supabase dashboard (S
 
 #### Automated
 
-- [x] 4.1 `npm run build` passes
-- [x] 4.2 `npm run lint` passes on `dashboard.astro`
+- [x] 4.1 `npm run build` passes — 920a9dc
+- [x] 4.2 `npm run lint` passes on `dashboard.astro` — 920a9dc
 
 #### Manual
 
-- [ ] 4.3 Dashboard grid loads for employee (active employees only)
-- [ ] 4.4 Dashboard grid loads for moderator (includes soft-deleted, filtered by date range)
-- [ ] 4.5 Absence colors and details correct; month navigation works
+- [x] 4.3 Dashboard grid loads for employee (active employees only) — 920a9dc
+- [x] 4.4 Dashboard grid loads for moderator (includes soft-deleted, filtered by date range) — 920a9dc
+- [x] 4.5 Absence colors and details correct; month navigation works — 920a9dc
 
 ### Phase 5: Types Cleanup
 
 #### Automated
 
-- [ ] 5.1 `npm run lint` passes with zero type errors
-- [ ] 5.2 `npm run build` passes
+- [x] 5.1 `npm run lint` passes with zero type errors
+- [x] 5.2 `npm run build` passes
 
 #### Manual
 
-- [ ] 5.3 Full end-to-end smoke test: all CRUD flows pass
-- [ ] 5.4 `supabase.ts` and `supabase-admin.ts` still used by middleware and auth routes (no accidental removal)
+- [x] 5.3 Full end-to-end smoke test: all CRUD flows pass
+- [x] 5.4 `supabase.ts` and `supabase-admin.ts` still used by middleware and auth routes (no accidental removal)

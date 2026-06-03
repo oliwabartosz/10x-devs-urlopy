@@ -71,6 +71,7 @@ if (currentEmployee) {
 
   const empCols = {
     id: employeesTable.id,
+    user_id: employeesTable.user_id,
     first_name: employeesTable.first_name,
     last_name: employeesTable.last_name,
     role: employeesTable.role,
@@ -98,22 +99,23 @@ if (currentEmployee) {
           comment: absencesTable.comment,
           substitute_employee_id: absencesTable.substitute_employee_id,
           created_at: absencesTable.created_at,
+          updated_at: absencesTable.updated_at,
         })
         .from(absencesTable)
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
       db.select().from(absence_types).orderBy(asc(absence_types.id)),
     ]);
 
-    allEmployees = employeesResult as unknown as Employee[];
+    allEmployees = employeesResult;
     gridEmployees =
       currentEmployee.role === "moderator"
-        ? (employeesResult.filter(
+        ? employeesResult.filter(
             (e) =>
               e.created_at <= new Date(firstDayNextMonth) &&
               (e.deleted_at === null || e.deleted_at >= new Date(firstDay)),
-          ) as unknown as Employee[])
+          )
         : allEmployees;
-    absences = absencesResult as unknown as Absence[];
+    absences = absencesResult;
     absenceTypes = typesResult;
   } catch {
     dataDbError = true;
