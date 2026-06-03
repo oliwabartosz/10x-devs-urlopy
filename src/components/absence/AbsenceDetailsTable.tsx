@@ -54,7 +54,7 @@ export default function AbsenceDetailsTable({
         case "date":
           return a.date.localeCompare(b.date) * dir;
         case "created_at":
-          return (a.created_at.getTime() - b.created_at.getTime()) * dir;
+          return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
         case "employee": {
           const ea = resolveEmployee(a.employee_id, employees);
           const eb = resolveEmployee(b.employee_id, employees);
@@ -176,7 +176,7 @@ export default function AbsenceDetailsTable({
                   <td className={tdClass}>{substitute ? `${substitute.first_name} ${substitute.last_name}` : "—"}</td>
                   <td className={tdClass}>{formatHours(absence)}</td>
                   <td className={tdClass}>{absence.comment ?? "—"}</td>
-                  <td className={tdClass}>{formatDate(absence.created_at.toISOString().slice(0, 10))}</td>
+                  <td className={tdClass}>{formatDate(new Date(absence.created_at).toISOString().slice(0, 10))}</td>
                 </tr>
               );
             })
