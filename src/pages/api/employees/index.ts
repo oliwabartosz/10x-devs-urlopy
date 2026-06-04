@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { createDb, employees } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, asc } from "drizzle-orm";
+import { extractPgErrorCode } from "@/lib/db-errors";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -141,8 +142,7 @@ export const POST: APIRoute = async (context) => {
       // eslint-disable-next-line no-console
       console.error("Failed to rollback auth user:", authData.user.id, err);
     });
-    const e = err as { code?: string; cause?: { code?: string } };
-    const code = e.code ?? e.cause?.code;
+    const code = extractPgErrorCode(err);
     if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     return json({ error: "Failed to create employee record" }, 500);
   }

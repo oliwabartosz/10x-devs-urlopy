@@ -1,7 +1,7 @@
 ---
 change_id: crud-integrity
 title: "Phase 1 — Bootstrap Vitest and prove Drizzle CRUD integrity + 409 duplicate handling"
-status: implemented
+status: impl_reviewed
 created: 2026-06-03
 updated: 2026-06-04
 archived_at: null

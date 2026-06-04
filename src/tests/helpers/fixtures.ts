@@ -38,12 +38,17 @@ export async function createTestEmployee(db: Db): Promise<string> {
 
 export async function teardownTestEmployee(db: Db | undefined, employeeId: string | undefined): Promise<void> {
   if (!db || !employeeId) return;
-  const rows = await db.select({ user_id: employees.user_id }).from(employees).where(eq(employees.id, employeeId));
-  const authUserId = rows[0]?.user_id;
-  await db.delete(absences).where(eq(absences.employee_id, employeeId));
-  await db.delete(employees).where(eq(employees.id, employeeId));
-  if (authUserId) {
-    const admin = getAdminClient();
-    await admin.auth.admin.deleteUser(authUserId);
+  try {
+    const rows = await db.select({ user_id: employees.user_id }).from(employees).where(eq(employees.id, employeeId));
+    const authUserId = rows[0]?.user_id;
+    await db.delete(absences).where(eq(absences.employee_id, employeeId));
+    await db.delete(employees).where(eq(employees.id, employeeId));
+    if (authUserId) {
+      const admin = getAdminClient();
+      await admin.auth.admin.deleteUser(authUserId);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("teardownTestEmployee failed (rows may be orphaned):", err);
   }
 }

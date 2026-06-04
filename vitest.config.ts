@@ -1,10 +1,9 @@
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const dir = import.meta.dirname;
 
 // Load ALL vars from .env (empty prefix = no VITE_ filtering)
 const env = loadEnv("test", process.cwd(), "");
@@ -37,7 +36,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(dir, "./src"),
     },
   },
 });

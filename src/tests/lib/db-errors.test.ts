@@ -17,5 +17,6 @@ describe("extractPgErrorCode", () => {
   it("returns undefined without throwing for non-object input", () => {
     expect(extractPgErrorCode(null)).toBeUndefined();
     expect(extractPgErrorCode("string")).toBeUndefined();
+    expect(extractPgErrorCode(undefined)).toBeUndefined();
   });
 });
