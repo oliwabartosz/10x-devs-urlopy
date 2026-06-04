@@ -137,9 +137,10 @@ export const POST: APIRoute = async (context) => {
     return json(employee, 201);
   } catch (err) {
     // compensating delete: prevent orphaned auth user when the DB insert fails
-    await adminClient.auth.admin
-      .deleteUser(authData.user.id)
-      .catch((err) => console.error("Failed to rollback auth user:", authData.user.id, err));
+    await adminClient.auth.admin.deleteUser(authData.user.id).catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("Failed to rollback auth user:", authData.user.id, err);
+    });
     const e = err as { code?: string; cause?: { code?: string } };
     const code = e.code ?? e.cause?.code;
     if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);

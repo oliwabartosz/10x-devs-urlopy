@@ -468,24 +468,24 @@ version installed (read from `package.json` after Phase 1 completes) and the
 
 #### Automated
 
-- [x] 1.1 `npm run test:run` exits 0 (empty suite — no test files yet)
-- [x] 1.2 `npm run test:coverage` exits 0 and produces `coverage/` directory
+- [x] 1.1 `npm run test:run` exits 0 (empty suite — no test files yet) — 507435f
+- [x] 1.2 `npm run test:coverage` exits 0 and produces `coverage/` directory — 507435f
 
 #### Manual
 
-- [x] 1.3 `npm run test:run -- --reporter=verbose` shows Vitest version and exits cleanly without module-resolution errors
+- [x] 1.3 `npm run test:run -- --reporter=verbose` shows Vitest version and exits cleanly without module-resolution errors — 507435f
 
 ### Phase 2: CRUD Integration Tests (Risk #1)
 
 #### Automated
 
-- [ ] 2.1 `npm run test:run` passes all tests in `crud.test.ts`
-- [ ] 2.2 `npm run lint` passes on new test helper and test files
+- [x] 2.1 `npm run test:run` passes all tests in `crud.test.ts`
+- [x] 2.2 `npm run lint` passes on new test helper and test files
 
 #### Manual
 
-- [ ] 2.3 All assertions green against real Supabase DB with `DATABASE_URL_DIRECT` set
-- [ ] 2.4 No orphaned rows in `employees` or `absences` after suite completes
+- [x] 2.3 All assertions green against real Supabase DB with `DATABASE_URL_DIRECT` set
+- [x] 2.4 No orphaned rows in `employees` or `absences` after suite completes
 
 ### Phase 3: Extract `extractPgErrorCode` + Unit Test (Risk #6)
 
