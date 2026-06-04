@@ -7,6 +7,7 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { DateSchema } from "@/lib/validators";
+import { extractPgErrorCode } from "@/lib/db-errors";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -92,8 +93,7 @@ export const PATCH: APIRoute = async (context) => {
     if (rows.length === 0) return json({ error: "Not found" }, 404);
     return json(rows[0], 200);
   } catch (err) {
-    const e = err as { code?: string; cause?: { code?: string } };
-    const code = e.code ?? e.cause?.code;
+    const code = extractPgErrorCode(err);
     if (code === "42501") return json({ error: "Forbidden" }, 403);
     if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
     if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
@@ -139,8 +139,7 @@ export const DELETE: APIRoute = async (context) => {
     if (deleted.length === 0) return json({ error: "Not found" }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
-    const e = err as { code?: string; cause?: { code?: string } };
-    const code = e.code ?? e.cause?.code;
+    const code = extractPgErrorCode(err);
     if (code === "42501") return json({ error: "Forbidden" }, 403);
     return json({ error: "Database error" }, 500);
   }

@@ -479,24 +479,24 @@ version installed (read from `package.json` after Phase 1 completes) and the
 
 #### Automated
 
-- [x] 2.1 `npm run test:run` passes all tests in `crud.test.ts`
-- [x] 2.2 `npm run lint` passes on new test helper and test files
+- [x] 2.1 `npm run test:run` passes all tests in `crud.test.ts` — 6232ea3
+- [x] 2.2 `npm run lint` passes on new test helper and test files — 6232ea3
 
 #### Manual
 
-- [x] 2.3 All assertions green against real Supabase DB with `DATABASE_URL_DIRECT` set
-- [x] 2.4 No orphaned rows in `employees` or `absences` after suite completes
+- [x] 2.3 All assertions green against real Supabase DB with `DATABASE_URL_DIRECT` set — 6232ea3
+- [x] 2.4 No orphaned rows in `employees` or `absences` after suite completes — 6232ea3
 
 ### Phase 3: Extract `extractPgErrorCode` + Unit Test (Risk #6)
 
 #### Automated
 
-- [ ] 3.1 `npm run test:run` passes all tests including `db-errors.test.ts`
-- [ ] 3.2 `npm run lint` passes on modified handler files and new `db-errors.ts` helper
+- [x] 3.1 `npm run test:run` passes all tests including `db-errors.test.ts`
+- [x] 3.2 `npm run lint` passes on modified handler files and new `db-errors.ts` helper
 
 #### Manual
 
-- [ ] 3.3 Code-read confirms handler response logic is unchanged; only the inline cast is replaced
+- [x] 3.3 Code-read confirms handler response logic is unchanged; only the inline cast is replaced
 
 ### Phase 4: Cookbook Update
 

@@ -19,19 +19,25 @@ export async function createTestEmployee(db: Db): Promise<string> {
   });
   if (error ?? !data.user) throw new Error(`Failed to create test auth user: ${error?.message}`);
 
-  const [row] = await db
-    .insert(employees)
-    .values({
-      user_id: data.user.id,
-      role: "employee",
-      first_name: "Test",
-      last_name: "Employee",
-    })
-    .returning({ id: employees.id });
-  return row.id;
+  try {
+    const [row] = await db
+      .insert(employees)
+      .values({
+        user_id: data.user.id,
+        role: "employee",
+        first_name: "Test",
+        last_name: "Employee",
+      })
+      .returning({ id: employees.id });
+    return row.id;
+  } catch (err) {
+    await admin.auth.admin.deleteUser(data.user.id);
+    throw err;
+  }
 }
 
-export async function teardownTestEmployee(db: Db, employeeId: string): Promise<void> {
+export async function teardownTestEmployee(db: Db | undefined, employeeId: string | undefined): Promise<void> {
+  if (!db || !employeeId) return;
   const rows = await db.select({ user_id: employees.user_id }).from(employees).where(eq(employees.id, employeeId));
   const authUserId = rows[0]?.user_id;
   await db.delete(absences).where(eq(absences.employee_id, employeeId));

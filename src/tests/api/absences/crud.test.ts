@@ -5,9 +5,10 @@ import { absences } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
 import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
 
+// Requires: 20260526000002_seed_absence_types.sql applied (absence_type_id: 1 must exist)
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration", () => {
-  let db: Db;
-  let testEmployeeId: string;
+  let db: Db | undefined;
+  let testEmployeeId: string | undefined;
 
   beforeAll(async () => {
     db = getTestDb();
@@ -16,6 +17,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId);
+    await db?.$client.end();
   });
 
   it("INSERT — RETURNING contains submitted field values", async () => {
@@ -136,8 +138,10 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
         is_full_day: true,
       }),
     ).rejects.toSatisfy((err: unknown) => {
-      const e = err as { code?: string; cause?: { code?: string } };
-      return e.code === "23505" || e.cause?.code === "23505";
+      const e = err as { cause?: { code?: string } };
+      return e.cause?.code === "23505";
     });
+
+    await db.delete(absences).where(eq(absences.employee_id, testEmployeeId));
   });
 });
