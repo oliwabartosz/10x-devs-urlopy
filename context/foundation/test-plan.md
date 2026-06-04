@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 
 ---
 
@@ -71,7 +71,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
-| 1 | CRUD integrity | Bootstrap Vitest in Node env; prove Drizzle CREATE/UPDATE/DELETE/SELECT return correct DB state; prove duplicate-entry returns 409 | #1, #6 | integration (real DB, Node env), unit | researched | crud-integrity |
+| 1 | CRUD integrity | Bootstrap Vitest in Node env; prove Drizzle CREATE/UPDATE/DELETE/SELECT return correct DB state; prove duplicate-entry returns 409 | #1, #6 | integration (real DB, Node env), unit | complete | crud-integrity |
 | 2 | Authorization coverage | Prove ownership checks and role checks on all absence and employee API handlers | #2, #4 | integration (handler-level, real DB) | not started | — |
 | 3 | Stats and query integrity | Prove NUMERIC-as-string cast in all stat aggregations; prove grid query returns complete column set and correct row count | #3, #5 | unit (aggregation logic), integration (query correctness) | not started | — |
 | 4 | Quality gates wiring | Wire `npm test` into CI; define lint + typecheck + test as required pre-merge gates | cross-cutting | CI gate, pre-commit hook | not started | — |
@@ -91,12 +91,10 @@ orchestrator updates Status as artifacts appear on disk.
 
 ## 4. Stack
 
-The classic test base for this project. No test runner is configured yet — Phase 1 bootstraps it.
-
 | Layer | Tool | Version | Notes |
 |---|---|---|---|
-| unit + integration | none yet — see §3 Phase 1 | — | Vitest (Node env) is the likely candidate for Astro 6 + Vite; `/10x-research` Phase 1 to verify. DATABASE_URL_DIRECT (port 5432) available for Node-based DB tests; `wrangler dev` cannot connect to Supabase DB |
-| API / handler mocking | none yet — see §3 Phase 1 | — | Research Phase 1 to determine mocking policy for Astro endpoint handlers |
+| unit + integration | Vitest | ^4.1.8 | Node env (`environment: 'node'`); config at `vitest.config.ts`; glob `src/tests/**/*.test.ts`; `envFile: '.env'` loads `DATABASE_URL_DIRECT`; `@/` alias resolves to `./src` |
+| API / handler mocking | n/a — tests bypass handler layer | — | Handlers import `astro:env/server` (Vite virtual module) unavailable in Node env; tests call Drizzle directly via `getTestDb()` |
 | e2e | none planned for MVP | — | Not justified by cost × signal for a ≤10-person internal app at this stage |
 | accessibility | none planned for MVP | — | Out of scope for MVP NFRs |
 
@@ -129,11 +127,78 @@ How to add new tests in this project. Each sub-section fills in once the relevan
 
 ### 6.1 Adding a unit test
 
-TBD — see §3 Phase 1 for test runner setup and naming conventions. Covers stats aggregation and error-handling unit tests (Risks #3, #6).
+**Runner**: Vitest (`npm run test:run` for a single pass; `npm test` for watch mode).
+
+**File placement**: `src/tests/<area>/<module>.test.ts` — follow the same sub-path as the source file under `src/`. Example: a test for `src/lib/db-errors.ts` lives at `src/tests/lib/db-errors.test.ts`.
+
+**Canonical example**: `src/tests/lib/db-errors.test.ts`
+
+```ts
+import { describe, it, expect } from "vitest";
+import { extractPgErrorCode } from "@/lib/db-errors";
+
+describe("extractPgErrorCode", () => {
+  it("returns top-level code when present", () => {
+    expect(extractPgErrorCode({ code: "23505" })).toBe("23505");
+  });
+
+  it("returns cause.code when top-level code is absent", () => {
+    expect(extractPgErrorCode({ code: undefined, cause: { code: "23505" } })).toBe("23505");
+  });
+});
+```
+
+**Two rules**:
+1. Unit test files import only from `@/lib/*` or `@/db/*` — never from handler or page files (`src/pages/`). Handler files import `astro:env/server`, a Vite virtual module that crashes in Node env.
+2. Pure-function unit tests need no async, no DB, no external deps — just import and assert. Keep them synchronous unless the function under test is genuinely async.
 
 ### 6.2 Adding an integration test against the database
 
-TBD — see §3 Phase 1 for DB connection setup (DATABASE_URL_DIRECT), test isolation strategy, and reference test. Covers Drizzle CRUD correctness pattern (Risk #1).
+**Canonical example**: `src/tests/api/absences/crud.test.ts`
+
+**Required env vars** (add to `.env`, never commit):
+- `DATABASE_URL_DIRECT` — direct Supabase connection on port 5432 (same URL used by `drizzle-kit`)
+- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` — needed by fixture helpers that create/delete Supabase Auth users
+
+**DB entry point**: use `getTestDb()` from `src/tests/helpers/db.ts`. It reads `DATABASE_URL_DIRECT` and throws a clear error if absent. Never instantiate a Drizzle client inline in a test file.
+
+**Fixture helpers**: `createTestEmployee` and `teardownTestEmployee` from `src/tests/helpers/fixtures.ts` manage a dedicated test employee and its associated absence rows. `createTestEmployee` creates a real Supabase Auth user (required for the FK from `employees.user_id`) and returns the employee row `id`.
+
+**CI guard**: wrap every `describe` block with `describe.skipIf(!process.env.DATABASE_URL_DIRECT)(...)`. The secret is absent in CI until Phase 4 quality gates; the guard makes tests skip (not fail) and prints a visible warning.
+
+**Skeleton**:
+
+```ts
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { getTestDb } from "@/tests/helpers/db";           // @/ alias works in tests
+import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import type { Db } from "@/db/index";
+
+describe.skipIf(!process.env.DATABASE_URL_DIRECT)("MyArea — integration", () => {
+  let db: Db;
+  let testEmployeeId: string | undefined;
+
+  beforeAll(async () => {
+    db = getTestDb();
+    testEmployeeId = await createTestEmployee(db);
+  });
+
+  afterAll(async () => {
+    await teardownTestEmployee(db, testEmployeeId);
+  });
+
+  it("INSERT — row is readable immediately after save", async () => {
+    // insert via db.insert(...).values(...).returning(...)
+    // assert returned values match submitted values
+  });
+});
+```
+
+**`afterAll` cleanup order** — mandatory due to FK constraint `absences.employee_id → employees.id` (no `ON DELETE CASCADE`): `teardownTestEmployee` deletes absence rows first, then the employee row, then the Supabase Auth user. Reversing the order throws PG error `23503`.
+
+**`hours`-as-string gotcha**: the `hours` column is `NUMERIC` in Postgres. postgres-js returns it as a string (`"2.50"`, not `2.5`). Integration test assertions against `hours` must compare to a string, not a number.
+
+**Test isolation**: each test inserts its own rows with a unique date to avoid hitting the `(employee_id, date)` unique constraint across tests within the same suite. Use fixed past dates (`2026-01-15`, `2026-01-16`, …) rather than `new Date()` to keep tests deterministic.
 
 ### 6.3 Adding an authorization test for an API handler
 

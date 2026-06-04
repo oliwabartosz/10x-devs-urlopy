@@ -491,16 +491,16 @@ version installed (read from `package.json` after Phase 1 completes) and the
 
 #### Automated
 
-- [x] 3.1 `npm run test:run` passes all tests including `db-errors.test.ts`
-- [x] 3.2 `npm run lint` passes on modified handler files and new `db-errors.ts` helper
+- [x] 3.1 `npm run test:run` passes all tests including `db-errors.test.ts` — 103b63d
+- [x] 3.2 `npm run lint` passes on modified handler files and new `db-errors.ts` helper — 103b63d
 
 #### Manual
 
-- [x] 3.3 Code-read confirms handler response logic is unchanged; only the inline cast is replaced
+- [x] 3.3 Code-read confirms handler response logic is unchanged; only the inline cast is replaced — 103b63d
 
 ### Phase 4: Cookbook Update
 
 #### Manual
 
-- [ ] 4.1 §6.1 of `test-plan.md` gives a developer enough to add a new unit test without setup guesswork
-- [ ] 4.2 §6.2 of `test-plan.md` gives a developer enough to add a new DB integration test without setup guesswork
+- [x] 4.1 §6.1 of `test-plan.md` gives a developer enough to add a new unit test without setup guesswork
+- [x] 4.2 §6.2 of `test-plan.md` gives a developer enough to add a new DB integration test without setup guesswork
