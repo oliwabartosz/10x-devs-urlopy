@@ -502,5 +502,5 @@ version installed (read from `package.json` after Phase 1 completes) and the
 
 #### Manual
 
-- [x] 4.1 §6.1 of `test-plan.md` gives a developer enough to add a new unit test without setup guesswork
-- [x] 4.2 §6.2 of `test-plan.md` gives a developer enough to add a new DB integration test without setup guesswork
+- [x] 4.1 §6.1 of `test-plan.md` gives a developer enough to add a new unit test without setup guesswork — 855b8a7
+- [x] 4.2 §6.2 of `test-plan.md` gives a developer enough to add a new DB integration test without setup guesswork — 855b8a7
