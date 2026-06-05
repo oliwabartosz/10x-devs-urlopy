@@ -14,7 +14,7 @@ interface AbsenceFormDialogProps {
   existingAbsence: Absence | null;
   absenceTypes: AbsenceType[];
   employees: Employee[];
-  currentEmployee: Employee;
+  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
   targetEmployee: Employee;
 }
 
@@ -30,7 +30,8 @@ export function AbsenceFormDialog({
 }: AbsenceFormDialogProps) {
   const [absenceTypeId, setAbsenceTypeId] = useState<number | null>(existingAbsence?.absence_type_id ?? null);
   const [isFullDay, setIsFullDay] = useState(existingAbsence?.is_full_day ?? true);
-  const [hours, setHours] = useState(existingAbsence?.hours?.toString() ?? "");
+  const [startTime, setStartTime] = useState(existingAbsence?.start_time?.slice(0, 5) ?? "");
+  const [endTime, setEndTime] = useState(existingAbsence?.end_time?.slice(0, 5) ?? "");
   const [comment, setComment] = useState(existingAbsence?.comment ?? "");
   const [substituteEmployeeId, setSubstituteEmployeeId] = useState<string | null>(
     existingAbsence?.substitute_employee_id ?? null,
@@ -44,7 +45,7 @@ export function AbsenceFormDialog({
     month: "long",
   });
 
-  const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!hours || parseFloat(hours) <= 0));
+  const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
 
   const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
 
@@ -54,7 +55,8 @@ export function AbsenceFormDialog({
       absence_type_id: absenceTypeId,
       date: dateStr,
       is_full_day: isFullDay,
-      hours: isFullDay ? null : parseFloat(hours),
+      start_time: isFullDay ? null : startTime,
+      end_time: isFullDay ? null : endTime,
       comment: comment || null,
       substitute_employee_id: substituteEmployeeId,
     };
@@ -143,7 +145,10 @@ export function AbsenceFormDialog({
               checked={isFullDay}
               onChange={(e) => {
                 setIsFullDay(e.target.checked);
-                if (e.target.checked) setHours("");
+                if (e.target.checked) {
+                  setStartTime("");
+                  setEndTime("");
+                }
               }}
               className="h-4 w-4"
             />
@@ -152,19 +157,28 @@ export function AbsenceFormDialog({
 
           {!isFullDay && (
             <div className="grid gap-1.5">
-              <Label htmlFor="hours">Liczba godzin</Label>
-              <Input
-                id="hours"
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={hours}
-                onChange={(e) => {
-                  setHours(e.target.value);
-                }}
-                placeholder="np. 4"
-                className="w-32"
-              />
+              <Label>Godziny</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="start-time"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => {
+                    setStartTime(e.target.value);
+                  }}
+                  className="w-32"
+                />
+                <span className="text-muted-foreground">–</span>
+                <Input
+                  id="end-time"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => {
+                    setEndTime(e.target.value);
+                  }}
+                  className="w-32"
+                />
+              </div>
             </div>
           )}
 

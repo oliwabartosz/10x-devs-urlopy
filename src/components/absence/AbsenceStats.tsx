@@ -9,6 +9,15 @@ interface AbsenceStatsProps {
   month: number;
 }
 
+const FULL_DAY_HOURS = 8;
+
+function getAbsenceDuration(a: Absence): number {
+  if (a.is_full_day) return FULL_DAY_HOURS;
+  const [sh, sm] = (a.start_time ?? "00:00").slice(0, 5).split(":").map(Number);
+  const [eh, em] = (a.end_time ?? "00:00").slice(0, 5).split(":").map(Number);
+  return (eh * 60 + em - (sh * 60 + sm)) / 60;
+}
+
 type StatsMatrix = Map<string, { days: number; hours: number }>; // key: `${employeeId}_${typeId}`
 
 function buildMatrix(absences: Absence[]): StatsMatrix {
@@ -19,7 +28,7 @@ function buildMatrix(absences: Absence[]): StatsMatrix {
     if (absence.is_full_day) {
       current.days += 1;
     } else {
-      current.hours += absence.hours ?? 0;
+      current.hours += getAbsenceDuration(absence);
     }
     matrix.set(key, current);
   }

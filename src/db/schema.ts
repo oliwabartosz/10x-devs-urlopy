@@ -5,7 +5,7 @@ import {
   text,
   timestamp,
   date,
-  numeric,
+  time,
   boolean,
   integer,
   serial,
@@ -43,8 +43,9 @@ export const absences = pgTable(
       .references(() => absence_types.id),
     date: date("date").notNull(),
     is_full_day: boolean("is_full_day").notNull().default(true),
-    // DB-level CHECK: is_full_day OR hours IS NOT NULL — not represented in Drizzle; re-add manually after any db:generate diff
-    hours: numeric("hours", { precision: 4, scale: 2 }),
+    // DB-level CHECK: absences_time_check — not represented in Drizzle; re-add manually after any db:generate diff
+    start_time: time("start_time"),
+    end_time: time("end_time"),
     comment: text("comment"),
     substitute_employee_id: uuid("substitute_employee_id").references(() => employees.id),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

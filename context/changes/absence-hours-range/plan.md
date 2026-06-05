@@ -405,13 +405,13 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 
 #### Automated
 
-- [ ] 1.1 Migration applies without errors (`npx supabase migration up` or `db reset`)
-- [ ] 1.2 `npm run build` passes (Drizzle types propagate)
-- [ ] 1.3 `npm run lint` passes
+- [x] 1.1 Migration applies without errors (`npx supabase migration up` or `db reset`)
+- [x] 1.2 `npm run build` passes (Drizzle types propagate)
+- [x] 1.3 `npm run lint` passes
 
 #### Manual
 
-- [ ] 1.4 `supabase db diff` shows column swap and updated CHECK; no unintended changes
+- [x] 1.4 `supabase db diff` shows column swap and updated CHECK; no unintended changes
 - [ ] 1.5 `$inferSelect.start_time` infers as `string | null` (IDE hover verification)
 
 ### Phase 2: API Routes + Validation
