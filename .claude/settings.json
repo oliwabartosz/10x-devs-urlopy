@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/say.sh Linter; npm run lint 2>&1 || (.claude/say.sh 'Błąd lintera'; exit 2)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/say.sh 'Sprawdzam typy'; npx astro check 2>&1 || (.claude/say.sh 'Błąd typów'; exit 2)"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=$(jq -r .tool_input.file_path); if echo \"$FILE\" | grep -qE \"src/(lib|db|pages/api|tests)/\"; then .claude/say.sh Testy; AI_AGENT=1 npx vitest related \"$FILE\" --run || (.claude/say.sh \"Błąd testów\"; exit 2); fi'"
+          },
+          {
+            "type": "command",
+            "command": ".claude/say.sh Gotowe"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/say.sh 'Klaudiusz zakończył zadanie'"
+          }
+        ]
+      }
+    ]
+  }
+}
