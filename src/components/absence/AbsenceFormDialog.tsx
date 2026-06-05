@@ -45,7 +45,11 @@ export function AbsenceFormDialog({
     month: "long",
   });
 
-  const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
+  const timePattern = /^\d{2}:\d{2}$/;
+  const saveDisabled =
+    absenceTypeId === null ||
+    isSubmitting ||
+    (!isFullDay && (!timePattern.test(startTime) || !timePattern.test(endTime)));
 
   const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
 
@@ -161,24 +165,32 @@ export function AbsenceFormDialog({
               <div className="flex items-center gap-2">
                 <Input
                   id="start-time"
-                  type="time"
-                  lang="pl"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:MM"
+                  maxLength={5}
                   value={startTime}
                   onChange={(e) => {
-                    setStartTime(e.target.value);
+                    let v = e.target.value.replace(/[^\d:]/g, "");
+                    if (v.length === 2 && !v.includes(":")) v += ":";
+                    setStartTime(v);
                   }}
-                  className="w-32"
+                  className="w-24"
                 />
                 <span className="text-muted-foreground">–</span>
                 <Input
                   id="end-time"
-                  type="time"
-                  lang="pl"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="HH:MM"
+                  maxLength={5}
                   value={endTime}
                   onChange={(e) => {
-                    setEndTime(e.target.value);
+                    let v = e.target.value.replace(/[^\d:]/g, "");
+                    if (v.length === 2 && !v.includes(":")) v += ":";
+                    setEndTime(v);
                   }}
-                  className="w-32"
+                  className="w-24"
                 />
               </div>
             </div>
