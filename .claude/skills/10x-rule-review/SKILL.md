@@ -10,6 +10,12 @@ description: >
   instructions", "is this rules file healthy", or similar. The skill is
   agnostic to which tool the rules file targets — it scores the file as a
   rule-for-AI artifact, not as a project document.
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Edit
+  - AskUserQuestion
 ---
 
 # 10x Rule Review
@@ -29,7 +35,7 @@ The skill never edits the file. It produces a scorecard. The user decides what t
 - `.github/copilot-instructions.md`
 - `~/.claude/CLAUDE.md`
 
-If `$ARGUMENTS` is empty, Ask the user: for the path. Do not guess.
+If `$ARGUMENTS` is empty, ask the user once for the path. Do not guess.
 
 If the path resolves to a directory, ask which file to review. If it resolves to multiple files (e.g. `**/AGENTS.md`), score them one at a time and report each scorecard separately — do not merge.
 
@@ -44,9 +50,9 @@ If the file does not exist, stop and report the path. Do not invent content.
 
 ## Procedure
 
-1. Read the file in full (use a file reading tool once; if it's > 2000 lines, read in chunks until complete).
+1. Read the file in full (use `Read` once; if it's > 2000 lines, read in chunks until complete).
 2. Compute Checks 1–4.
-3. Run Check 5 in its own multi-step flow (5a list → 5b comment → 5c propose → 5d ask via a user interaction tool → 5e atomic-change reminder). The reorder edit, if any, happens here and only with explicit user approval.
+3. Run Check 5 in its own multi-step flow (5a list → 5b comment → 5c propose → 5d ask via `AskUserQuestion` → 5e atomic-change reminder). The reorder edit, if any, happens here and only with explicit user approval.
 4. Print the scorecard in the exact format under "Output format". Include the reorder-proposal summary and the user's decision in the Check 5 findings.
 5. Stop. Do not propose further follow-up actions unless the user asks.
 
@@ -58,11 +64,11 @@ If the file does not exist, stop and report the path. Do not invent content.
 
 Count non-empty lines (ignore blank lines and pure separator lines like `---`).
 
-| Lines | Verdict | Symbol |
-|---|---|---|
-| 0–200 | fine | OK |
-| 201–500 | watch out | WARN |
-| 501+ | warn | FAIL |
+| Lines       | Verdict      | Symbol |
+|-------------|--------------|--------|
+| 0–200       | fine         | OK     |
+| 201–500     | watch out    | WARN   |
+| 501+        | warn         | FAIL   |
 
 Why it matters: long rule files crowd out the user's prompt in the context window, and middle-of-file rules get the weakest attention from the model. Length is a proxy for "you're paying context for things the agent doesn't need every session."
 
@@ -116,14 +122,14 @@ If the project context truly doesn't suggest anything specific, propose a sensib
 
 Examples (note how each replacement borrows project-specific names/conventions, not generic advice):
 
-| Vague phrase in file | Project context signal | Grounded testable replacement |
-|---|---|---|
-| "Write clean code" | TypeScript + ESLint mentioned in same file | "Avoid `any`. Functions over 40 lines must be split. Run `pnpm lint` before committing." |
-| "Handle errors properly" | Hard rule earlier: API returns `{ error: {...} }` shape | "API handlers must return `{ error: { code, message, context } }` per the shape defined above. Never throw raw." |
-| "Be consistent with naming" | File mentions `feature.handler.ts` elsewhere | "Use `<feature>.handler.ts` (matching the existing handlers in `src/api/`), not `featureHandler.ts`." |
-| "Use modern patterns" | Project uses native JS, no lodash in `package.json` | "Use native `Array`/`Object` methods. Do not add `lodash` — it's not in `package.json` and we keep it that way." |
-| "Make components readable" | React + Tailwind project | "Components over 150 lines must be split. Tailwind classes go through `cn()` for conditionals (assumed — confirm if a different helper is used)." |
-| "Keep things simple" | Python FastAPI service | "Prefer one Pydantic model per request/response. No nested decorators beyond `@router.post` + `@requires_auth`." |
+| Vague phrase in file              | Project context signal                          | Grounded testable replacement                                                                              |
+|-----------------------------------|--------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| "Write clean code"                | TypeScript + ESLint mentioned in same file      | "Avoid `any`. Functions over 40 lines must be split. Run `pnpm lint` before committing."                   |
+| "Handle errors properly"          | Hard rule earlier: API returns `{ error: {...} }` shape | "API handlers must return `{ error: { code, message, context } }` per the shape defined above. Never throw raw." |
+| "Be consistent with naming"       | File mentions `feature.handler.ts` elsewhere    | "Use `<feature>.handler.ts` (matching the existing handlers in `src/api/`), not `featureHandler.ts`."       |
+| "Use modern patterns"             | Project uses native JS, no lodash in `package.json` | "Use native `Array`/`Object` methods. Do not add `lodash` — it's not in `package.json` and we keep it that way." |
+| "Make components readable"        | React + Tailwind project                         | "Components over 150 lines must be split. Tailwind classes go through `cn()` for conditionals (assumed — confirm if a different helper is used)." |
+| "Keep things simple"              | Python FastAPI service                           | "Prefer one Pydantic model per request/response. No nested decorators beyond `@router.post` + `@requires_auth`." |
 
 Verdict: OK if 0 vague phrases · WARN if 1–3 · FAIL if 4+.
 
@@ -171,15 +177,15 @@ Walk the file and print the current top-level structure as a numbered list. Use 
 Example:
 ```
 Current order:
-1. # Welcome to OrderFlow (line 1)
-2. ## About the team (line 5)
-3. ## Project mission (line 9)
-4. ## Our values (line 13)
-5. ## Tech stack (line 22)
-6. ## Setup (line 36)
-7. ## TypeScript (line 78)
+1. # Welcome to OrderFlow            (line 1)
+2. ## About the team                 (line 5)
+3. ## Project mission                (line 9)
+4. ## Our values                     (line 13)
+5. ## Tech stack                     (line 22)
+6. ## Setup                          (line 36)
+7. ## TypeScript                     (line 78)
 ...
-N. ## Project conventions (line 312)
+N. ## Project conventions            (line 312)
 ```
 
 If the file has no headings, say so explicitly: *"No section headings — file is one undifferentiated block."*
@@ -208,19 +214,19 @@ If the comment in 5b identified a real problem, propose a target order. Frame it
 Example:
 ```
 Proposed order:
-1. ## Hard rules (was: line 312) ← moved to top
+1. ## Hard rules         (was: line 312)        ← moved to top
 2. ## Project conventions (was: line 312, split) ← moved up
-3. ## Tech stack (was: line 22) ← kept
-4. ## Setup (was: line 36) ← kept, replace with @README.md if possible
-5. ## Failure modes (new section) ← collect incident-driven rules here
-— ## About the team / Mission / Values ← remove (Check 3/4 already flagged these)
+3. ## Tech stack          (was: line 22)         ← kept
+4. ## Setup               (was: line 36)         ← kept, replace with @README.md if possible
+5. ## Failure modes       (new section)          ← collect incident-driven rules here
+—   ## About the team / Mission / Values        ← remove (Check 3/4 already flagged these)
 ```
 
 If 5b found no problem, skip 5c entirely — say *"Order is sound; no reshuffle needed."*
 
 #### Step 5d — Ask before reordering
 
-If 5c produced a proposal, **Ask the user:** before touching the file. Phrase the question concretely. Example options:
+If 5c produced a proposal, **ask the user via `AskUserQuestion`** before touching the file. Phrase the question concretely. Example options:
 
 - **Yes, reorder the file now** — apply the proposed structure, preserve all rule content, only move/regroup sections.
 - **Only move the critical rules to the top** — minimal change: lift hard rules to the top, leave the rest alone.
@@ -256,13 +262,13 @@ Print exactly this, in this order. Use Polish or English matching the user's pro
 
 ## Scorecard
 
-| # | Check | Verdict | Score |
-|---|---|---|---|
-| 1 | Length | OK/WARN/FAIL | <n> non-blank lines |
-| 2 | Direct snippets | OK/WARN/FAIL | <n> flagged blocks |
-| 3 | Precise language | OK/WARN/FAIL | <n> vague phrases |
-| 4 | Redundant knowledge | OK/WARN/FAIL | <n> redundant rules |
-| 5 | Rule ordering | OK/WARN/FAIL | <one-line reason> |
+| # | Check                | Verdict | Score |
+|---|----------------------|---------|-------|
+| 1 | Length               | OK/WARN/FAIL | <n> non-blank lines |
+| 2 | Direct snippets      | OK/WARN/FAIL | <n> flagged blocks |
+| 3 | Precise language     | OK/WARN/FAIL | <n> vague phrases |
+| 4 | Redundant knowledge  | OK/WARN/FAIL | <n> redundant rules |
+| 5 | Rule ordering        | OK/WARN/FAIL | <one-line reason> |
 
 ## Findings
 

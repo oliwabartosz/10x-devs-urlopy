@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/say.sh Linter; npm run lint 2>&1 || (.claude/say.sh 'Błąd lintera'; exit 2)"
+            "command": "bash -c '.claude/say.sh Linter; out=$(npm run lint 2>&1); rc=$?; if [ $rc -ne 0 ]; then .claude/say.sh \"Błąd lintera\"; printf \"%s\\n\" \"$out\"; exit 2; fi'"
           },
           {
             "type": "command",
-            "command": ".claude/say.sh 'Sprawdzam typy'; npx astro check 2>&1 || (.claude/say.sh 'Błąd typów'; exit 2)"
+            "command": "bash -c '.claude/say.sh \"Sprawdzam typy\"; out=$(npx astro check 2>&1); rc=$?; if [ $rc -ne 0 ]; then .claude/say.sh \"Błąd typów\"; printf \"%s\\n\" \"$out\"; exit 2; fi'"
           },
           {
             "type": "command",

@@ -6,9 +6,23 @@ interface AbsenceGridProps {
   employees: Employee[];
   absences: Absence[];
   absenceTypes: AbsenceType[];
-  currentEmployee: Employee;
+  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
   year: number;
   month: number;
+}
+
+function textColorForBg(hexColor: string): string {
+  const hex = hexColor.replace("#", "");
+  if (hex.length !== 6) return "text-white";
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? "text-gray-800" : "text-white";
+}
+
+function formatTime(t: string | null | undefined): string {
+  return t?.slice(0, 5) ?? "";
 }
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -112,12 +126,20 @@ export default function AbsenceGrid({
                             : undefined
                         }
                       >
-                        {absenceType ? (
+                        {absenceType && absence ? (
                           <div
-                            className="h-5 w-full rounded-sm"
+                            className="flex h-5 w-full items-center justify-center overflow-hidden rounded-sm"
                             style={{ backgroundColor: absenceType.color }}
                             title={absenceType.name}
-                          />
+                          >
+                            {!absence.is_full_day && absence.start_time && absence.end_time && (
+                              <span
+                                className={`truncate px-0.5 text-[10px] leading-none font-medium ${textColorForBg(absenceType.color)}`}
+                              >
+                                {formatTime(absence.start_time)}–{formatTime(absence.end_time)}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           clickable && (
                             <div className="flex h-5 w-full items-center justify-center text-xs text-gray-300">+</div>

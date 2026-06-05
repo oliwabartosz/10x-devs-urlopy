@@ -23,7 +23,7 @@ Two modes:
 1. Argument points to a saved review file (contains `<!-- PLAN-REVIEW-REPORT -->`) → **resume triage** (skip to Step 6)
 2. Argument is a `<change-id>` and `context/changes/<change-id>/plan.md` exists → review that plan
 3. Plan path provided (e.g. `@context/changes/<change-id>/plan.md`) → use it
-4. No argument → list `context/changes/*/plan.md` (newest by `change.md.updated`) via Ask the user:
+4. No argument → list `context/changes/*/plan.md` (newest by `change.md.updated`) via AskUserQuestion
 5. `--quick` flag → document-only mode (skip Step 3)
 
 If the resolved plan path starts with `context/archive/`, refuse to write a review: print "This change is archived. Reviews are not appended to archived plans." and STOP.
@@ -54,8 +54,8 @@ Before any code verification, check the plan against itself. These three scans o
 ## Step 2: Grounding
 
 Quick, no sub-agents:
-- **Paths**: Execute a shell command to list files (`ls -l`) on ≥5 file paths the plan claims to modify. Non-existent paths are critical.
-- **Symbols**: Execute a shell command to search (`grep`) for specific functions/config keys the plan references.
+- **Paths**: `ls -l` on ≥5 file paths the plan claims to modify. Non-existent paths are critical.
+- **Symbols**: grep for specific functions/config keys the plan references.
 - **Brief↔plan consistency**: phases, decisions, scope match?
 
 Report inline: `Grounding: 5/5 paths ✓, 3/3 symbols ✓, brief↔plan ✓`. Only escalate to a finding on failure.
@@ -64,10 +64,10 @@ Report inline: `Grounding: 5/5 paths ✓, 3/3 symbols ✓, brief↔plan ✓`. On
 
 Skip if `--quick`.
 
-From Steps 1–2, identify the **3–5 riskiest claims** in the plan — things that, if wrong, force significant rework. Launch **one** sub-agent with three combined tasks:
+From Steps 1–2, identify the **3–5 riskiest claims** in the plan — things that, if wrong, force significant rework. Launch **one** sub-agent (`subagent_type: "general-purpose"`) with three combined tasks:
 
 1. **Verify the riskiest claims** against the actual code. For each: what does the code show, does it confirm or contradict the plan, with file:line evidence.
-2. **Blast-radius sweep**: for functions, constants, or endpoints the plan modifies, search the codebase for other callers/importers not mentioned in the plan. These are files the plan doesn't know it's affecting.
+2. **Blast-radius sweep**: for functions, constants, or endpoints the plan modifies, grep the codebase for other callers/importers not mentioned in the plan. These are files the plan doesn't know it's affecting.
 3. **Pattern check** (only if plan introduces new patterns): do existing files in the touched areas already solve this? Pattern proliferation is a common finding.
 
 Give the sub-agent targeted questions with relevant file paths — don't dump the full plan. A focused prompt finds more than a broad sweep because the agent knows what to look for.
@@ -350,8 +350,8 @@ multiSelect: false
 **With 1 fix option:** same options, but replace "Apply Fix A/B" with a single "Fix in plan".
 
 **Handling responses:**
-- **Apply Fix A/B / Fix in plan**: show the exact plan edit (before/after). Brief confirmation, then apply the edit to the plan file. Mark FIXED (record which fix, e.g. "Fixed via Fix A").
-- **Fix differently**: ask the preferred approach, apply the edit to the plan file, mark FIXED.
+- **Apply Fix A/B / Fix in plan**: show the exact plan edit (before/after). Brief confirmation, then apply. Mark FIXED (record which fix, e.g. "Fixed via Fix A").
+- **Fix differently**: ask the preferred approach, apply, mark FIXED.
 - **Skip** → SKIPPED. **Accept risk** → ACCEPTED. **Disagree** → DISMISSED. Move on, don't argue.
 
 After each decision, if working from a saved file, update its `Decision:` field.

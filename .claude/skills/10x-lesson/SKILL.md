@@ -1,6 +1,12 @@
 ---
 name: 10x-lesson
 description: Capture a recurring rule or pattern into context/foundation/lessons.md. Use when you spot a class of bug or design pitfall worth surfacing for future reviews and implementations.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - AskUserQuestion
 ---
 
 # /10x-lesson — Capture a Recurring Rule
@@ -32,7 +38,7 @@ Then wait.
 
 ### Step 1: Interview
 
-Ask the user to collect the four fields. You may batch them as one round of four free-form prompts (each option set is just `["I'll fill it in"]` — i.e., the user picks "Other" to type the answer), or run four sequential rounds. Either form is fine; the goal is that the user, not the skill, writes the wording.
+Use AskUserQuestion to collect the four fields. You may batch them as one round of four free-form prompts (each option set is just `["I'll fill it in"]` — i.e., the user picks "Other" to type the answer), or run four sequential rounds. Either form is fine; the goal is that the user, not the skill, writes the wording.
 
 Pre-fill nothing. The user provides every field. If a freeform intent was passed in the invocation, surface it as a suggestion next to the Rule prompt — not as the default.
 
@@ -45,7 +51,7 @@ The four fields, with one-line guides:
 
 ### Step 2: Echo and confirm
 
-Render the proposed entry as a markdown block and show it to the user. Ask the user to confirm:
+Render the proposed entry as a markdown block and show it to the user. Use AskUserQuestion to confirm:
 
 - question: "Append this lesson to `context/foundation/lessons.md`?"
   header: "Confirm"
@@ -84,7 +90,7 @@ If `context/foundation/lessons.md` does not exist, create it with this canonical
 
 If the file exists, leave it untouched and append to the end. Do not reorder, deduplicate, or reformat existing entries — the file is append-only.
 
-Use a file editing tool (or a file writing tool for the bootstrap case) to land the change. After append, re-read the file and confirm the new H2 is the last section.
+Use Edit (or Write for the bootstrap case) to land the change. After append, re-read the file and confirm the new H2 is the last section.
 
 ### Step 4: Echo result
 

@@ -14,6 +14,7 @@ description: >
   for testing", "QA spec", "AI-native testing strategy", "stwórz plan
   testów", "strategia jakości". Use AFTER /10x-prd and /10x-roadmap.
   Brownfield only; greenfield needs a PRD first.
+argument-hint: "[path ...] | --status | --refresh"
 ---
 
 # 10x Test Plan — Stateful Phased Rollout Orchestrator
@@ -202,7 +203,6 @@ Locate the directories that hold hand-written application code, in whatever way 
 
 #### Step 2 — Confirm scope with the user
 
-Ask the user:
 > Detected main-codebase scopes for the hot-spot scan: `<scope 1>`, `<scope 2>`, `<scope 3>`. Excluding docs, fixtures, archive, build output. **Accept**, or paste an **override** list.
 
 If detection returns nothing, fall back to repo root with the default exclusion list and explicitly tell the user. Never silently scan everything.
@@ -222,7 +222,7 @@ Persist the output as a short note that Phases 2, 3, and 4 consume.
 
 ### Checkpoint
 
-Summarize the inputs back to the user in ≤12 lines: `path → classified-type → 1-line gist → [argument | default]`, plus a 3-line hot-spot recap. Ask the user to confirm before moving to Phase 2.
+Summarize the inputs back to the user in ≤12 lines: `path → classified-type → 1-line gist → [argument | default]`, plus a 3-line hot-spot recap. Confirm before moving to Phase 2.
 
 ## Phase 2 — User Interview (only when the guide is missing)
 
@@ -240,27 +240,27 @@ The user may reply "skip" to any question. If three or more are skipped, abort t
 
 Each question below ships with example answers. Read them to the user as part of the prompt; adapt the examples to the project's domain when an obvious adaptation exists (e.g., for a billing product, use billing-flavoured examples).
 
-1. Ask the user: **"What worries you most about this product breaking — independent of what the docs say?"**
+1. **"What worries you most about this product breaking — independent of what the docs say?"**
    - e.g., "A paying user gets a 403 and can't reach the content they paid for."
    - e.g., "Webhook from Stripe arrives twice and we double-charge."
    - e.g., "A silent data-loss bug in the import pipeline that nobody notices for a week."
 
-2. Ask the user: **"Where have you been burned before in this codebase, or one like it?"**
+2. **"Where have you been burned before in this codebase, or one like it?"**
    - e.g., "Last quarter a migration ran fine in staging and corrupted prod rows."
    - e.g., "A refactor of the auth middleware logged users out for 30 minutes."
    - e.g., "We shipped a build where the catalog was missing half the lessons and nobody noticed for a day."
 
-3. Ask the user: **"Which area do you change most often without feeling confident?"**
+3. **"Which area do you change most often without feeling confident?"**
    - e.g., "The lesson-gating logic — every tweak feels like roulette."
    - e.g., "The Cloudflare Worker routing — works locally, breaks in prod."
    - e.g., "The R2 upload script — I run it and pray."
 
-4. Ask the user: **"What feels under-tested today that you've been quietly worried about?"** *(see conditional rewrite below if the test-base profile is `none`)*
+4. **"What feels under-tested today that you've been quietly worried about?"** *(see conditional rewrite below if the test-base profile is `none`)*
    - e.g., "The webhook retry path — we have one happy-path test and that's it."
    - e.g., "Error boundaries — they exist but I've never seen them fire in a test."
    - e.g., "Anything that touches money — coverage is light and the impact is severe."
 
-5. Ask the user: **"What would you NOT want test budget spent on, even if a textbook says to test it?"**
+5. **"What would you NOT want test budget spent on, even if a textbook says to test it?"**
    - e.g., "Internal admin tools — five trusted users, low blast radius."
    - e.g., "Generated TypeScript clients — the generator is the test."
    - e.g., "UI snapshot tests for marketing pages — they break constantly and catch nothing."
@@ -351,7 +351,7 @@ Before showing the brief to the user, walk every top-N risk and apply the QA-con
 
 Both checks fire silently — they're how the brief gets cleaned, not a user-facing step. If a risk is dropped or reframed, note it in a one-line "Challenger findings" subsection at the end of the brief so the user can see what was removed and why.
 
-Show the (cleaned) brief; ask the user for **Accept** / **Edit** / **Cancel**.
+Show the (cleaned) brief; ask for **Accept** / **Edit** / **Cancel**.
 
 ## Phase 4 — Write the phased `test-plan.md` (only when the guide is missing)
 
@@ -405,7 +405,7 @@ Return to `/10x-test-plan` when the test plan itself needs attention: backportin
 
 ### Handoff A — Change folder missing (Status `not started`)
 
-Propose a change-id from the rollout phase name (kebab-case, prefixed `testing-`). E.g., "Critical-path coverage" → `testing-critical-path-coverage`. Ask the user to confirm, then update §3 (Status → `change opened`, Change folder → chosen id) **before** the handoff so resume works if the session dies.
+Propose a change-id from the rollout phase name (kebab-case, prefixed `testing-`). E.g., "Critical-path coverage" → `testing-critical-path-coverage`. Confirm with the user, then update §3 (Status → `change opened`, Change folder → chosen id) **before** the handoff so resume works if the session dies.
 
 Then run the **Handoff Ritual** with:
 
@@ -514,7 +514,8 @@ The rollout phase is done. Update §3 Status to `complete`. Then **loop back to 
 - All §3 rows are `complete` → print the completion summary (see "All phases complete" at the bottom of this skill).
 - The user wants to stop here → after updating Status, print a short summary and STOP.
 
-Ask the user:
+Use `AskUserQuestion` after marking complete:
+
 > Rollout Phase <N> is complete. Proceed to Phase <N+1>, or stop here?
 >
 > - **Continue to Phase <N+1>** — I'll present the `/10x-new` handoff for the next phase.
@@ -589,7 +590,7 @@ Triggered when the user invokes `/10x-test-plan --refresh`, or when the guide is
 
 ## Interactive prompts — host-agnostic
 
-Whenever this skill says *"ask the user"*, use whichever interactive-question tool the host exposes (e.g., a tool for asking questions, or a plain conversational message with labelled options). Before the first interactive step, the AI assistant should scan available tools for one with a `question` parameter and an `options`/`choices` field; use the first match. If none exists, fall back to a plain conversational message with labelled options.
+Whenever this skill says *"ask the user"*, use whichever interactive-question tool the host exposes (e.g., `AskUserQuestion`, `ask_question`, `request_user_input`). Before the first interactive step, scan available tools for one with a `question` parameter and an `options`/`choices` field; use the first match. If none exists, fall back to a plain conversational message with labelled options.
 
 ## All phases complete
 
@@ -609,11 +610,11 @@ surfaces, a tool's `checked:` date is > 3 months old, the tech stack changes,
 or §7 negative-space no longer matches what the team believes.
 ```
 
-Then suggest a smoke test: open a fresh agent session and ask "Read the project rules and `context/foundation/test-plan.md`. What should I test first for a new `<area>` endpoint, and why?" The AI assistant should name the cookbook pattern, location, and cheapest test type. If it picks a random file, the rules-file is not pointing at `context/foundation/` yet.
+Then suggest a smoke test: open a fresh agent session and ask "Read the project rules and `context/foundation/test-plan.md`. What should I test first for a new `<area>` endpoint, and why?" The agent should name the cookbook pattern, location, and cheapest test type. If it picks a random file, the rules-file is not pointing at `context/foundation/` yet.
 
 ## What this skill does NOT do
 
-- Does not write test code, configure hooks/MCPs/CI YAML, or edit the project's AI configuration file (AGENTS.md). Those land via downstream rollout phases.
+- Does not write test code, configure hooks/MCPs/CI YAML, or edit AGENTS.md. Those land via downstream rollout phases.
 - Does not invent risks — every risk traces back to PRD, roadmap, archive, hot-spots, or the Phase 2 interview.
 - Does not auto-invoke downstream skills. Every handoff stops at the clipboard and waits, but each completed downstream phase should suggest the next natural command in the established research → plan → implement process unless there is a clear blocker.
 - **Does not read the codebase for knowledge.** Hot-spot churn, test-base count, project marker, framework detection — yes. Call graphs, schema bodies, error-translation logic, "which file owns this failure" — no. That extraction is `/10x-research`'s job, run per rollout phase against the up-to-date code. If you ever feel tempted to cite `src/foo/bar.ts:42` in §2, you've crossed the line — stop and let research do it. (See "Load-bearing principles" §3.)

@@ -7,8 +7,8 @@ import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtur
 
 // Requires: 20260526000002_seed_absence_types.sql applied (absence_type_id: 1 must exist)
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration", () => {
-  let db: Db | undefined;
-  let testEmployeeId: string | undefined;
+  let db!: Db;
+  let testEmployeeId!: string;
 
   beforeAll(async () => {
     db = getTestDb();
@@ -17,7 +17,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId);
-    await db?.$client.end();
+    await db.$client.end();
   });
 
   it("INSERT — RETURNING contains submitted field values", async () => {
@@ -28,7 +28,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
         absence_type_id: 1,
         date: "2026-01-15",
         is_full_day: false,
-        hours: "2.50",
+        start_time: "09:00",
+        end_time: "11:30",
       })
       .returning();
 
@@ -41,7 +42,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
     await db.delete(absences).where(eq(absences.id, row.id));
   });
 
-  it("INSERT — hours is returned as a string (postgres-js NUMERIC behavior)", async () => {
+  it("INSERT — start_time and end_time are returned as HH:MM:SS strings (postgres-js TIME behavior)", async () => {
     const [row] = await db
       .insert(absences)
       .values({
@@ -49,12 +50,15 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
         absence_type_id: 1,
         date: "2026-01-16",
         is_full_day: false,
-        hours: "2.50",
+        start_time: "09:00",
+        end_time: "11:30",
       })
       .returning();
 
-    expect(typeof row.hours).toBe("string");
-    expect(row.hours).toBe("2.50");
+    expect(typeof row.start_time).toBe("string");
+    expect(typeof row.end_time).toBe("string");
+    expect(row.start_time).toBe("09:00:00");
+    expect(row.end_time).toBe("11:30:00");
 
     await db.delete(absences).where(eq(absences.id, row.id));
   });
@@ -94,13 +98,14 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
     const [updated] = await db
       .update(absences)
-      .set({ comment: "updated comment", is_full_day: false, hours: "4.00" })
+      .set({ comment: "updated comment", is_full_day: false, start_time: "09:00", end_time: "13:00" })
       .where(eq(absences.id, inserted.id))
       .returning();
 
     expect(updated.comment).toBe("updated comment");
     expect(updated.is_full_day).toBe(false);
-    expect(updated.hours).toBe("4.00");
+    expect(updated.start_time).toBe("09:00:00");
+    expect(updated.end_time).toBe("13:00:00");
 
     await db.delete(absences).where(eq(absences.id, inserted.id));
   });

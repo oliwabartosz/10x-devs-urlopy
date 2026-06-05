@@ -22,9 +22,9 @@ function formatDate(isoDate: string): string {
   return `${d}.${m}.${y}`;
 }
 
-function formatHours(absence: Absence): string {
+function formatAbsenceTime(absence: Absence): string {
   if (absence.is_full_day) return "Cały dzień";
-  return `${absence.hours ?? 0} godz.`;
+  return `${absence.start_time?.slice(0, 5) ?? "?"}–${absence.end_time?.slice(0, 5) ?? "?"}`;
 }
 
 export default function AbsenceDetailsTable({
@@ -128,7 +128,7 @@ export default function AbsenceDetailsTable({
               </button>
             </th>
             <th className={thClass}>Zastępca</th>
-            <th className={thClass}>Godziny</th>
+            <th className={thClass}>Czas</th>
             <th className={thClass}>Komentarz</th>
             <th className={thClass}>
               <button
@@ -174,7 +174,7 @@ export default function AbsenceDetailsTable({
                   </td>
                   <td className={tdClass}>{employee ? `${employee.first_name} ${employee.last_name}` : "—"}</td>
                   <td className={tdClass}>{substitute ? `${substitute.first_name} ${substitute.last_name}` : "—"}</td>
-                  <td className={tdClass}>{formatHours(absence)}</td>
+                  <td className={tdClass}>{formatAbsenceTime(absence)}</td>
                   <td className={tdClass}>{absence.comment ?? "—"}</td>
                   <td className={tdClass}>{formatDate(new Date(absence.created_at).toISOString().slice(0, 10))}</td>
                 </tr>

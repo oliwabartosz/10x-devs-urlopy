@@ -1,6 +1,18 @@
 ---
 name: 10x-impl-review
 description: Review implementation against plan for drift, dangerous decisions, and pattern compliance
+argument-hint: <plan-path> [phase N] | <saved-review-path>
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Agent
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
+  - TaskList
+  - TaskGet
 ---
 
 # Implementation Review
@@ -21,13 +33,13 @@ Two modes:
 2. Argument is a `<change-id>` and `context/changes/<change-id>/plan.md` exists → fresh review on that plan
 3. Plan path provided (e.g. `@context/changes/<change-id>/plan.md`) → fresh review on that plan
 4. Phase number provided (e.g. "phase 3") → review only that phase
-5. No argument → enumerate `context/changes/*/change.md`; pick the most recently `updated` change with `status` in `{implementing, implemented}` and confirm via Ask the user:
+5. No argument → enumerate `context/changes/*/change.md`; pick the most recently `updated` change with `status` in `{implementing, implemented}` and confirm via AskUserQuestion
 
 If the resolved plan path starts with `context/archive/`, refuse: print "This change is archived. Reviews are not appended to archived plans." and STOP.
 
 ## Step 1: Load plan and detect change scope
 
-Create a task named "Implementation Review" with active form "Loading context"
+TaskCreate: "Implementation Review" / activeForm "Loading context"
 
 1. **Read the plan file fully** — no limit/offset.
 2. **Read `context/foundation/lessons.md` if present** and use accepted rules as priors when scanning for findings — a deviation that violates a known recurring rule is a stronger signal than a generic style nit.
@@ -51,7 +63,7 @@ Don't pre-read every changed file into the main context — let the sub-agents r
 
 ## Step 2: Parallel review via sub-agents
 
-Update the task's active form to "Gathering evidence"
+TaskUpdate: activeForm "Gathering evidence"
 
 Launch **two** sub-agents simultaneously. Each gets targeted context — don't dump the full plan into both.
 
@@ -86,17 +98,17 @@ Report each finding with: file, line number, category, severity (CRITICAL / WARN
 
 ## Step 3: Verify success criteria
 
-Update the task's active form to "Verifying success criteria"
+TaskUpdate: activeForm "Verifying success criteria"
 
 For each reviewed phase:
 
-**Automated**: run each command from the "Automated Verification" checkboxes using a bash shell. Record command, pass/fail, actual output (truncate if huge).
+**Automated**: run each command from the "Automated Verification" checkboxes with Bash. Record command, pass/fail, actual output (truncate if huge).
 
 **Manual**: in the `## Progress` section, check Manual items as `- [x]` vs `- [ ]`. Flag items marked complete that lack observable evidence in the diff (possible rubber-stamping); acknowledge unchecked items as pending.
 
 ## Step 4: Compile findings and present report
 
-Update the task's active form to "Compiling findings"
+TaskUpdate: activeForm "Compiling findings"
 
 Each finding has:
 - **ID**: F1, F2, F3…
@@ -247,7 +259,7 @@ Plain text, box-drawing. PASS dimensions appear only in the verdicts table, neve
 - **Impact always carries its one-line meaning** (copy from the Impact table — "architectural stakes; think carefully before deciding" / "real tradeoff; pause to reason through it" / "quick decision; fix is obvious and narrowly scoped"). This makes LOW/MEDIUM/HIGH self-explanatory at the point of use instead of relying on the user to remember the table.
 - Severity, Impact, Dimension, Location are each on their own line with aligned labels. Detail starts on its own line under a `Detail:` label so it can wrap naturally.
 
-After the report, ask the user:
+After the report, ask:
 
 ```
 question: "Review complete. How would you like to proceed?"
@@ -279,7 +291,7 @@ Save to `context/changes/<change-id>/reviews/impl-review.md` (or `context/change
 ## Verdicts
 
 | Dimension | Verdict |
-|-----------|---------
+|-----------|---------|
 | Plan Adherence | PASS/WARNING/FAIL |
 | Scope Discipline | PASS/WARNING/FAIL |
 | Safety & Quality | PASS/WARNING/FAIL |
@@ -340,7 +352,7 @@ The `<!-- IMPL-REVIEW-REPORT -->` marker and `Decision: PENDING` fields enable r
 
 ## Step 5: Interactive triage
 
-Update the task's active form to "Triage"
+TaskUpdate: activeForm "Triage"
 
 ### Resume mode
 
@@ -351,7 +363,6 @@ If entered via saved file: read it, parse `### F` headers, filter to `Decision: 
 Walk findings in severity order (CRITICAL → WARNING → OBSERVATION). For each:
 
 **With 2 fix options:**
-Ask the user:
 ```
 question: "F[N] — [title]\n\nSeverity: [sev icon] [SEV]\nImpact: [impact icon] [LEVEL] — [meaning]\nDimension: [dim]\nLocation: [loc]\n\nDetail: [detail]\n\n[Fix A block]\n\n[Fix B block]"
 header: "Finding [current] of [total remaining]"
@@ -368,7 +379,6 @@ multiSelect: false
 ```
 
 **With 1 fix option:**
-Ask the user:
 ```
 question: "F[N] — [title]\n\nSeverity: [sev icon] [SEV]\nImpact: [impact icon] [LEVEL] — [meaning]\nDimension: [dim]\nLocation: [loc]\n\nDetail: [detail]\n\n[Fix block]"
 header: "Finding [current] of [total remaining]"
@@ -385,9 +395,9 @@ multiSelect: false
 ```
 
 **Handling responses:**
-- **Apply Fix A/B / Fix now**: show the exact before/after code change. Ask for confirmation ("Apply this?"), then perform the edit. Mark FIXED (record which option, e.g. "Fixed via Fix A").
-- **Fix differently**: Ask the user for the preferred approach, perform the edit, mark FIXED.
-- **Record as lesson**: pre-fill four lessons-entry fields directly from the finding — `Context` from the finding's Location, `Problem` from the finding's Detail, `Rule` and `Applies to` left as empty placeholders for the user to fill. Show the proposed entry as a complete markdown block and ask the user to edit / confirm via Ask the user: ("Approve this entry?" / "Edit before saving" / "Cancel"). On confirm, append the entry as a new H2 section to `context/foundation/lessons.md` — if the file does not exist, create it first with this canonical 5-line header (no separate template file; the header is embedded inline here):
+- **Apply Fix A/B / Fix now**: show the exact before/after code change. Brief confirmation ("Apply this?"), then edit. Mark FIXED (record which option, e.g. "Fixed via Fix A").
+- **Fix differently**: ask the preferred approach, apply, mark FIXED.
+- **Record as lesson**: pre-fill four lessons-entry fields directly from the finding — `Context` from the finding's Location, `Problem` from the finding's Detail, `Rule` and `Applies to` left as empty placeholders for the user to fill. Show the proposed entry as a complete markdown block and ask the user to edit / confirm via AskUserQuestion ("Approve this entry?" / "Edit before saving" / "Cancel"). On confirm, append the entry as a new H2 section to `context/foundation/lessons.md` — if the file does not exist, create it first with this canonical 5-line header (no separate template file; the header is embedded inline here):
 
   ```
   # Lessons Learned
@@ -396,9 +406,9 @@ multiSelect: false
 
   ```
 
-  The pre-fill-then-confirm flow is the load-bearing UX detail; the user must see the full proposed entry with the pre-filled Context/Problem and have a chance to edit Rule and Applies-to before append. After the append succeeds, **always** ask a follow-up via Ask the user: "Lesson saved. Also apply the fix to the current code?" with options "Yes — fix now" / "No — lesson only". **Never skip this question or decide on the user's behalf** — whether the fix is trivial, out of scope, or spans many files, the decision belongs to the user. If yes: show the before/after code change, perform the edit, mark `FIXED + ACCEPTED-AS-RULE: <rule title>`. If no: mark `ACCEPTED-AS-RULE: <rule title>` (finding stays unfixed, rule is recorded for future work).
+  The pre-fill-then-confirm flow is the load-bearing UX detail; the user must see the full proposed entry with the pre-filled Context/Problem and have a chance to edit Rule and Applies-to before append. After the append succeeds, **always** ask a follow-up via AskUserQuestion: "Lesson saved. Also apply the fix to the current code?" with options "Yes — fix now" / "No — lesson only". **Never skip this question or decide on the user's behalf** — whether the fix is trivial, out of scope, or spans many files, the decision belongs to the user. If yes: show the before/after code change, apply, mark `FIXED + ACCEPTED-AS-RULE: <rule title>`. If no: mark `ACCEPTED-AS-RULE: <rule title>` (finding stays unfixed, rule is recorded for future work).
 - **Skip** → SKIPPED. Move on, don't argue.
-- **Other (free text)**: interpret the user's intent. Common intents: "fix differently" (especially in dual-fix context) → Ask the user for the preferred approach, perform the edit, mark FIXED; "accept risk" → mark ACCEPTED with the user's justification; "dismiss"/"disagree" → mark DISMISSED.
+- **Other (free text)**: interpret the user's intent. Common intents: "fix differently" (especially in dual-fix context) → ask the preferred approach, apply, mark FIXED; "accept risk" → mark ACCEPTED with the user's justification; "dismiss"/"disagree" → mark DISMISSED.
 
 After each decision, if working from a saved file, update its `Decision:` field.
 

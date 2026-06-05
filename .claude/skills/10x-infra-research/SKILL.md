@@ -13,6 +13,17 @@ description: >
   "deployment platform for my MVP", "wybierz platformę", "gdzie deployować",
   "infrastructure decision", "hosting choice", "jaka platforma do deploymentu".
   Use AFTER /10x-prd or /10x-tech-stack-selector, BEFORE /10x-implement.
+argument-hint: "[path-to-tech-stack-or-prd]"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - WebFetch
+  - WebSearch
+  - AskUserQuestion
+  - Agent
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Platform Research: Conscious Deployment Platform for MVP
@@ -79,49 +90,81 @@ Context loaded:
 
 ### Step 1 — Developer interview (5 questions)
 
-Ask the user five Yes / No / Don't know questions. Ask the user for each, one at a time. Collect all answers before proceeding to research.
+Ask the user five Yes / No / Don't know questions. Use the `AskUserQuestion` tool for each, one at a time. Collect all answers before proceeding to research.
 
 **Question 1**
 
-Ask the user: "Does your app require persistent server-side connections — WebSockets, long-polling, or background worker processes that must stay alive between requests?"
-  Options:
-  - Yes: The app needs always-on processes or long-lived connections.
-  - No: Request/response only — each request is stateless.
-  - Don't know: I'm not sure yet.
+AskUserQuestion:
+- question: "Does your app require persistent server-side connections — WebSockets, long-polling, or background worker processes that must stay alive between requests?"
+  header: "Platform constraints"
+  options:
+  - label: "Yes"
+    description: "The app needs always-on processes or long-lived connections."
+  - label: "No"
+    description: "Request/response only — each request is stateless."
+  - label: "Don't know"
+    description: "I'm not sure yet."
+  multiSelect: false
 
 **Question 2**
 
-Ask the user: "Is minimizing monthly cost the top priority at MVP stage, or is developer experience and speed of iteration more important?"
-  Options:
-  - Minimize cost: I want the cheapest viable option, even if DX is rougher.
-  - Prioritize DX: I'll pay a reasonable amount for a smoother development loop.
-  - Don't know / roughly equal: No strong preference.
+AskUserQuestion:
+- question: "Is minimizing monthly cost the top priority at MVP stage, or is developer experience and speed of iteration more important?"
+  header: "Trade-off preference"
+  options:
+  - label: "Minimize cost"
+    description: "I want the cheapest viable option, even if DX is rougher."
+  - label: "Prioritize DX"
+    description: "I'll pay a reasonable amount for a smoother development loop."
+  - label: "Don't know / roughly equal"
+    description: "No strong preference."
+  multiSelect: false
 
 **Question 3**
 
-Ask the user: "Do you or your team already have hands-on experience with any specific platform you'd feel comfortable deploying to?"
-  Options:
-  - Yes — Vercel / Netlify: Comfortable with JAMstack-style platforms.
-  - Yes — Cloudflare (Workers / Pages): Comfortable with edge-first deployment.
-  - Yes — Railway / Render / Fly.io: Comfortable with container-based PaaS.
-  - Yes — AWS / GCP / Azure: Comfortable with hyperscaler infrastructure.
-  - No strong familiarity: Open to whatever fits best.
+AskUserQuestion:
+- question: "Do you or your team already have hands-on experience with any specific platform you'd feel comfortable deploying to?"
+  header: "Existing familiarity"
+  options:
+  - label: "Yes — Vercel / Netlify"
+    description: "Comfortable with JAMstack-style platforms."
+  - label: "Yes — Cloudflare (Workers / Pages)"
+    description: "Comfortable with edge-first deployment."
+  - label: "Yes — Railway / Render / Fly.io"
+    description: "Comfortable with container-based PaaS."
+  - label: "Yes — AWS / GCP / Azure"
+    description: "Comfortable with hyperscaler infrastructure."
+  - label: "No strong familiarity"
+    description: "Open to whatever fits best."
+  multiSelect: false
 
 **Question 4**
 
-Ask the user: "Do you expect the app to serve users globally (edge/CDN matters) or mainly from one region?"
-  Options:
-  - Global — latency across regions matters: Users will be on different continents.
-  - Single region is fine: All users are in one country / region.
-  - Don't know yet: Not sure about target geography.
+AskUserQuestion:
+- question: "Do you expect the app to serve users globally (edge/CDN matters) or mainly from one region?"
+  header: "Geographic reach"
+  options:
+  - label: "Global — latency across regions matters"
+    description: "Users will be on different continents."
+  - label: "Single region is fine"
+    description: "All users are in one country / region."
+  - label: "Don't know yet"
+    description: "Not sure about target geography."
+  multiSelect: false
 
 **Question 5**
 
-Ask the user: "Will the deployment need co-located managed services — database, object storage, queues — from the same platform, or are external providers fine?"
-  Options:
-  - Co-location preferred: I want DB, storage, etc. from the same vendor to keep it simple.
-  - External providers are fine: I'll use separate services (e.g., Supabase, Upstash, Cloudflare R2).
-  - Don't know yet: Haven't decided on data layer yet.
+AskUserQuestion:
+- question: "Will the deployment need co-located managed services — database, object storage, queues — from the same platform, or are external providers fine?"
+  header: "Service co-location"
+  options:
+  - label: "Co-location preferred"
+    description: "I want DB, storage, etc. from the same vendor to keep it simple."
+  - label: "External providers are fine"
+    description: "I'll use separate services (e.g., Supabase, Upstash, Cloudflare R2)."
+  - label: "Don't know yet"
+    description: "Haven't decided on data layer yet."
+  multiSelect: false
 
 Store all five answers as research constraints before moving to Step 2.
 
@@ -152,7 +195,7 @@ Focus on:
 4. Free tier and estimated cost at 10k-100k monthly requests
 5. Persistent process / WebSocket support (yes / no / limited)
 6. Co-located managed services (database, storage, queues)
-7. MCP server or your AI coding assistant integration (if any)
+7. MCP server or Claude/AI agent integration (if any)
 8. Known limitations or gotchas for <framework from tech stack>
 9. Current status of every feature mentioned above: GA / beta / preview / deprecated / region-limited.
    For any non-GA feature, capture the explicit caveat and the date the status was checked.
@@ -161,7 +204,7 @@ Return: a brief factual summary (200-300 words) with evidence links. Mark every
 beta/preview/region-limited capability inline so it carries forward into the risk register.
 ```
 
-Use web search or web fetching tools to find current pricing pages, official docs, and recent community comparisons (look for content from 2024-2025).
+Use `WebSearch` or `WebFetch` to find current pricing pages, official docs, and recent community comparisons (look for content from 2024-2025).
 
 After all subagents complete, synthesize their findings into a scoring matrix.
 
@@ -227,11 +270,17 @@ Mentally apply this lens and surface 3-5 things the user may not be aware of:
 
 After all three cross-checks, present the findings to the user and ask:
 
-Ask the user: "The anti-bias cross-check surfaced some risks for <Platform A>. How would you like to proceed?"
-  Options:
-  - Proceed with <Platform A> — risks noted: The risks are manageable. Include them in the output's risk register.
-  - Swap to <Platform B> instead: The risks are significant enough to prefer the second option.
-  - Swap to <Platform C> instead: The risks are significant enough to prefer the third option.
+AskUserQuestion:
+- question: "The anti-bias cross-check surfaced some risks for <Platform A>. How would you like to proceed?"
+  header: "Cross-check result"
+  options:
+  - label: "Proceed with <Platform A> — risks noted"
+    description: "The risks are manageable. Include them in the output's risk register."
+  - label: "Swap to <Platform B> instead"
+    description: "The risks are significant enough to prefer the second option."
+  - label: "Swap to <Platform C> instead"
+    description: "The risks are significant enough to prefer the third option."
+  multiSelect: false
 
 Apply the user's choice. If they swap to B or C, run the three cross-checks again for the new top pick and present results (no need to ask again — record it and proceed).
 
@@ -245,11 +294,17 @@ test -f context/foundation/infrastructure.md
 
 If the file exists, ask:
 
-Ask the user: "context/foundation/infrastructure.md already exists. How would you like to proceed?"
-  Options:
-  - Overwrite (Recommended): Replace the existing file. The prior version is lost unless committed.
-  - Save as infrastructure-v2.md: Preserve history. New file lands at the next available version slot.
-  - Abort: Exit without writing. The recommendation is preserved in chat only.
+AskUserQuestion:
+- question: "context/foundation/infrastructure.md already exists. How would you like to proceed?"
+  header: "Collision"
+  options:
+  - label: "Overwrite (Recommended)"
+    description: "Replace the existing file. The prior version is lost unless committed."
+  - label: "Save as infrastructure-v2.md"
+    description: "Preserve history. New file lands at the next available version slot."
+  - label: "Abort"
+    description: "Exit without writing. The recommendation is preserved in chat only."
+  multiSelect: false
 
 Build the output file:
 
@@ -375,7 +430,7 @@ Single file written: `context/foundation/infrastructure.md` (or `infrastructure-
 
 ## Critical guardrails
 
-1. **Research before recommending.** Never recommend a platform based solely on training-data familiarity. Always run the parallel web research (Step 2) with web search / web fetching tools before scoring. Stale impressions about pricing or feature support lead to wrong recommendations.
+1. **Research before recommending.** Never recommend a platform based solely on training-data familiarity. Always run the parallel web research (Step 2) with `WebSearch` / `WebFetch` before scoring. Stale impressions about pricing or feature support lead to wrong recommendations.
 
 2. **Tech stack is a hard constraint, not a preference.** If the tech stack requires a runtime that a platform doesn't support (e.g., Python on a JS-only edge runtime), that platform is dropped — no amount of scoring overrides it.
 

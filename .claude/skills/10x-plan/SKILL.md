@@ -1,6 +1,19 @@
 ---
 name: 10x-plan
 description: Create detailed implementation plans with thorough research and iteration
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Write
+  - Edit
+  - Bash
+  - Task
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
+  - TaskList
+  - TaskGet
 ---
 
 # Implementation Plan
@@ -82,7 +95,7 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
    - Related implementation plans
    - Any JSON/data files mentioned
    - `context/foundation/lessons.md` if present — treat its rules as priors when probing scope, edge cases, and architecture choices; rules already accepted by the team narrow which design pitfalls still need fresh questioning.
-   - **IMPORTANT**: Read files WITHOUT limit/offset parameters to read entire files
+   - **IMPORTANT**: Use the Read tool WITHOUT limit/offset parameters to read entire files
    - **CRITICAL**: DO NOT spawn sub-tasks before reading these files yourself in the main context
    - **NEVER** read files partially - if a file is mentioned, read it completely
 
@@ -137,9 +150,10 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
    Does this feel right, or would you adjust the complexity level?
    ```
 
-   Ask the user: "Does this complexity assessment match your expectations?"
-   - header: "Complexity"
-   - options:
+   Use AskUserQuestion for confirmation:
+   - question: "Does this complexity assessment match your expectations?"
+     header: "Complexity"
+     options:
      - label: "Agree — proceed with [N] questions"
        description: "The assessment is accurate, let's dig into the details."
      - label: "Higher — ask more questions"
@@ -158,7 +172,7 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
 
    After the user confirms (or adjusts), proceed to questioning.
 
-6. **Ask deep probing questions**:
+6. **Ask deep probing questions using AskUserQuestion**:
 
    Ask the confirmed number of questions across multiple rounds (1-4 questions per round, as many rounds as needed).
 
@@ -174,11 +188,12 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
      `[1-sentence what this does] · Strength: [key advantage] · Tradeoff: [key cost or risk]`
    - The recommendation should be grounded in research (codebase patterns for software, domain knowledge and context for non-software) — not guessing
 
-   **Example question with recommendations (software):** `Conflicts` is `[S]` — solution architecture; always asked even when a frame defined the problem.
+   **Example AskUserQuestion call with recommendations (software):** `Conflicts` is `[S]` — solution architecture; always asked even when a frame defined the problem.
 
-   Ask the user: "How should the system handle conflicts when two users edit simultaneously?"
-   - header: "Conflicts"
-   - options:
+   AskUserQuestion with questions:
+   - question: "How should the system handle conflicts when two users edit simultaneously?"
+     header: "Conflicts"
+     options:
      - label: "Last write wins"
        description: "Later save silently overwrites earlier one. · Strength: Zero added complexity, no UI changes needed. · Tradeoff: Users can lose work without warning — acceptable only if edits are rare or low-stakes."
      - label: "⭐ Recommended: Notify and merge"
@@ -187,11 +202,12 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
        description: "First editor locks the resource; others see read-only until released. · Strength: Prevents conflicts entirely — simplest mental model for users. · Tradeoff: Stale locks require TTL + cleanup logic; blocks legitimate concurrent work."
        multiSelect: false
 
-   **Example question with recommendations (non-software — content/strategy):** `Depth` is `[D]` — diagnostic about audience/scope; skip if a frame brief already settled who this is for.
+   **Example AskUserQuestion call with recommendations (non-software — content/strategy):** `Depth` is `[D]` — diagnostic about audience/scope; skip if a frame brief already settled who this is for.
 
-   Ask the user: "What depth of technical detail should the course module target?"
-   - header: "Depth"
-   - options:
+   AskUserQuestion with questions:
+   - question: "What depth of technical detail should the course module target?"
+     header: "Depth"
+     options:
      - label: "Conceptual overview"
        description: "High-level principles, no code. · Strength: Accessible to all skill levels, faster to produce. · Tradeoff: Advanced learners may find it too shallow — risks losing engagement."
      - label: "⭐ Recommended: Hands-on with guided examples"
@@ -290,7 +306,7 @@ After getting initial clarifications from the user, NOW is when you address the 
    - Read the specific files/directories they mention
    - Only proceed once you've verified the facts yourself
 
-3. **Create research tasks** using the Task tool to track exploration (these appear in the user's status bar). Update them as research completes.
+3. **Create research tasks** using TaskCreate to track exploration (these appear in the user's status bar). Update them via TaskUpdate as research completes.
 
 4. **Spawn parallel sub-tasks for comprehensive research**:
    - Create multiple Task agents to research different aspects concurrently
@@ -312,7 +328,7 @@ After getting initial clarifications from the user, NOW is when you address the 
 
 5. **Wait for ALL sub-tasks to complete** before proceeding
 
-6. **Present findings and design options**:
+6. **Present findings and design options using AskUserQuestion**:
 
    First, present a brief summary of research findings:
 
@@ -324,17 +340,18 @@ After getting initial clarifications from the user, NOW is when you address the 
    - [Pattern or convention to follow]
    ```
 
-   Then, if there are multiple valid approaches, present them as structured choices:
+   Then, if there are multiple valid approaches, present them as structured choices using AskUserQuestion:
 
-   Ask the user: "Which implementation approach should we use?"
-   - header: "Approach"
-   - options:
+   AskUserQuestion:
+   - question: "Which implementation approach should we use?"
+     header: "Approach"
+     options:
      - label: "[Option A name]"
        description: "[Key tradeoffs: simpler but X, or faster but Y]"
      - label: "[Option B name]"
        description: "[Key tradeoffs]"
 
-   If there's clearly one best approach, skip asking the user and explain why you chose it.
+   If there's clearly one best approach, skip AskUserQuestion and explain why you chose it.
    Only ask when the choice genuinely matters and you can't determine the answer from codebase patterns.
 
 ### Step 3: Plan Structure Development
@@ -357,9 +374,10 @@ Once aligned on approach:
    3. [Phase name] - [what it accomplishes]
    ```
 
-   Then ask the user: "Does this phase breakdown look right?"
-   - header: "Phases"
-   - options:
+   Then use AskUserQuestion:
+   - question: "Does this phase breakdown look right?"
+     header: "Phases"
+     options:
      - label: "Looks good, proceed"
        description: "Write the detailed plan with these phases."
      - label: "Needs adjustment"
@@ -412,7 +430,7 @@ After structure approval:
 
 ## Critical Implementation Details
 
-This section captures **constraints, gotchas, and ordering requirements that the implementer needs to know before they touch the code** — facts the AI assistant determines during Research & Discovery (Step 2) that aren't visible from the file paths alone.
+This section captures **constraints, gotchas, and ordering requirements that the implementer needs to know before they touch the code** — facts the LLM determines during Research & Discovery (Step 2) that aren't visible from the file paths alone.
 
 This is NOT a place to pre-decide implementation. Default: **omit** the entire section. Include a heading below ONLY when something genuinely surprising or load-bearing applies — and write 1-3 sentences, not bullet templates.
 
@@ -672,11 +690,11 @@ For non-software: structure, workflow, key dependencies.]
    - Include "what we're NOT doing"
 
 5. **Track Progress**:
-   - Use the Task tool to create planning tasks and update them to mark them completed as you progress
+   - Use TaskCreate to create planning tasks and TaskUpdate to mark them completed as you progress
    - Tasks appear in the user's status bar for visibility
    - Mark tasks completed as you finish research areas
 
-6. **MANDATORY: Complexity-Scaled Deep Questioning**:
+6. **MANDATORY: Complexity-Scaled Deep Questioning via AskUserQuestion**:
    - **BEFORE** writing any plan, you MUST assess complexity (HIGH/MEDIUM/LOW) and get user confirmation
    - Ask the full number of questions matching complexity: LOW=4-6, MEDIUM=7-10, HIGH=11-15
    - Every option must include a `⭐ Recommended` pick with strength/tradeoff analysis
@@ -737,15 +755,17 @@ Planning can be context-heavy due to research + iteration. Keep context efficien
   ```
   This lets `/10x-plan` reload the draft and continue iterating with full context available.
 
-## Example Question Probing by Feature Type
+## Example AskUserQuestion Probing by Feature Type
 
 ### Example 1: Software / UI Feature — MEDIUM complexity (e.g., Pagination)
 
 Mixed: `Loading UX` is `[S]` (UI behavior — solution detail); `Scale` is `[D]` (problem boundary — how big is the dataset). With a frame brief, ask only `Loading UX`; the scale should already be in the Reframed (or Confirmed) Problem Statement.
 
-Ask the user: "What should the user see while new items load?"
-- header: "Loading UX"
-- options:
+AskUserQuestion with questions:
+
+- question: "What should the user see while new items load?"
+  header: "Loading UX"
+  options:
   - label: "Inline spinner"
     description: "Small spinner below existing content. · Strength: User keeps seeing current items, minimal UI work. · Tradeoff: Feels slower than skeleton — users see a generic spinner instead of content shape."
   - label: "⭐ Recommended: Skeleton screens"
@@ -753,9 +773,9 @@ Ask the user: "What should the user see while new items load?"
   - label: "Full-page spinner"
     description: "Replace content with spinner. · Strength: Simplest to implement — one component, no layout concerns. · Tradeoff: Blocks all interaction; feels broken on slow connections."
     multiSelect: false
-Ask the user: "How many items should this handle gracefully?"
-- header: "Scale"
-- options:
+- question: "How many items should this handle gracefully?"
+  header: "Scale"
+  options:
   - label: "⭐ Recommended: Hundreds"
     description: "Standard offset pagination. · Strength: Simple, well-understood, works with existing SQL queries. · Tradeoff: Breaks down past ~5k items — acceptable given current data volumes."
   - label: "Thousands"
@@ -768,9 +788,11 @@ Ask the user: "How many items should this handle gracefully?"
 
 Mixed: `Outcome` is `[D]` (defines what success looks like — pure problem framing); `Levels` is `[S]` (audience-handling strategy — how to structure delivery). With a frame brief, ask only `Levels`; the outcome should be settled.
 
-Ask the user: "What should the learner be able to DO after this module — not just know?"
-- header: "Outcome"
-- options:
+AskUserQuestion with questions:
+
+- question: "What should the learner be able to DO after this module — not just know?"
+  header: "Outcome"
+  options:
   - label: "⭐ Recommended: Build a working prototype"
     description: "Learner produces a functional artifact using the techniques taught. · Strength: Forces genuine skill transfer — the artifact proves competence. Matches the 'Innovate' lesson format from 10xDevs3. · Tradeoff: Requires well-designed starter templates and clear acceptance criteria; takes 2-3x longer to prep."
   - label: "Complete a guided exercise"
@@ -778,9 +800,9 @@ Ask the user: "What should the learner be able to DO after this module — not j
   - label: "Pass a knowledge check"
     description: "Quiz or code review proving conceptual understanding. · Strength: Fast to create, easy to grade at scale. · Tradeoff: Tests recognition not production — learner may understand but not be able to execute."
     multiSelect: false
-Ask the user: "How should this module handle different skill levels in the audience?"
-- header: "Levels"
-- options:
+- question: "How should this module handle different skill levels in the audience?"
+  header: "Levels"
+  options:
   - label: "Single track, advanced"
     description: "One path targeting experienced devs. · Strength: Deep content, no hand-holding, respects expert time. · Tradeoff: Alienates beginners — they'll drop off or flood support channels."
   - label: "⭐ Recommended: Layered depth"
@@ -793,9 +815,11 @@ Ask the user: "How should this module handle different skill levels in the audie
 
 `Bottleneck` is `[D]` — pure problem framing (which problem to solve). This is exactly the kind of question a frame exists to settle. With a frame brief, skip this entirely; the leading hypothesis is the bottleneck.
 
-Ask the user: "What's the primary bottleneck in the current newsletter pipeline?"
-- header: "Bottleneck"
-- options:
+AskUserQuestion with questions:
+
+- question: "What's the primary bottleneck in the current newsletter pipeline?"
+  header: "Bottleneck"
+  options:
   - label: "⭐ Recommended: Curation takes too long"
     description: "Finding and evaluating links is the slow step. · Strength: Directly targets time-to-publish — automating curation yields the biggest time savings based on current pipeline timings. · Tradeoff: Automated curation risks losing the personal editorial voice that subscribers value."
   - label: "Writing the commentary"

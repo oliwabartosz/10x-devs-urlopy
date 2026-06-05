@@ -12,6 +12,14 @@ description: >
   "is my stack agent-friendly", "oceń mój stack", "sprawdź projekt",
   "stack assessment", "brownfield assessment".
   Use AFTER /10x-prd (brownfield), BEFORE /10x-health-check.
+argument-hint: "[path-to-prd]"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Stack Assess: Evaluate an Existing Stack for Agent-Friendliness
@@ -110,7 +118,9 @@ Detected stack:
   Instruction files: <list or "none">
 ```
 
-Ask the user:
+Ask for confirmation:
+
+AskUserQuestion:
 - question: "Is this detection accurate? Anything missing or wrong?"
   header: "Stack"
   options:
@@ -140,7 +150,7 @@ For each detected component (language, framework, build tool, test runner), scor
 
 - **Pass**: the framework ships strong opinions about folder layout, routing, configuration (Next.js App Router, Rails, Django, Spring Boot, Astro, Angular, Laravel, .NET).
 - **Fail**: the framework is minimal/unopinionated and the project has no documented conventions (Express, Koa, Flask without blueprints, Sinatra, raw Vite + React).
-- **Partial pass**: minimal framework BUT the project has documented conventions in instruction files (CLAUDE.md, AGENTS.MD) or a visible conventions document. Score as pass-with-note.
+- **Partial pass**: minimal framework BUT the project has documented conventions in instruction files (CLAUDE.md, AGENTS.md) or a visible conventions document. Score as pass-with-note.
 - **Evidence**: cite the framework's convention strength or the absence of it.
 
 #### Gate 3: Popular in training data
@@ -215,9 +225,15 @@ The verdict is informational, not blocking. Even `significant-friction` doesn't 
 
 ### Step 5 — Write assessment
 
-Check for collision by attempting to read `context/foundation/stack-assessment.md`.
+Check for collision:
 
-If the file exists, ask the user:
+```bash
+test -f context/foundation/stack-assessment.md
+```
+
+If the file exists, ask:
+
+AskUserQuestion:
 - question: "context/foundation/stack-assessment.md already exists. How would you like to proceed?"
   header: "Collision"
   options:

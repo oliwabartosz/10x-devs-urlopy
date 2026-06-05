@@ -1,0 +1,13 @@
+echo "Running pre-push checks (lint + all tests)..."
+
+if ! npm run lint 2>&1; then
+  say "Push zablokowany: błędy lintowania" &
+  exit 1
+fi
+
+if npm run test:run 2>&1; then
+  say "Wszystkie sprawdzenia przeszły, wysyłam zmiany" &
+else
+  say "Push zablokowany: testy nie przeszły" &
+  exit 1
+fi

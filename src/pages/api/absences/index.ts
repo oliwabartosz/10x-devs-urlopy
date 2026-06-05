@@ -5,8 +5,8 @@ import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
-import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
-import { DateSchema } from "@/lib/validators";
+import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
+import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
 
 const json = (data: unknown, status: number) =>
@@ -93,10 +93,12 @@ export const GET: APIRoute = async (context) => {
         absence_type_id: absences.absence_type_id,
         date: absences.date,
         is_full_day: absences.is_full_day,
-        hours: sql<number | null>`${absences.hours}::float`,
+        start_time: absences.start_time,
+        end_time: absences.end_time,
         comment: absences.comment,
         substitute_employee_id: absences.substitute_employee_id,
         created_at: absences.created_at,
+        updated_at: absences.updated_at,
       })
       .from(absences)
       // No employee_id filter: the team grid shows all employees' absences to every user.
@@ -118,13 +120,18 @@ const AbsenceCreateSchema = z
     absence_type_id: z.number().int().positive(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     is_full_day: z.boolean(),
-    hours: z.number().positive().nullable(),
+    start_time: TimeSchema.nullable(),
+    end_time: TimeSchema.nullable(),
     comment: z.string().max(500).nullable(),
     substitute_employee_id: z.uuid().nullable(),
   })
-  .refine((d) => (d.is_full_day ? d.hours === null : d.hours !== null), {
-    message: "hours must be null when is_full_day is true, and set otherwise",
-  });
+  .refine(
+    (d) =>
+      d.is_full_day
+        ? d.start_time === null && d.end_time === null
+        : d.start_time !== null && d.end_time !== null && d.end_time > d.start_time, // string compare valid: TimeSchema guarantees HH:MM format
+    { message: "start_time and end_time must be null for full-day; both set with end_time > start_time otherwise" },
+  );
 
 export const POST: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -189,7 +196,8 @@ export const POST: APIRoute = async (context) => {
         absence_type_id: absences.absence_type_id,
         date: absences.date,
         is_full_day: absences.is_full_day,
-        hours: sql<number | null>`${absences.hours}::float`,
+        start_time: absences.start_time,
+        end_time: absences.end_time,
         comment: absences.comment,
         substitute_employee_id: absences.substitute_employee_id,
         created_at: absences.created_at,
@@ -201,7 +209,7 @@ export const POST: APIRoute = async (context) => {
     if (code === "42501") return json({ error: "Forbidden" }, 403);
     if (code === "23503") return json({ error: "Substitute employee not found." }, 422);
     if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
-    if (code === "23514") return json({ error: "Invalid hours/is_full_day combination" }, 400);
+    if (code === "23514") return json({ error: "Invalid time/is_full_day combination" }, 400);
     return json({ error: "Database error" }, 500);
   }
 };

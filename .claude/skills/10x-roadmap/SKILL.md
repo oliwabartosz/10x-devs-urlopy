@@ -9,6 +9,16 @@ description: >
   "create the roadmap from PRD", "stwórz roadmapę", "turn PRD into a
   roadmap", "what should I build first". Do NOT use for per-change planning
   — that's /10x-plan's job.
+argument-hint: "[path-to-prd]"
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+  - Glob
+  - Agent
+  - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
 ---
 
 # Roadmap: Generate context/foundation/roadmap.md from a PRD
@@ -47,7 +57,7 @@ When this skill is invoked:
 
 Whenever the procedure says *"ask the user"*, use whichever interactive-question tool the host agent exposes. The skill is host-agnostic; do not hard-code one tool name into execution. Known equivalents (non-exhaustive):
 
-- your AI coding assistant → Ask the user:
+- Claude Code → `AskUserQuestion`
 - Cursor → `ask_question`
 - OpenAI Codex / Codex CLI → `request_user_input`
 - Other harnesses → look for any tool whose description mentions asking the user a structured question with options.
@@ -62,7 +72,7 @@ The interactive-question tool is used in Steps 1, 3, 4, 5, and 9 (input-missing,
 
 Whenever the procedure says to use subagents or run parallel probes, use whichever background research / task-spawn tool the host exposes. Known equivalents (non-exhaustive):
 
-- your AI coding assistant → Spawn an isolated agent with its own context window and return a summary
+- Claude Code → `Agent` with an Explore/general-purpose subagent type
 - Cursor → background agents / delegated tasks
 - OpenAI Codex → task delegation tools where available
 - Other harnesses → look for any tool that spawns an isolated agent with its own context window and returns a summary.
@@ -86,7 +96,7 @@ If the file exists, **read it FULLY** (no `limit`/`offset`).
 
 If it does not exist, ask with the selected interactive-question tool:
 
-Ask the user:
+Interactive question:
 - question: "No PRD found at `<resolved-path>`. How would you like to proceed?"
   header: "Input?"
   options:
@@ -149,7 +159,7 @@ up the PRD first, the resulting roadmap will be substantially more actionable.
 
 Then ask with the selected interactive-question tool:
 
-Ask the user:
+Interactive question:
 - question: "How would you like to proceed?"
   header: "Thin PRD"
   options:
@@ -169,14 +179,14 @@ The "what's already in place" assessment shouldn't fall on the user — the code
 
 **Layers to probe** (skip a layer if `tech-stack.md` already names that layer's choice — report "per tech-stack.md: <choice>" instead of probing):
 
-| Layer | What the probe looks for |
-|---|---|
-| Frontend | UI framework, build tooling, routing, component libraries — `package.json` deps, framework config files |
-| Backend / API | Server framework, API routes, request handlers — entrypoints, route files, controllers |
-| Data | DB driver, ORM/query builder, schema/migration tooling, seeded data — schema files, migration directories |
-| Auth | Auth provider integration, session/token handling, auth middleware — auth config, middleware files |
+| Layer          | What the probe looks for                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Frontend       | UI framework, build tooling, routing, component libraries — `package.json` deps, framework config files           |
+| Backend / API  | Server framework, API routes, request handlers — entrypoints, route files, controllers                            |
+| Data           | DB driver, ORM/query builder, schema/migration tooling, seeded data — schema files, migration directories         |
+| Auth           | Auth provider integration, session/token handling, auth middleware — auth config, middleware files                |
 | Deploy / infra | Hosting target, container config, CI/CD workflows, infra-as-code — `Dockerfile`, `.github/workflows`, deploy YAML |
-| Observability | Logging library, error tracking, metrics, dashboards — sentry/datadog/otel imports, log middleware |
+| Observability  | Logging library, error tracking, metrics, dashboards — sentry/datadog/otel imports, log middleware                |
 
 **Run all probes in one batched delegation when the host supports it.** Each prompt is short and self-contained; delegated agents return only a paragraph each, so the main context stays small. Example for Auth:
 
@@ -199,7 +209,7 @@ Codebase baseline (auto-researched):
 
 Then confirm:
 
-Ask the user:
+Interactive question:
 - question: "Does this baseline match your understanding? Anything to correct or add before it informs Foundations?"
   header: "Baseline"
   options:
@@ -243,7 +253,7 @@ The cap is **3 anchor questions**. In practice you will usually ask 2-3; you may
 
 For each non-skipped anchor — `main_goal`, then `north_star`, then `top_blocker` — use the selected interactive-question tool. Each question is its own call (sequential, not batched). Format:
 
-Ask the user:
+Interactive question:
 - question: "<plain-language anchor question, in the user's language>"
   header: "<short header — e.g., Cel | Gwiazda | Główne ryzyko / Goal | North star | Blocker>"
   options:
@@ -322,6 +332,10 @@ This step is where the skill earns its keep. Build the roadmap content **in memo
 
 Don't invent foundations the PRD doesn't imply (no "set up Storybook" unless something forces it). Do not create a generic "data layer", "API layer", "UI layer", or "auth system" foundation unless you can name the downstream `S-NN` item it unlocks, the blocking unknown it reduces, or the verification path it enables.
 
+**Foundation scope cap.** A Foundation must be the smallest cross-cutting enabler that lets a named vertical slice proceed. It may establish a minimal contract, scaffold, policy, or verification path; it must NOT complete an entire architectural layer ahead of user-facing work. If a foundation's Outcome sounds like "the data layer/API/UI/auth is complete", split it or fold the minimum needed work into the first `S-NN` slice that consumes it. The test: after the Foundation lands, at least one downstream `S-NN` should still integrate and exercise that layer through a real user capability.
+
+**Progressive disclosure rule.** Prefer introducing technical elements at the moment the first user-facing slice needs them. A foundation is justified only when postponing it would make the first vertical slice unplannable, unsafe, or unverifiable. "We'll need this layer eventually" is not enough.
+
 Foundation IDs are `F-NN` (zero-padded two-digit, starting at `F-01`).
 
 **6b. Decompose the user-facing surface into slices.** Walk the PRD's `## User Stories` and `## Functional Requirements`. Group them into vertical, end-to-end slices where each slice:
@@ -335,6 +349,18 @@ Do NOT slice horizontally ("the database slice", "the API slice", "the UI slice"
 Slice IDs are `S-NN` (zero-padded two-digit, starting at `S-01`).
 
 Each `F-NN` and `S-NN` also gets a stable **Change ID** in kebab-case. The Change ID is the bridge into `/10x-plan` and, later, a backlog item in Jira/Linear. Prefer concise, outcome-oriented names such as `first-gated-generation`, `minimal-auth-for-generation`, or `srs-review-session`.
+
+**Slice granularity and balance.** Roadmap slices should be roughly comparable in planning effort and conceptual weight, even though they do not carry estimates. Avoid one slice that absorbs most of the PRD while later slices are tiny polish items. If one candidate slice references many must-have FRs or multiple unrelated user stories, split it along user-visible outcomes, workflow phases, personas, or risk boundaries until each `S-NN` is something one `/10x-plan <change-id>` can reason about coherently.
+
+Use these split triggers:
+
+- A slice covers more than one primary user action (e.g., "import, edit, share, and report").
+- A slice combines setup, core workflow, and administration in one item.
+- A slice satisfies most of the must-have FRs while other slices have only one minor FR each.
+- A slice's Risk line contains more than one independent risk.
+- A slice needs unrelated unknowns owned by different people or layers.
+
+Do NOT split by layer to fix size. Split by narrower vertical outcomes. For example, replace "complete recipe system" with "user can save the first recipe", "user can search saved recipes", and "user can share a recipe" — not "recipe schema", "recipe API", and "recipe UI".
 
 **6c. Build the dependency graph.** For each slice and foundation, identify Prerequisites:
 
@@ -439,23 +465,23 @@ be able to read the section cold.>
 
 ## At a glance
 
-| ID | Change ID | Outcome (user can …) | Prerequisites | PRD refs | Status |
-|---|---|---|---|---|---|
-| F-01 | <kebab-case-change-id> | (foundation) <foundation outcome> | — | NFR-XX | proposed |
-| F-02 | <kebab-case-change-id> | (foundation) <foundation outcome> | F-01 | NFR-YY | proposed |
-| S-01 | <kebab-case-change-id> | <user-can outcome> | F-01 | US-01, FR-001 | ready |
-| S-02 | <kebab-case-change-id> | <user-can outcome> | S-01 | US-02, FR-003 | proposed |
-| S-03 | <kebab-case-change-id> | <user-can outcome> | S-01, F-02 | US-03, FR-005 | blocked |
+| ID    | Change ID              | Outcome (user can …)              | Prerequisites    | PRD refs       | Status   |
+| ----- | ---------------------- | --------------------------------- | ---------------- | -------------- | -------- |
+| F-01  | <kebab-case-change-id> | (foundation) <foundation outcome> | —                | NFR-XX         | proposed |
+| F-02  | <kebab-case-change-id> | (foundation) <foundation outcome> | F-01             | NFR-YY         | proposed |
+| S-01  | <kebab-case-change-id> | <user-can outcome>                | F-01             | US-01, FR-001  | ready    |
+| S-02  | <kebab-case-change-id> | <user-can outcome>                | S-01             | US-02, FR-003  | proposed |
+| S-03  | <kebab-case-change-id> | <user-can outcome>                | S-01, F-02       | US-03, FR-005  | blocked  |
 
 ## Streams
 
 Navigation aid — groups items that share a Prerequisites chain. Canonical ordering still lives in the dependency graph below; this table is the proposed reading order across parallel tracks.
 
-| Stream | Theme | Chain | Note |
-|---|---|---|---|
-| A | <Theme> | `F-01` → `S-01` → `S-02` | <One-line rationale tying the stream to main_goal.> |
-| B | <Theme> | `F-02` → `S-03` | <Joins Stream A at `S-NN` if applicable, else standalone.> |
-| C | <Theme> | `S-NN` | <Standalone slice with no foundation prerequisite.> |
+| Stream | Theme              | Chain                          | Note                                                      |
+| ------ | ------------------ | ------------------------------ | --------------------------------------------------------- |
+| A      | <Theme>            | `F-01` → `S-01` → `S-02`       | <One-line rationale tying the stream to main_goal.>       |
+| B      | <Theme>            | `F-02` → `S-03`                | <Joins Stream A at `S-NN` if applicable, else standalone.> |
+| C      | <Theme>            | `S-NN`                         | <Standalone slice with no foundation prerequisite.>       |
 
 (2–5 streams; every `F-NN` and `S-NN` appears in exactly one stream. Omit this section entirely if the dep graph is too small for streams to add value — see Step 6h.)
 
@@ -508,10 +534,10 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID | Suggested issue title | Ready for `/10x-plan` | Notes |
-|---|---|---|---|---|
-| F-01 | <kebab-case-change-id> | <issue title for Jira/Linear> | no | <why or `—`> |
-| S-01 | <kebab-case-change-id> | <issue title for Jira/Linear> | yes | Run `/10x-plan <change-id>` |
+| Roadmap ID | Change ID              | Suggested issue title         | Ready for `/10x-plan` | Notes |
+| ---------- | ---------------------- | ----------------------------- | --------------------- | ----- |
+| F-01       | <kebab-case-change-id> | <issue title for Jira/Linear> | no                    | <why or `—`> |
+| S-01       | <kebab-case-change-id> | <issue title for Jira/Linear> | yes                   | Run `/10x-plan <change-id>` |
 
 This table is the clean handoff to Jira/Linear or any MCP-backed backlog. Include one row for every `F-NN` and `S-NN`. It should be compact enough to copy into issues, but it must not duplicate the detailed roadmap body.
 
@@ -539,7 +565,7 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog. Includ
 - **Outcome** is verb-led. Slices: *"user can sign in and see an empty fridge"*. Foundations: *"(foundation) auth scaffold landed; tokens issued via configured provider"*. Never a noun phrase ("authentication system"); always a state-of-the-world declarative.
 - **Change ID** is kebab-case, stable, and suitable for `context/changes/<change-id>/`. Do not use `F-01` / `S-01` as the change id; those are roadmap-local order IDs.
 - **Unlocks** appears only on Foundations. It names the downstream reason this Foundation exists: specific `S-NN` slices, blocking unknowns, or verification paths. A Foundation without Unlocks is horizontal drift.
-- **PRD refs** uses the literal IDs from PRD (`FR-001`, `US-01`, `NFR-02`). Don't paraphrase. Every must-have FR in PRD must appear in at least one slice's `PRD refs` after Step 8 self-review.
+- **PRD refs** uses the literal IDs from PRD (`FR-001`, `US-01`, `NFR-02`). Don't paraphrase. Every must-have FR in PRD must appear in at least one slice's PRD refs after Step 8 self-review.
 - **Prerequisites** mixes slice IDs (`S-01`, `F-02`) and external state, comma-separated. External state is plain English ("seeded ingredient table", "design tokens published"). One field, not split.
 - **Parallel with** is informational. Computed from the dep graph: any slice X where my Prerequisites and X's Prerequisites have no path between them. Empty = `—`.
 - **Blockers** is *external pending* only (vendor, design, stakeholder decision). Things the team can't unilaterally resolve. If the team CAN resolve it, it's an Unknown, not a Blocker.
@@ -567,10 +593,11 @@ Before any disk write, verify the in-memory roadmap:
 9. **Baseline ↔ Foundations consistency** — no Foundation re-scaffolds a layer the `## Baseline` section reports as `present`. If the baseline says auth is present and there's still an `F-NN` for auth scaffold, that's a self-review failure (either the baseline is wrong or the foundation is redundant).
 10. **Foundation enabler contract** — every Foundation has `Unlocks` populated with at least one downstream `S-NN`, a named blocking unknown, or a named verification path. A generic foundation such as "database layer" without a downstream reason is a self-review failure.
 11. **Change ID integrity** — every F-NN and S-NN has a unique kebab-case `Change ID`; every F-NN and S-NN appears exactly once in `## Backlog Handoff`; every handoff row references an existing roadmap ID and repeats the same Change ID. No spaces, dates, status labels, or roadmap IDs as change IDs.
-
-13. **Streams coverage** (only if a `## Streams` section was emitted) — every `F-NN` and every `S-NN` listed in `## At a glance` appears in exactly one stream's `Chain` cell. Duplicates and omissions both fail. The Chain cells only reference existing Roadmap IDs (no invented IDs). Stream count is 2–5. If the doc has < 2 candidate streams, the section should have been omitted (Step 6h cap).
-
-12. **Strategic terms are defined inline** — scan the emitted document for product-strategy jargon: `wedge`, `beachhead`, `north star`, `validation milestone`, `primary metric`, `product-market fit`, `thin end of the wedge`, `riskiest assumption`, `core hypothesis`. For each term that appears anywhere in the body (Vision recap, North star, Risk lines, slice titles), verify there is a one-sentence inline definition on its **first** occurrence in the document. If a term is used without being defined on first use, the self-review FAILS. Acceptable forms of definition: parenthetical ("the wedge — the one trait that, if removed, makes the product generic — is …"), em-dash gloss, or a short follow-on sentence. Identifier-style terms (`FR-001`, `US-03`, `F-01`, `S-02`) and proper names of tools/services are exempt. If the term cannot be defined in one sentence, replace it with plain language and re-emit.
+12. **Slice granularity balance** — no `S-NN` may absorb the majority of a non-trivial PRD while sibling slices are narrow leftovers. If one slice references most must-have FRs, more than two unrelated US-NN entries, multiple primary user actions, or unrelated risks/unknowns, the self-review FAILS unless the PRD truly has only one user-visible workflow. Fix by splitting into narrower vertical outcomes, not by creating layer slices.
+13. **Foundation scope cap** — no Foundation may complete an entire layer in advance. The Outcome and Risk must show a minimal enabler contract, and `Unlocks` must name vertical slices that will still integrate that layer through user-facing behavior. If the Foundation reads like "build the data/API/UI/auth layer", the self-review FAILS. Split it, narrow it, or fold the minimum needed work into the first consuming `S-NN`.
+14. **Progressive disclosure of technical elements** — each cross-cutting technical element appears either in the first vertical slice that needs it or in a Foundation that is required before that slice can be planned, verified, or made safe. If a technical element is introduced only because it will be useful later, the self-review FAILS and that work moves into the first slice that actually uses it.
+15. **Streams coverage** (only if a `## Streams` section was emitted) — every `F-NN` and every `S-NN` listed in `## At a glance` appears in exactly one stream's `Chain` cell. Duplicates and omissions both fail. The Chain cells only reference existing Roadmap IDs (no invented IDs). Stream count is 2–5. If the doc has < 2 candidate streams, the section should have been omitted (Step 6h cap).
+16. **Strategic terms are defined inline** — scan the emitted document for product-strategy jargon: `wedge`, `beachhead`, `north star`, `validation milestone`, `primary metric`, `must-have path`, `product-market fit`, `thin end of the wedge`, `riskiest assumption`, `core hypothesis`. For each term that appears anywhere in the body (Vision recap, North star, Risk lines, slice titles), verify there is a one-sentence inline definition on its **first** occurrence in the document. If a term is used without being defined on first use, the self-review FAILS. Acceptable forms of definition: parenthetical ("the wedge — the one trait that, if removed, makes the product generic — is …"), em-dash gloss, or a short follow-on sentence. Identifier-style terms (`FR-001`, `US-03`, `F-01`, `S-02`) and proper names of tools/services are exempt. If the term cannot be defined in one sentence, replace it with plain language and re-emit.
 
 If any check fails, **abort the write** and report the specific failure:
 
@@ -599,7 +626,7 @@ If the file does not exist, write to `context/foundation/roadmap.md` and proceed
 
 If the file exists, the foundation-doc convention is **edit-in-place** for incremental refinement, **archive-then-replace** for full regeneration. This skill produces a *full* roadmap from PRD; surgical refinement is out of scope. So default to archive-then-replace, but ask with the selected interactive-question tool:
 
-Ask the user:
+Interactive question:
 - question: "context/foundation/roadmap.md already exists. How would you like to proceed?"
   header: "Collision"
   options:
@@ -692,25 +719,29 @@ STOP. Do not chain into another skill automatically — the user picks when to p
 
 2. **Vertical slices first.** A slice delivers user-visible capability end-to-end. Horizontal slices ("the API layer", "the schema") are the anti-pattern this skill exists to prevent. Foundations are the *only* exception — they are explicitly cross-cutting enablers, live in their own section, carry `Unlocks`, and are marked `(foundation)` so no reader confuses them with user-facing work.
 
-3. **No estimates, no time units.** No "Day 1", no "2 weeks", no "small/medium/large", no points. AI-agent execution is non-linear and time-budgeted estimates lie. Order is encoded in Prerequisites; pacing surfaces via Blockers and Unknowns. The roadmap describes shape, not schedule.
+3. **Balanced granularity without estimates.** Slices do not get size labels, but their scope still has to be comparable. A roadmap where `S-01` contains nearly the whole PRD and `S-02`/`S-03` are minor leftovers is a bad roadmap. Split oversized items by narrower user-visible outcomes, workflow phases, personas, or risk boundaries — never by technical layer.
 
-4. **No low-level technical details.** No frameworks named (those live in `tech-stack.md`), no file paths, no schema definitions, no code, no library choices. If you find yourself writing those, you've crossed into `/10x-plan`'s territory — stop and let `/10x-plan` do its job downstream.
+4. **Foundations are minimal unlocks, not layer-completion projects.** A foundation may create the smallest prerequisite needed before vertical work can proceed. It may not prebuild the whole database/API/UI/auth layer. If a technical element can be introduced inside the first user-facing slice that needs it, put it there; this keeps integration vertical and progressively reveals only the needed elements.
 
-5. **Surface unknowns, don't paper over them.** Per-slice Unknowns with `Block: yes` promote `Status: blocked`. Cross-cutting unknowns land in `## Open Roadmap Questions`. If the PRD has TODOs, the roadmap inherits them as blocked-slice unknowns. The roadmap's value is partly in showing the user what's NOT yet plannable.
+5. **No estimates, no time units.** No "Day 1", no "2 weeks", no "small/medium/large", no points. AI-agent execution is non-linear and time-budgeted estimates lie. Order is encoded in Prerequisites; pacing surfaces via Blockers and Unknowns. The roadmap describes shape, not schedule.
 
-6. **Baseline is auto-researched, not asked.** Don't ask the user "what's already in place?" — spawn parallel Explore subagents (Step 4) and let the codebase answer. Then ask the user only to confirm or correct. This is the contract that makes Foundations honest: a foundation only exists when the baseline says the layer is absent or partial.
+6. **No low-level technical details.** No frameworks named (those live in `tech-stack.md`), no file paths, no schema definitions, no code, no library choices. If you find yourself writing those, you've crossed into `/10x-plan`'s territory — stop and let `/10x-plan` do its job downstream.
 
-7. **Self-review aborts on drift.** Missing required sections, broken dep graph, uncovered must-have FRs, invented slices, Baseline-vs-Foundations contradictions — all abort the write with a specific error. No silent patch-up.
+7. **Surface unknowns, don't paper over them.** Per-slice Unknowns with `Block: yes` promote `Status: blocked`. Cross-cutting unknowns land in `## Open Roadmap Questions`. If the PRD has TODOs, the roadmap inherits them as blocked-slice unknowns. The roadmap's value is partly in showing the user what's NOT yet plannable.
 
-8. **Foundation-doc convention.** `roadmap.md` is a foundation doc per `context/foundation/README.md`. Default collision handling is archive-then-replace (history goes to `foundation/archive/<today>-roadmap.md`); surgical refinement is out of scope for this skill (edit by hand if you need it).
+8. **Baseline is auto-researched, not asked.** Don't ask the user "what's already in place?" — spawn parallel Explore subagents (Step 4) and let the codebase answer. Then ask the user only to confirm or correct. This is the contract that makes Foundations honest: a foundation only exists when the baseline says the layer is absent or partial.
 
-9. **Universal language only.** No 10xDevs / cohort / certification references in any user-facing output or any artifact written to disk. The skill is a generic roadmap generator.
+9. **Self-review aborts on drift.** Missing required sections, broken dep graph, uncovered must-have FRs, invented slices, oversized slices, Foundation layer-completion, Baseline-vs-Foundations contradictions — all abort the write with a specific error. No silent patch-up.
 
-10. **Never chain automatically.** Step 10 is an announcement, not an invocation. The user picks when (and which) slice to feed to `/10x-plan`. Auto-chaining would skip the human's review of the generated roadmap.
+10. **Foundation-doc convention.** `roadmap.md` is a foundation doc per `context/foundation/README.md`. Default collision handling is archive-then-replace (history goes to `foundation/archive/<today>-roadmap.md`); surgical refinement is out of scope for this skill (edit by hand if you need it).
 
-11. **Define strategic terms inline on first use.** Product-strategy vocabulary — `wedge`, `beachhead`, `north star`, `validation milestone`, `primary metric`, `must-have path`, `riskiest assumption`, `core hypothesis` — is skill-internal and PRD-internal shorthand, not common knowledge. The roadmap must be readable cold by a teammate (or future-you) who has not taken a product-strategy course. On the FIRST occurrence of any such term in the document body, attach a one-sentence definition inline (parenthetical, em-dash gloss, or short follow-on sentence). Do not repeat the definition on later uses. If the concept cannot be defined in one sentence, replace it with plain language ("the smallest end-to-end flow that proves the product works" beats "the wedge" if you can't compress the wedge's distinguishing trait into one clause). This guardrail applies to user-facing prose in the emitted document — not to the interview questions (Step 5 already handles those) and not to the field semantics inside this skill file. Step 8's self-review check #12 enforces this; bypass is a self-review failure, not a stylistic preference.
+11. **Universal language only.** No 10xDevs / cohort / certification references in any user-facing output or any artifact written to disk. The skill is a generic roadmap generator.
 
-12. **Lean interview with strong Recommends — not silent auto-framing, not unbounded discovery.** Step 5 asks **at most 3 anchor questions** (`main_goal`, `north_star`, `top_blocker`); investment areas are *derived* from the answers. Each anchor question carries one strong **Recommend** grounded in a quoted artifact line, plus 1-2 alternatives where each alternative has its own one-line "why this is also reasonable" rationale tied to artifact signal. Strawman alternatives (an option listed only to make the Recommend look right) are forbidden — if the artifacts support only one value, present the anchor with a single Recommend and a free-form override, and say so. An anchor may be **skipped only when the PRD or Success Criteria literally states the value** (e.g., `timeline_budget: "1 week"` plus "must launch before X" → `main_goal: speed` is unambiguous); never skip when any plausible alternative exists. The two failure modes to avoid: **(a) performative interrogation** — asking what the artifacts already answer, or asking more than 3 questions; **(b) false confidence** — silently deciding load-bearing framing without offering the user a real choice. The custom-MVP-shape exception (Step 5f) is the only path that allows follow-ups (up to 2, on top of the 3 anchors). Step 10's recommended-next-move is the same principle applied to the hand-off: one recommendation with a one-line reason, not a "ready to plan" list the user has to triage.
+12. **Never chain automatically.** Step 10 is an announcement, not an invocation. The user picks when (and which) slice to feed to `/10x-plan`. Auto-chaining would skip the human's review of the generated roadmap.
+
+13. **Define strategic terms inline on first use.** Product-strategy vocabulary — `wedge`, `beachhead`, `north star`, `validation milestone`, `primary metric`, `must-have path`, `product-market fit`, `thin end of the wedge`, `riskiest assumption`, `core hypothesis` — is skill-internal and PRD-internal shorthand, not common knowledge. The roadmap must be readable cold by a teammate (or future-you) who has not taken a product-strategy course. On the FIRST occurrence of any such term in the document body, attach a one-sentence definition inline (parenthetical, em-dash gloss, or short follow-on sentence). Do not repeat the definition on later uses. If the concept cannot be defined in one sentence, replace it with plain language ("the smallest end-to-end flow that proves the product works" beats "the wedge" if you can't compress the wedge's distinguishing trait into one clause). This guardrail applies to user-facing prose in the emitted document — not to the interview questions (Step 5 already handles those) and not to the field semantics inside this skill file. Step 8's self-review check #16 enforces this; bypass is a self-review failure, not a stylistic preference.
+
+14. **Lean interview with strong Recommends — not silent auto-framing, not unbounded discovery.** Step 5 asks **at most 3 anchor questions** (`main_goal`, `north_star`, `top_blocker`); investment areas are *derived* from the answers. Each anchor question carries one strong **Recommend** grounded in a quoted artifact line, plus 1-2 alternatives where each alternative has its own one-line "why this is also reasonable" rationale tied to artifact signal. Strawman alternatives (an option listed only to make the Recommend look right) are forbidden — if the artifacts support only one value, present the anchor with a single Recommend and a free-form override, and say so. An anchor may be **skipped only when the PRD or Success Criteria literally states the value** (e.g., `timeline_budget: "1 week"` plus "must launch before X" → `main_goal: speed` is unambiguous); never skip when any plausible alternative exists. The two failure modes to avoid: **(a) performative interrogation** — asking what the artifacts already answer, or asking more than 3 questions; **(b) false confidence** — silently deciding load-bearing framing without offering the user a real choice. The custom-MVP-shape exception (Step 5f) is the only path that allows follow-ups (up to 2, on top of the 3 anchors). Step 10's recommended-next-move is the same principle applied to the hand-off: one recommendation with a one-line reason, not a "ready to plan" list the user has to triage.
 
 ## Notes
 

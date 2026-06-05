@@ -3,7 +3,8 @@ change_id: absence-hours-range
 title: Replace absence duration with start/end time range and show time block in grid and details
 status: implementing
 created: 2026-06-05
-updated: 2026-06-05
+updated: 2026-06-06
+status_phase4_review: impl_reviewed
 archived_at: null
 ---
 

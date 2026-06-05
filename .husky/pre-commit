@@ -1,1 +1,9 @@
 npx lint-staged
+
+echo "Running unit tests..."
+if npm run test:run -- --reporter=verbose --testPathPattern="src/tests/lib" 2>&1; then
+  say "Testy jednostkowe zakończone sukcesem" &
+else
+  say "Testy jednostkowe nie przeszły, commit zablokowany" &
+  exit 1
+fi
