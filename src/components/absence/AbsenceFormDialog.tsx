@@ -162,6 +162,7 @@ export function AbsenceFormDialog({
                 <Input
                   id="start-time"
                   type="time"
+                  lang="pl"
                   value={startTime}
                   onChange={(e) => {
                     setStartTime(e.target.value);
@@ -172,6 +173,7 @@ export function AbsenceFormDialog({
                 <Input
                   id="end-time"
                   type="time"
+                  lang="pl"
                   value={endTime}
                   onChange={(e) => {
                     setEndTime(e.target.value);
