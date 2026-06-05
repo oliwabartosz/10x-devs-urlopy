@@ -1,6 +1,19 @@
--- Replace hours column with start_time and end_time TIME columns.
--- Biconditional CHECK mirrors the pattern from 20260527000001.
--- No data conversion needed — no partial-day absence data exists.
+-- =============================================================================
+-- Replace absence duration with start/end time range (absence-hours-range)
+--   Intent: Swap hours NUMERIC column for start_time/end_time TIME columns.
+--   Old: hours NUMERIC(4,2) nullable; CHECK (biconditional on is_full_day)
+--   New: start_time/end_time TIME WITHOUT TIME ZONE; CHECK absences_time_check
+--   No data conversion needed — no partial-day absence data exists.
+-- =============================================================================
+
+-- Safety guard: abort if any partial-day rows exist (hours data would be lost).
+DO $$
+BEGIN
+  IF (SELECT COUNT(*) FROM absences WHERE NOT is_full_day) > 0 THEN
+    RAISE EXCEPTION 'Refusing to drop hours: % partial-day rows exist — verify data before re-running',
+      (SELECT COUNT(*) FROM absences WHERE NOT is_full_day);
+  END IF;
+END $$;
 
 ALTER TABLE absences DROP CONSTRAINT IF EXISTS absences_hours_check;
 ALTER TABLE absences DROP COLUMN IF EXISTS hours;
