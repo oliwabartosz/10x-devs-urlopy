@@ -445,16 +445,16 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 
 #### Automated
 
-- [ ] 4.1 `npm run build` passes
-- [ ] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes — dad662c
+- [x] 4.2 `npm run lint` passes — dad662c
 
 #### Manual
 
-- [ ] 4.3 Partial-day grid cell shows time label (e.g. "09:00–11:00") inside colored block
-- [ ] 4.4 Yellow absence type cell shows dark text (gray-800), others show white
-- [ ] 4.5 Full-day grid cell shows no text label
-- [ ] 4.6 Details table header reads "Czas"; partial-day shows range; full-day shows "Cały dzień"
-- [ ] 4.7 Stats: partial-day contributes computed duration; full-day contributes 8 h
+- [x] 4.3 Partial-day grid cell shows time label (e.g. "09:00–11:00") inside colored block
+- [x] 4.4 Yellow absence type cell shows dark text (gray-800), others show white
+- [x] 4.5 Full-day grid cell shows no text label
+- [x] 4.6 Details table header reads "Czas"; partial-day shows range; full-day shows "Cały dzień"
+- [x] 4.7 Stats: partial-day contributes computed duration; full-day contributes 8 h
 
 ### Phase 5: Tests + Roadmap
 
