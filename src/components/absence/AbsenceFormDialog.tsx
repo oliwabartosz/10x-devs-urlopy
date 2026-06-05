@@ -45,11 +45,7 @@ export function AbsenceFormDialog({
     month: "long",
   });
 
-  const timePattern = /^\d{2}:\d{2}$/;
-  const saveDisabled =
-    absenceTypeId === null ||
-    isSubmitting ||
-    (!isFullDay && (!timePattern.test(startTime) || !timePattern.test(endTime)));
+  const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
 
   const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
 
@@ -165,32 +161,24 @@ export function AbsenceFormDialog({
               <div className="flex items-center gap-2">
                 <Input
                   id="start-time"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="HH:MM"
-                  maxLength={5}
+                  type="time"
+                  lang="en-GB"
                   value={startTime}
                   onChange={(e) => {
-                    let v = e.target.value.replace(/[^\d:]/g, "");
-                    if (v.length === 2 && !v.includes(":")) v += ":";
-                    setStartTime(v);
+                    setStartTime(e.target.value);
                   }}
-                  className="w-24"
+                  className="w-32"
                 />
                 <span className="text-muted-foreground">–</span>
                 <Input
                   id="end-time"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="HH:MM"
-                  maxLength={5}
+                  type="time"
+                  lang="en-GB"
                   value={endTime}
                   onChange={(e) => {
-                    let v = e.target.value.replace(/[^\d:]/g, "");
-                    if (v.length === 2 && !v.includes(":")) v += ":";
-                    setEndTime(v);
+                    setEndTime(e.target.value);
                   }}
-                  className="w-24"
+                  className="w-32"
                 />
               </div>
             </div>
