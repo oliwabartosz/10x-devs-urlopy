@@ -45,3 +45,7 @@
   React island (client:load) has hydrated and onClick handlers are attached.
 - Form dialog: `getByRole("dialog")` scoped to `getByRole("heading", { name: … })`.
 - Tab navigation: `getByRole("link", { name: "Siatka" })` — reliable dashboard-loaded signal.
+
+## Exemplar
+
+`tests/e2e/absence-form-dialog.spec.ts` is the seed — model all new tests on its structure.
