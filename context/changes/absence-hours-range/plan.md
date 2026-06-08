@@ -432,14 +432,14 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 Uncheck "Cały dzień" → two time pickers appear; recheck → pickers disappear
-- [ ] 3.4 Edit existing partial-day absence → start/end fields pre-filled correctly
-- [ ] 3.5 Save partial-day absence → dialog closes, grid reloads, cell shows colored block
+- [x] 3.3 Uncheck "Cały dzień" → two time pickers appear; recheck → pickers disappear
+- [x] 3.4 Edit existing partial-day absence → start/end fields pre-filled correctly
+- [x] 3.5 Save partial-day absence → dialog closes, grid reloads, cell shows colored block
 
 ### Phase 4: Display UI
 
@@ -460,8 +460,8 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 
 #### Automated
 
-- [ ] 5.1 `npx vitest run src/tests/api/absences/crud.test.ts` — all tests pass
-- [ ] 5.2 New reversed-range validation tests pass (end_time ≤ start_time → 400)
+- [x] 5.1 `npx vitest run src/tests/api/absences/crud.test.ts` — all tests pass
+- [x] 5.2 New reversed-range validation tests pass (end_time ≤ start_time → 400)
 
 #### Manual
 

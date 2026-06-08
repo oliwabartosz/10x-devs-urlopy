@@ -36,3 +36,8 @@ supabase/snippets/
 
 # LibreOffice temp files
 .xdp-*
+
+# Playwright
+tests/e2e/.auth/user.json
+playwright-report/
+test-results/

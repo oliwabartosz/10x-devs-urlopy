@@ -48,6 +48,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | done     |
 | S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | proposed |
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
+| S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | planned  |
 
 ## Streams
 
@@ -57,7 +58,7 @@ przez równoległe tory.
 
 | Stream | Temat                    | Łańcuch                                  | Uwaga                                                                        |
 | ------ | ------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------- |
-| A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03`       | Ścieżka must-have; S-02 i S-03 można realizować równolegle po S-01           |
+| A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03` / `S-09` | Ścieżka must-have; S-02, S-03 i S-09 można realizować równolegle po S-01  |
 | B      | Zarządzanie pracownikami | `F-01` → `S-04` → `S-07`                | S-07 wymaga S-04 (kolumna display_order na tabeli employees)                 |
 | C      | Post-MVP enhancements    | `S-02` → `S-06` / `S-04` → `S-05`       | S-05, S-06, S-07 można realizować równolegle; S-05 nie blokuje żadnego z nich |
 | D      | Bugfixy integralności    | `S-03` + `S-04` → `S-08`                | Bug odkryty podczas S-03; wymaga S-04 (is_active/deleted_at na employees)    |
@@ -174,6 +175,18 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Unknowns:** Czy kolumna zdezaktywowanego pracownika powinna pozostać widoczna (ze wskaźnikiem nieaktywności), czy być ukryta dla nowych miesięcy, ale widoczna dla historycznych? Wymaga decyzji UX przed implementacją.
 - **Risk:** Niskie — prawdopodobnie zmiana filtra zapytania grid z `is_active = true` na `is_active = true OR has_absences_in_month`; nie wymaga zmian schematu jeśli F-01 już ma `is_active`.
 - **Status:** done
+
+### S-09: Nieobecności — widok zakresu godzin w siatce i szczegółach
+
+- **Outcome:** użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce miesięcznej i tabeli szczegółów; formularz umożliwia wprowadzenie godziny rozpoczęcia i zakończenia zamiast liczby godzin.
+- **Change ID:** absence-hours-range
+- **PRD refs:** FR-004, US-01
+- **Prerequisites:** S-01
+- **Parallel with:** S-02, S-03
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Niskie — zmiana schematu (`hours` → `start_time`/`end_time`) jest czystym swap'em; brak danych produkcyjnych dla nieobecności niepełnodniowych eliminuje konieczność migracji danych.
+- **Status:** planned
 
 ### S-07: Moderator — zmiana kolejności pracowników w siatce
 

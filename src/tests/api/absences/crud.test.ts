@@ -127,6 +127,38 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
     expect(rows).toHaveLength(0);
   });
 
+  it("INSERT with reversed times (end_time < start_time) — DB CHECK constraint rejects with 23514", async () => {
+    await expect(
+      db.insert(absences).values({
+        employee_id: testEmployeeId,
+        absence_type_id: 1,
+        date: "2026-01-21",
+        is_full_day: false,
+        start_time: "14:00",
+        end_time: "09:00",
+      }),
+    ).rejects.toSatisfy((err: unknown) => {
+      const e = err as { cause?: { code?: string } };
+      return e.cause?.code === "23514";
+    });
+  });
+
+  it("INSERT with equal times (end_time === start_time) — DB CHECK constraint rejects with 23514", async () => {
+    await expect(
+      db.insert(absences).values({
+        employee_id: testEmployeeId,
+        absence_type_id: 1,
+        date: "2026-01-22",
+        is_full_day: false,
+        start_time: "09:00",
+        end_time: "09:00",
+      }),
+    ).rejects.toSatisfy((err: unknown) => {
+      const e = err as { cause?: { code?: string } };
+      return e.cause?.code === "23514";
+    });
+  });
+
   it("Duplicate INSERT — error has PG code 23505 accessible via cause.code", async () => {
     await db.insert(absences).values({
       employee_id: testEmployeeId,

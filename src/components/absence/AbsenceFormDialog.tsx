@@ -161,6 +161,7 @@ export function AbsenceFormDialog({
               <div className="flex items-center gap-2">
                 <Input
                   id="start-time"
+                  aria-label="Czas od"
                   type="time"
                   lang="en-GB"
                   value={startTime}
@@ -172,6 +173,7 @@ export function AbsenceFormDialog({
                 <span className="text-muted-foreground">–</span>
                 <Input
                   id="end-time"
+                  aria-label="Czas do"
                   type="time"
                   lang="en-GB"
                   value={endTime}
