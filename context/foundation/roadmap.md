@@ -48,7 +48,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | done     |
 | S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | proposed |
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
-| S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | planned  |
+| S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
 
 ## Streams
 
@@ -186,7 +186,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Niskie — zmiana schematu (`hours` → `start_time`/`end_time`) jest czystym swap'em; brak danych produkcyjnych dla nieobecności niepełnodniowych eliminuje konieczność migracji danych.
-- **Status:** planned
+- **Status:** done
 
 ### S-07: Moderator — zmiana kolejności pracowników w siatce
 

@@ -22,6 +22,7 @@ export const employees = pgTable("employees", {
   last_name: text("last_name").notNull(),
   deleted_at: timestamp("deleted_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  display_order: integer("display_order").notNull().default(0),
 });
 
 export const absence_types = pgTable("absence_types", {

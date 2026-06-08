@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { createDb, employees } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
-import { eq, isNull, and, asc } from "drizzle-orm";
+import { eq, isNull, and, asc, max } from "drizzle-orm";
 import { extractPgErrorCode } from "@/lib/db-errors";
 
 export const GET: APIRoute = async (context) => {
@@ -131,9 +131,11 @@ export const POST: APIRoute = async (context) => {
   }
 
   try {
+    const [{ maxOrder }] = await db.select({ maxOrder: max(employees.display_order) }).from(employees);
+    const nextOrder = (maxOrder ?? -1) + 1;
     const [employee] = await db
       .insert(employees)
-      .values({ user_id: authData.user.id, first_name, last_name, role })
+      .values({ user_id: authData.user.id, first_name, last_name, role, display_order: nextOrder })
       .returning();
     return json(employee, 201);
   } catch (err) {
