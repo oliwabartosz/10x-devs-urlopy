@@ -1,0 +1,73 @@
+import type { APIRoute } from "astro";
+import { z } from "zod";
+import { createDb } from "@/db/index";
+import { DATABASE_URL } from "astro:env/server";
+import { employees } from "@/db/index";
+import { eq, isNull, and } from "drizzle-orm";
+
+export const prerender = false;
+
+const json = (data: unknown, status: number) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+const OrderSchema = z.object({
+  order: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        display_order: z.number().int().min(0),
+      }),
+    )
+    .min(1),
+});
+
+export const PATCH: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  const db = createDb(DATABASE_URL);
+
+  let caller: { id: string; role: "employee" | "moderator" } | undefined;
+  try {
+    caller = await db
+      .select({ id: employees.id, role: employees.role })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch {
+    return json({ error: "Database error" }, 503);
+  }
+  if (!caller) {
+    return json({ error: "Employee record not found" }, 403);
+  }
+  if (caller.role !== "moderator") {
+    return json({ error: "Forbidden" }, 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await context.request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const parsed = OrderSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
+  }
+
+  try {
+    await Promise.all(
+      parsed.data.order.map((item) =>
+        db.update(employees).set({ display_order: item.display_order }).where(eq(employees.id, item.id)),
+      ),
+    );
+    return json({ ok: true }, 200);
+  } catch {
+    return json({ error: "Database error" }, 500);
+  }
+};

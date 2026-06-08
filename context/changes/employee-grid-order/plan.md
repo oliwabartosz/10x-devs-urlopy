@@ -342,27 +342,27 @@ Seeding UPDATE in the migration assigns deterministic initial `display_order` va
 
 #### Automated
 
-- [x] 1.1 `npm run db:generate` produces migration with column + seeding UPDATE
-- [x] 1.2 `npm run db:migrate` applies cleanly
-- [x] 1.3 `npm run build` passes with display_order in Employee type
+- [x] 1.1 `npm run db:generate` produces migration with column + seeding UPDATE — c484ac9
+- [x] 1.2 `npm run db:migrate` applies cleanly — c484ac9
+- [x] 1.3 `npm run build` passes with display_order in Employee type — c484ac9
 
 #### Manual
 
-- [x] 1.4 DB query shows unique ascending display_order seeded from alphabetical rank
-- [x] 1.5 POST new employee returns display_order = MAX + 1
+- [x] 1.4 DB query shows unique ascending display_order seeded from alphabetical rank — c484ac9
+- [x] 1.5 POST new employee returns display_order = MAX + 1 — c484ac9
 
 ### Phase 2: PATCH /api/employees/order Endpoint
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 PATCH with moderator session updates display_order in DB
-- [ ] 2.4 PATCH with employee session returns 403
-- [ ] 2.5 PATCH with invalid body returns 400
+- [x] 2.3 PATCH with moderator session updates display_order in DB
+- [x] 2.4 PATCH with employee session returns 403
+- [x] 2.5 PATCH with invalid body returns 400
 
 ### Phase 3: Dashboard Query Update
 
