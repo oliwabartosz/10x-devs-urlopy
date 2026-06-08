@@ -355,14 +355,14 @@ Seeding UPDATE in the migration assigns deterministic initial `display_order` va
 
 #### Automated
 
-- [x] 2.1 `npm run build` passes
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes — a6c70c5
+- [x] 2.2 `npm run lint` passes — a6c70c5
 
 #### Manual
 
-- [x] 2.3 PATCH with moderator session updates display_order in DB
-- [x] 2.4 PATCH with employee session returns 403
-- [x] 2.5 PATCH with invalid body returns 400
+- [x] 2.3 PATCH with moderator session updates display_order in DB — a6c70c5
+- [x] 2.4 PATCH with employee session returns 403 — a6c70c5
+- [x] 2.5 PATCH with invalid body returns 400 — a6c70c5
 
 ### Phase 3: Dashboard Query Update
 
