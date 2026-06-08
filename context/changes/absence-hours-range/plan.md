@@ -412,34 +412,34 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 #### Manual
 
 - [x] 1.4 `supabase db diff` shows column swap and updated CHECK; no unintended changes — a52bc12
-- [ ] 1.5 `$inferSelect.start_time` infers as `string | null` (IDE hover verification)
+- [x] 1.5 `$inferSelect.start_time` infers as `string | null` (IDE hover verification)
 
 ### Phase 2: API Routes + Validation
 
 #### Automated
 
-- [ ] 2.1 `npm run build` passes
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 `npm run build` passes
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 POST with valid time range → 201 with `start_time`/`end_time` in response, no `hours`
-- [ ] 2.4 POST with reversed range (`end_time < start_time`) → 400
-- [ ] 2.5 POST with equal times → 400
-- [ ] 2.6 POST with `is_full_day: true, start_time: null, end_time: null` → 201
+- [x] 2.3 POST with valid time range → 201 with `start_time`/`end_time` in response, no `hours`
+- [x] 2.4 POST with reversed range (`end_time < start_time`) → 400
+- [x] 2.5 POST with equal times → 400
+- [x] 2.6 POST with `is_full_day: true, start_time: null, end_time: null` → 201
 
 ### Phase 3: Form Dialog UI
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — d33e34e
+- [x] 3.2 `npm run lint` passes — d33e34e
 
 #### Manual
 
-- [x] 3.3 Uncheck "Cały dzień" → two time pickers appear; recheck → pickers disappear
-- [x] 3.4 Edit existing partial-day absence → start/end fields pre-filled correctly
-- [x] 3.5 Save partial-day absence → dialog closes, grid reloads, cell shows colored block
+- [x] 3.3 Uncheck "Cały dzień" → two time pickers appear; recheck → pickers disappear — d33e34e
+- [x] 3.4 Edit existing partial-day absence → start/end fields pre-filled correctly — d33e34e
+- [x] 3.5 Save partial-day absence → dialog closes, grid reloads, cell shows colored block — d33e34e
 
 ### Phase 4: Display UI
 
@@ -465,5 +465,5 @@ Production: no partial-day data exists; the migration is a clean column swap. If
 
 #### Manual
 
-- [ ] 5.3 Roadmap "At a glance" table has S-09 row with status `planned`
-- [ ] 5.4 Roadmap Slices section has S-09 block
+- [x] 5.3 Roadmap "At a glance" table has S-09 row with status `planned`
+- [x] 5.4 Roadmap Slices section has S-09 block
