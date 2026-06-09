@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees } from "@/db/index";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, isNull, and, sql } from "drizzle-orm";
 
 export const prerender = false;
 
@@ -21,7 +21,8 @@ const OrderSchema = z.object({
         display_order: z.number().int().min(0),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(500),
 });
 
 export const PATCH: APIRoute = async (context) => {
@@ -61,10 +62,16 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   try {
-    await Promise.all(
-      parsed.data.order.map((item) =>
-        db.update(employees).set({ display_order: item.display_order }).where(eq(employees.id, item.id)),
-      ),
+    const idList = sql.join(
+      parsed.data.order.map((item) => sql`${item.id}::uuid`),
+      sql`, `,
+    );
+    const ordList = sql.join(
+      parsed.data.order.map((item) => sql`${item.display_order}::int`),
+      sql`, `,
+    );
+    await db.execute(
+      sql`UPDATE employees SET display_order = v.ord FROM (SELECT UNNEST(ARRAY[${idList}]) AS id, UNNEST(ARRAY[${ordList}]) AS ord) AS v WHERE employees.id = v.id`,
     );
     return json({ ok: true }, 200);
   } catch {

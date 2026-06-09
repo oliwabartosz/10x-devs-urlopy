@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Employee, Absence, AbsenceType } from "@/types";
 import { AbsenceFormDialog } from "./AbsenceFormDialog";
 import {
@@ -92,6 +92,13 @@ export default function AbsenceGrid({
 
   const [orderedEmployees, setOrderedEmployees] = useState<Employee[]>(() => selfFirst(employees, currentEmployee.id));
   const [activeId, setActiveId] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const [dialogState, setDialogState] = useState<{
     day: Date;
@@ -158,15 +165,21 @@ export default function AbsenceGrid({
 
     setOrderedEmployees(next);
 
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     fetch("/api/employees/order", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order: next.map((e, i) => ({ id: e.id, display_order: i })) }),
+      signal: controller.signal,
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed");
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") return;
         toast.error("Nie udało się zapisać kolejności");
         setOrderedEmployees(prevOrder);
       });

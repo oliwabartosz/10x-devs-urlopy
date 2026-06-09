@@ -36,6 +36,7 @@ export const GET: APIRoute = async (context) => {
     role: employees.role,
     deleted_at: employees.deleted_at,
     created_at: employees.created_at,
+    display_order: employees.display_order,
   };
 
   try {
@@ -131,6 +132,8 @@ export const POST: APIRoute = async (context) => {
   }
 
   try {
+    // display_order is best-effort; concurrent inserts may produce duplicates,
+    // which are tolerated and resolved by the next moderator drag.
     const [{ maxOrder }] = await db.select({ maxOrder: max(employees.display_order) }).from(employees);
     const nextOrder = (maxOrder ?? -1) + 1;
     const [employee] = await db

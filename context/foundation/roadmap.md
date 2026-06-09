@@ -46,7 +46,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | done     |
 | S-05 | drizzle-migration            | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                      | S-04          | —                                           | done     |
 | S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | done     |
-| S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | proposed |
+| S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | done     |
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
 
@@ -198,7 +198,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** Persystencja kolejności — nowa kolumna `display_order` w tabeli `employees` (migracja) lub osobna tabela ustawień. Drag-and-drop w poziomie na siatce z zamrożoną pierwszą kolumną (dni) wymaga weryfikacji z wybraną biblioteką (np. `@dnd-kit/core`).
 - **Risk:** Średnie — drag-and-drop na siatce z poziomym scrollem może być złożony UX; warto zprototypować layout przed pełną implementacją.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -233,4 +233,5 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
 - **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31 → `context/changes/moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).
 - **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
+- **S-07: (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie** — Implemented 2026-06-09 → `context/changes/employee-grid-order/`. display_order column + seeding migration, PATCH /api/employees/order (UNNEST bulk update), dashboard orderBy with active-first CASE expression, @dnd-kit DnD with two SortableContexts + DragOverlay, self-first sort.
 - **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.

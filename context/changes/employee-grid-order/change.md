@@ -1,7 +1,7 @@
 ---
 change_id: employee-grid-order
 title: Moderator drag-and-drop column ordering for the monthly grid
-status: implemented
+status: impl_reviewed
 created: 2026-06-08
 updated: 2026-06-09
 archived_at: null
