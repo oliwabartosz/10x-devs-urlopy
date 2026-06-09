@@ -368,27 +368,27 @@ Seeding UPDATE in the migration assigns deterministic initial `display_order` va
 
 #### Automated
 
-- [x] 3.1 `npm run build` passes
-- [x] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes — 1f2edbe
+- [x] 3.2 `npm run lint` passes — 1f2edbe
 
 #### Manual
 
-- [x] 3.3 Employee view: columns in display_order sequence
-- [x] 3.4 Moderator view: active columns first by display_order, inactive floated to end
+- [x] 3.3 Employee view: columns in display_order sequence — 1f2edbe
+- [x] 3.4 Moderator view: active columns first by display_order, inactive floated to end — 1f2edbe
 
 ### Phase 4: Grid Component — Self-First Sort + Drag-and-Drop
 
 #### Automated
 
-- [ ] 4.1 `npm run build` passes
-- [ ] 4.2 `npm run lint` passes
+- [x] 4.1 `npm run build` passes
+- [x] 4.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 4.3 Employee: self first, no drag handles
-- [ ] 4.4 Moderator: self first, drag handles on non-self active columns
-- [ ] 4.5 Active column drag persists on reload
-- [ ] 4.6 Inactive column drag reorders only within inactive section
-- [ ] 4.7 Offline drag triggers toast error and reverts
+- [x] 4.3 Employee: self first, no drag handles
+- [x] 4.4 Moderator: self first, drag handles on non-self active columns
+- [x] 4.5 Active column drag persists on reload
+- [x] 4.6 Inactive column drag reorders only within inactive section
+- [x] 4.7 Offline drag triggers toast error and reverts
 - [ ] 4.8 New employee appears at end of active section
-- [ ] 4.9 Details and Stats tabs reflect same order as grid
+- [x] 4.9 Details and Stats tabs reflect same order as grid
