@@ -49,6 +49,8 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | done     |
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
+| S-10 | dev-vars-rename              | (tech) plik .dev.vars przemianowany na .env.dev — spójne nazewnictwo plików środowiskowych                    | —             | —                                           | proposed |
+| S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
 
 ## Streams
 
@@ -199,6 +201,34 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Unknowns:** Persystencja kolejności — nowa kolumna `display_order` w tabeli `employees` (migracja) lub osobna tabela ustawień. Drag-and-drop w poziomie na siatce z zamrożoną pierwszą kolumną (dni) wymaga weryfikacji z wybraną biblioteką (np. `@dnd-kit/core`).
 - **Risk:** Średnie — drag-and-drop na siatce z poziomym scrollem może być złożony UX; warto zprototypować layout przed pełną implementacją.
 - **Status:** done
+
+### S-10: Przemianowanie .dev.vars na .env.dev
+
+- **Outcome:** (tech) plik `.dev.vars` przemianowany na `.env.dev` — wszystkie pliki środowiskowe (.env, .env.example, .env.dev) podążają za konwencją `.env.*`. Żadna zmiana widoczna dla użytkownika.
+- **Change ID:** dev-vars-rename
+- **PRD refs:** —
+- **Prerequisites:** —
+- **Parallel with:** wszystkie slices
+- **Blockers:** —
+- **Unknowns:** Czy `wrangler dev` rozpoznaje `.env.dev` zamiast `.dev.vars`? Wymaga weryfikacji z dokumentacją Wrangler. Jeśli nie — konieczna konfiguracja aliasu lub aktualizacja `wrangler.jsonc`.
+- **Risk:** Niskie — czysto kosmetyczna zmiana nazwy pliku; `.dev.vars` jest gitignorowany i lokalny. Trzeba jednak zweryfikować, czy Wrangler obsługuje nową nazwę bez dodatkowej konfiguracji.
+- **Status:** proposed
+
+### S-11: Bootstrap konta admin z plików env
+
+- **Outcome:** (tech/auth) pierwsze konto admina (rola: moderator) jest tworzone automatycznie z danych w `.env` / `.env.dev` (e-mail + hasło) przy starcie lub przez jednorazowy skrypt seed — bez potrzeby ręcznej rejestracji. Po wdrożeniu S-11 samorejestracja jest wyłączona: nowych użytkowników (pracowników i moderatorów) mogą dodawać wyłącznie moderatorzy. Konto admin jest kontem technicznym: niewidoczne w siatce miesięcznej, tabeli szczegółów i liście pracowników; nie może być usunięte przez innych moderatorów.
+- **Change ID:** admin-bootstrap
+- **PRD refs:** FR-007
+- **Prerequisites:** F-01 (schemat auth/employees + RLS), S-04 (logika zarządzania pracownikami)
+- **Parallel with:** S-10
+- **Blockers:** —
+- **Unknowns:**
+  - Mechanizm seedowania: migracja SQL (Supabase `auth.users` insert przez service role) vs. jednorazowy skrypt Node/CLI vs. endpoint `/api/seed` zabezpieczony tokenem z env — trzeba wybrać przed implementacją.
+  - Wyłączenie samorejestracji: czy blokować na poziomie RLS/Supabase Auth settings (wyłączyć "Enable email signup"), czy przez middleware Astro, czy przez ukrycie formularza + walidację po stronie API? Supabase Auth settings to najprostszy toggle, ale wymaga zmiany konfiguracji projektu Supabase poza migracją SQL.
+  - Jak moderatorzy będą dodawać nowych użytkowników bez samorejestracji? S-04 implementuje dodawanie pracowników, ale zakłada, że użytkownik `auth.users` już istnieje (FK). Tworzenie konta auth + rekordu employee w jednej operacji (Supabase Admin API) musi być obsłużone — może wymagać rozszerzenia S-04 lub nowego slice.
+  - Czy admin powinien być w tabeli `employees` (z flagą `is_system = true` lub `is_hidden = true`), czy w ogóle poza tą tabelą? Decyzja wpływa na RLS i zapytania grid.
+- **Risk:** Średnie — wyłączenie samorejestracji jest nieodwracalne dla użytkowników w produkcji; błąd w seedzie blokuje cały onboarding. Mechanizm tworzenia użytkowników przez moderatora (Supabase Admin API po stronie serwera) wymaga service role key — musi pozostać wyłącznie po stronie API, nigdy nie wyciekać do klienta. Jeśli admin jest w tabeli `employees`, każde zapytanie grid/details musi go filtrować — ryzyko pominięcia filtra w nowym kodzie.
+- **Status:** proposed
 
 ## Backlog Handoff
 
