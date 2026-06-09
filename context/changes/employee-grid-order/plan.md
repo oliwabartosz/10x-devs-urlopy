@@ -368,13 +368,13 @@ Seeding UPDATE in the migration assigns deterministic initial `display_order` va
 
 #### Automated
 
-- [ ] 3.1 `npm run build` passes
-- [ ] 3.2 `npm run lint` passes
+- [x] 3.1 `npm run build` passes
+- [x] 3.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 3.3 Employee view: columns in display_order sequence
-- [ ] 3.4 Moderator view: active columns first by display_order, inactive floated to end
+- [x] 3.3 Employee view: columns in display_order sequence
+- [x] 3.4 Moderator view: active columns first by display_order, inactive floated to end
 
 ### Phase 4: Grid Component — Self-First Sort + Drag-and-Drop
 

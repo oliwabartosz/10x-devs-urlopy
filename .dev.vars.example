@@ -5,3 +5,4 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key-here
 SUPABASE_SERVICE_KEY=your-service-role-key-here
 DATABASE_URL=postgresql://postgres.[project-ref]:[DB_PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres
+SENTRY_DSN=https://...@....ingest.de.sentry.io/...
