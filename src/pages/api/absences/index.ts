@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
+import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
@@ -50,7 +51,8 @@ export const GET: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
     return json({ error: "Database error" }, 503);
   }
   if (!employeeRow) {
@@ -109,7 +111,8 @@ export const GET: APIRoute = async (context) => {
       .orderBy(asc(absences.date))
       .limit(5000);
     return json(data, 200);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -147,7 +150,8 @@ export const POST: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
     return json({ error: "Database error" }, 503);
   }
   if (!employeeRow) {
@@ -177,7 +181,8 @@ export const POST: APIRoute = async (context) => {
         .from(employees)
         .where(and(eq(employees.id, requestedEmployeeId), isNull(employees.deleted_at)))
         .then((r) => r[0]);
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
       return json({ error: "Database error" }, 503);
     }
     if (!targetRow) {
@@ -205,6 +210,7 @@ export const POST: APIRoute = async (context) => {
       });
     return json(absenceRow, 201);
   } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
     const code = extractPgErrorCode(err);
     if (code === "42501") return json({ error: "Forbidden" }, 403);
     if (code === "23503") return json({ error: "Substitute employee not found." }, 422);

@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
+import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { createDb, employees } from "@/db/index";
@@ -22,7 +23,8 @@ export const GET: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -49,7 +51,8 @@ export const GET: APIRoute = async (context) => {
             .where(isNull(employees.deleted_at))
             .orderBy(asc(employees.last_name), asc(employees.first_name));
     return json(rows, 200);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -82,7 +85,8 @@ export const POST: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -118,7 +122,8 @@ export const POST: APIRoute = async (context) => {
       password,
       email_confirm: true,
     });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Failed to create auth user" }, 500);
   }
 
@@ -142,10 +147,15 @@ export const POST: APIRoute = async (context) => {
       .returning();
     return json(employee, 201);
   } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
     // compensating delete: prevent orphaned auth user when the DB insert fails
-    await adminClient.auth.admin.deleteUser(authData.user.id).catch((err: unknown) => {
+    await adminClient.auth.admin.deleteUser(authData.user.id).catch((compErr: unknown) => {
+      Sentry.captureException(compErr, {
+        level: "warning",
+        tags: { route: "POST /api/employees", action: "compensating_delete" },
+      });
       // eslint-disable-next-line no-console
-      console.error("Failed to rollback auth user:", authData.user.id, err);
+      console.error("Failed to rollback auth user:", authData.user.id, compErr);
     });
     const code = extractPgErrorCode(err);
     if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);

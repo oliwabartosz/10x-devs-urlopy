@@ -5,6 +5,7 @@ import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
+import * as Sentry from "@sentry/cloudflare";
 import { createDb, employees as employeesTable, absence_types, absences as absencesTable } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
@@ -48,7 +49,8 @@ try {
     .where(and(eq(employeesTable.user_id, Astro.locals.user.id), isNull(employeesTable.deleted_at)))
     .then((r) => r.at(0) ?? null);
   currentEmployee = row;
-} catch {
+} catch (error) {
+  Sentry.captureException(error, { tags: { page: "dashboard", phase: "employee-lookup" } });
   employeeDbError = true;
 }
 
@@ -127,7 +129,8 @@ if (currentEmployee) {
         : allEmployees;
     absences = absencesResult;
     absenceTypes = typesResult;
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, { tags: { page: "dashboard", phase: "data-fetch" } });
     dataDbError = true;
   }
 }

@@ -257,27 +257,27 @@ No data migrations. The `SENTRY_DSN` secret must be set before Phase 1 changes a
 
 #### Automated
 
-- [x] 1.1 Build succeeds: `npm run build`
-- [x] 1.2 TypeScript compiles: `npx tsc --noEmit`
-- [x] 1.3 Lint passes: `npm run lint`
+- [x] 1.1 Build succeeds: `npm run build` — 469614c
+- [x] 1.2 TypeScript compiles: `npx tsc --noEmit` — 469614c
+- [x] 1.3 Lint passes: `npm run lint` — 469614c
 
 #### Manual
 
-- [ ] 1.4 `wrangler secret list` shows `SENTRY_DSN`
-- [ ] 1.5 Sentry Issues view shows a captured event with deobfuscated stack trace after triggering an unhandled exception in production
-- [ ] 1.6 Sentry Performance dashboard shows sampled transactions
+- [x] 1.4 `wrangler secret list` shows `SENTRY_DSN`
+- [x] 1.5 Sentry Issues view shows a captured event with deobfuscated stack trace after triggering an unhandled exception in production
+- [x] 1.6 Sentry Performance dashboard shows sampled transactions
 
 ### Phase 2: Application-Level Instrumentation
 
 #### Automated
 
-- [ ] 2.1 TypeScript compiles: `npx tsc --noEmit`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Build succeeds: `npm run build`
+- [x] 2.1 TypeScript compiles: `npx tsc --noEmit`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.4 POST `/api/absences` with missing field — Sentry event shows user ID, `user_role` tag, `route` tag, readable stack trace
-- [ ] 2.5 Same test as moderator — event shows `user_role: moderator`
-- [ ] 2.6 401 guard branch does NOT produce a Sentry event
-- [ ] 2.7 Normal dashboard load produces no spurious Sentry events
+- [x] 2.4 POST `/api/absences` with missing field — Sentry event shows user ID, `user_role` tag, `route` tag, readable stack trace
+- [x] 2.5 Same test as moderator — event shows `user_role: moderator`
+- [x] 2.6 401 guard branch does NOT produce a Sentry event
+- [x] 2.7 Normal dashboard load produces no spurious Sentry events

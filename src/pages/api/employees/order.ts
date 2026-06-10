@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
@@ -39,7 +40,8 @@ export const PATCH: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -74,7 +76,8 @@ export const PATCH: APIRoute = async (context) => {
       sql`UPDATE employees SET display_order = v.ord FROM (SELECT UNNEST(ARRAY[${idList}]) AS id, UNNEST(ARRAY[${ordList}]) AS ord) AS v WHERE employees.id = v.id`,
     );
     return json({ ok: true }, 200);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 500);
   }
 };

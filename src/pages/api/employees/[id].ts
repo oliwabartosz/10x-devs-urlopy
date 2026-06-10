@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
@@ -39,7 +40,8 @@ export const PATCH: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -74,7 +76,8 @@ export const PATCH: APIRoute = async (context) => {
       .from(employees)
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!target) {
@@ -93,7 +96,8 @@ export const PATCH: APIRoute = async (context) => {
       if (value <= 1) {
         return json({ error: "Nie możesz zdegradować ostatniego moderatora." }, 409);
       }
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err, { tags: { route: "PATCH /api/employees/:id" } });
       return json({ error: "Database error" }, 503);
     }
   }
@@ -102,7 +106,8 @@ export const PATCH: APIRoute = async (context) => {
     const rows = await db.update(employees).set(parsed.data).where(eq(employees.id, idParsed.data)).returning();
     if (rows.length === 0) return json({ error: "Employee not found" }, 404);
     return json(rows[0], 200);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/:id" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -121,7 +126,8 @@ export const DELETE: APIRoute = async (context) => {
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "DELETE /api/employees/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -148,7 +154,8 @@ export const DELETE: APIRoute = async (context) => {
       .from(employees)
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "DELETE /api/employees/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!target) {
@@ -166,7 +173,8 @@ export const DELETE: APIRoute = async (context) => {
       .returning({ id: employees.id });
     if (rows.length === 0) return json({ error: "Employee is already deactivated" }, 409);
     return json({ success: true }, 200);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "DELETE /api/employees/:id" } });
     return json({ error: "Database error" }, 500);
   }
 };
