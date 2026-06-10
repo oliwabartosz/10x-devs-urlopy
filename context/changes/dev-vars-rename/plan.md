@@ -222,12 +222,12 @@ Remove every reference to `.dev.vars` from code and documentation now that the f
 
 #### Automated
 
-- [x] 2.1 No `.dev.vars` references in tracked files: `git grep -l 'dev\.vars' -- ':!context/archive/' ':!context/changes/dev-vars-rename/change.md'` → no output
-- [x] 2.2 Build passes: `npm run build`
-- [x] 2.3 Lint passes: `npm run lint`
-- [x] 2.4 Tests pass: `npm test`
+- [x] 2.1 No `.dev.vars` references in tracked files: `git grep -l 'dev\.vars' -- ':!context/archive/' ':!context/changes/dev-vars-rename/change.md'` → no output — 9c741b4
+- [x] 2.2 Build passes: `npm run build` — 9c741b4
+- [x] 2.3 Lint passes: `npm run lint` — 9c741b4
+- [x] 2.4 Tests pass: `npm test` — 9c741b4
 
 #### Manual
 
-- [x] 2.5 `npm run dev` starts without missing-var errors; auth and static pages load
-- [x] 2.6 `.env.example` contains all required var names (verify against `astro.config.mjs` env schema)
+- [x] 2.5 `npm run dev` starts without missing-var errors; auth and static pages load — 9c741b4
+- [x] 2.6 `.env.example` contains all required var names (verify against `astro.config.mjs` env schema) — 9c741b4
