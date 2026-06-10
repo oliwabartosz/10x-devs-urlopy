@@ -35,13 +35,7 @@ npm install
 
 3. Set up Supabase and configure environment variables — see [Supabase Configuration](#supabase-configuration) below.
 
-4. Create a `.dev.vars` file for local Cloudflare dev secrets:
-
-```bash
-cp .env.example .dev.vars
-```
-
-5. Run the development server:
+4. Run the development server:
 
 ```bash
 npm run dev
@@ -96,7 +90,7 @@ npx supabase init
 npx supabase start
 ```
 
-4. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`:
+4. Copy the credentials printed by the CLI into your `.env`:
 
 ```
 SUPABASE_URL=http://127.0.0.1:54321
@@ -115,7 +109,7 @@ No database tables or migrations are required — this project uses Supabase Aut
 
 ### Using a cloud Supabase project instead
 
-If you prefer to use a hosted Supabase project, add these variables to your `.env` and `.dev.vars` files:
+If you prefer to use a hosted Supabase project, add these variables to your `.env` file:
 
 | Variable       | Description                                                |
 | -------------- | ---------------------------------------------------------- |

@@ -93,7 +93,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | Layer | Tool | Version | Notes |
 |---|---|---|---|
-| unit + integration | Vitest | ^4.1.8 | Node env (`environment: 'node'`); config at `vitest.config.ts`; glob `src/tests/**/*.test.ts`; env loaded via `loadEnv("test", process.cwd(), "")` + `.dev.vars` parser (see `vitest.config.ts` lines 10–26) — no `envFile`; `@/` alias resolves to `./src` |
+| unit + integration | Vitest | ^4.1.8 | Node env (`environment: 'node'`); config at `vitest.config.ts`; glob `src/tests/**/*.test.ts`; env loaded via `loadEnv("test", process.cwd(), "")` — no `envFile`; `@/` alias resolves to `./src` |
 | API / handler mocking | n/a — tests bypass handler layer | — | Handlers import `astro:env/server` (Vite virtual module) unavailable in Node env; tests call Drizzle directly via `getTestDb()` |
 | e2e | none planned for MVP | — | Not justified by cost × signal for a ≤10-person internal app at this stage |
 | accessibility | none planned for MVP | — | Out of scope for MVP NFRs |

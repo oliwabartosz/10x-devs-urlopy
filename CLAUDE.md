@@ -4,7 +4,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 
 ## Commands
 
-- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.dev.vars`, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory. **Drizzle database queries will fail in `wrangler dev`** — workerd's C++ TLS layer rejects Supabase's certificate regardless of the `ssl` option; auth and static pages still work. Test Drizzle-backed API routes against the production deployment.
+- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.env` for Worker runtime, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory. **Drizzle database queries will fail in `wrangler dev`** — workerd's C++ TLS layer rejects Supabase's certificate regardless of the `ssl` option; auth and static pages still work. Test Drizzle-backed API routes against the production deployment.
 - `npm run build` — production build (SSR via `@astrojs/cloudflare`)
 - `npm run preview` — preview production build
 - `npm run lint` — ESLint with type-checked rules
@@ -44,9 +44,9 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` — copy `.dev.vars.example` to `.dev.vars` (gitignored) for Cloudflare local dev; `.env.example` is for Node-based tooling only
+- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` — `.env` (gitignored) covers both Node tooling and Cloudflare local dev; copy `.env.example` to `.env` and fill in all values.
 - Local Supabase: `npx supabase start` (requires Docker)
-- Cloudflare local dev: secrets go in `.dev.vars` (gitignored); `wrangler dev` reads this file automatically
+- Cloudflare local dev: secrets go in `.env` (gitignored); `wrangler dev` reads `.env` automatically.
 - Deploy: `npx wrangler pages deploy dist --project-name urlopy` (requires Cloudflare account + `wrangler login`)
 
 ## CI

@@ -18,7 +18,6 @@ function loadEnvFile(path: string) {
 }
 
 loadEnvFile(".env");
-loadEnvFile(".dev.vars");
 
 // Default: production deployment. Override with BASE_URL env var for staging/local.
 // NOTE: wrangler dev cannot connect to Supabase (TLS issue) — don't point BASE_URL there.

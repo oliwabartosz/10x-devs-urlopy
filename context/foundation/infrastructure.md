@@ -68,13 +68,13 @@ Netlify has a confirmed `llms.txt` (February 2025 GA) and the `@astrojs/netlify`
 
 4. **25 MB compressed bundle size limit.** Astro 6 + React 19 + shadcn/ui components can accumulate. If the bundle approaches this limit, the deploy will fail at `wrangler pages deploy` time with no obvious fix short of code-splitting or dependency removal. This should be monitored in CI.
 
-5. **Vendor lock-in via Cloudflare env binding model.** `astro:env/server` secrets map to Cloudflare Worker `env` bindings, not `process.env`. Both `.dev.vars` (local dev) and `wrangler secret put` (production) must be populated with matching names. If this project ever moves platforms, env handling must be rewritten — it is not a portable pattern.
+5. **Vendor lock-in via Cloudflare env binding model.** `astro:env/server` secrets map to Cloudflare Worker `env` bindings, not `process.env`. Both `.env` (local dev) and `wrangler secret put` (production) must be populated with matching names. If this project ever moves platforms, env handling must be rewritten — it is not a portable pattern.
 
 ### Pre-Mortem — How This Could Fail
 
 The team deployed Urlopy to Cloudflare Pages on day one. Local development worked perfectly with `npm run dev`. Production deployment succeeded through GitHub Actions on the first attempt.
 
-Week two: authentication began failing silently for some users. The team reached for `wrangler pages deployment tail` to inspect live logs — the command connected but dropped every few minutes, making it hard to catch the error. The root cause turned out to be `SUPABASE_KEY` set in `.dev.vars` for local dev but never added as a Cloudflare Worker Secret for production. The error in the Workers runtime was `TypeError: Cannot read properties of undefined (reading 'getSession')` — no indication a secret was missing. Diagnosis took four hours.
+Week two: authentication began failing silently for some users. The team reached for `wrangler pages deployment tail` to inspect live logs — the command connected but dropped every few minutes, making it hard to catch the error. The root cause turned out to be `SUPABASE_KEY` set in `.env` for local dev but never added as a Cloudflare Worker Secret for production. The error in the Workers runtime was `TypeError: Cannot read properties of undefined (reading 'getSession')` — no indication a secret was missing. Diagnosis took four hours.
 
 Week three: a bad deploy required a rollback. The developer discovered there was no `wrangler` command for Pages rollback, found the Cloudflare dashboard, clicked through to the deployment history, and reverted. The rollback itself took five seconds; finding the right UI page took twenty minutes.
 
@@ -82,11 +82,11 @@ The project shipped on time, but approximately one day of the three-week MVP win
 
 ### Unknown Unknowns
 
-- **Two secret stores must stay in sync: `.dev.vars` (local) and Cloudflare Secrets (production).** Astro's `envField.secret()` declaration is a third source of truth. A developer touching secrets who doesn't know the pattern will almost certainly set only one store and be confused when the other environment breaks.
+- **Two secret stores must stay in sync: `.env` (local) and Cloudflare Secrets (production).** Astro's `envField.secret()` declaration is a third source of truth. A developer touching secrets who doesn't know the pattern will almost certainly set only one store and be confused when the other environment breaks.
 
 - **Preview deploys from forked PRs cannot access production secrets.** Fork PRs don't inherit Cloudflare Secrets — preview deploys will fail auth silently. This affects onboarding any contributor, even on a small team.
 
-- **`wrangler dev` and `astro dev` are different programs.** `npm run dev` in this project correctly calls `wrangler dev`, but any developer who triggers `astro dev` directly (VS Code Astro extension, global `astro dev` command) will get a Vite server that doesn't emulate the Workers runtime, doesn't read `.dev.vars`, and can produce behavior that differs from production.
+- **`wrangler dev` and `astro dev` are different programs.** `npm run dev` in this project correctly calls `wrangler dev`, but any developer who triggers `astro dev` directly (VS Code Astro extension, global `astro dev` command) will get a Vite server that doesn't emulate the Workers runtime, doesn't read `.env` for Worker runtime, and can produce behavior that differs from production.
 
 - **Supabase requests originate from Cloudflare's anycast IPs.** If Supabase's threat detection ever rate-limits Cloudflare egress IPs (uncommon but non-zero for shared infrastructure), auth failures would appear global with no obvious cause.
 
@@ -96,7 +96,7 @@ The project shipped on time, but approximately one day of the three-week MVP win
 
 - **Preview deploys**: Every push to a non-main branch automatically creates a preview URL via the Cloudflare Pages GitHub integration (`cloudflare/pages-action`). Preview URLs take the form `<commit-sha>.<project>.pages.dev`. Fork PRs do not inherit production secrets — preview deploys from forks will fail Supabase auth (expected security behavior). Protect preview URLs with Cloudflare Access if the absence data is sensitive.
 
-- **Secrets**: `SUPABASE_URL` and `SUPABASE_KEY` live in two places: `.dev.vars` for local `wrangler dev` (gitignored), and as Cloudflare Worker Secrets for production set via `npx wrangler secret put SUPABASE_URL`. The `astro.config.mjs` env schema declares them via `envField.secret()` — the names must match exactly in both stores. Rotation: update both stores, then trigger a new deploy; Workers pick up secrets on next cold start.
+- **Secrets**: `SUPABASE_URL` and `SUPABASE_KEY` live in two places: `.env` for local `wrangler dev` (gitignored), and as Cloudflare Worker Secrets for production set via `npx wrangler secret put SUPABASE_URL`. The `astro.config.mjs` env schema declares them via `envField.secret()` — the names must match exactly in both stores. Rotation: update both stores, then trigger a new deploy; Workers pick up secrets on next cold start.
 
 - **Rollback**: For Pages deployments, rollback is dashboard-only — navigate to `dash.cloudflare.com` → Pages → Urlopy → Deployments → find the previous build → "Rollback to this deployment." Time-to-revert: ~30 seconds once in the dashboard. For programmatic rollback (CI/agent), use the Cloudflare REST API: `POST /client/v4/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/retry` (promotes a prior deployment). DB migrations applied in a deploy do not roll back automatically.
 
@@ -109,7 +109,7 @@ The project shipped on time, but approximately one day of the three-week MVP win
 | Risk | Source | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | Transitive dependency uses unsupported Node.js API, breaks only at runtime | Devil's advocate | M | H | Set `nodejs_compat` flag in `wrangler.toml`; add a `wrangler dev` smoke-test step to CI that exercises auth routes before merging |
-| `SUPABASE_KEY` missing from Cloudflare Secrets (set only in `.dev.vars`) | Pre-mortem + Unknown unknowns | H | H | Add a deployment health-check step in GitHub Actions: after `wrangler pages deploy`, hit `/api/auth/signin` and assert a non-500 response |
+| `SUPABASE_KEY` missing from Cloudflare Secrets (set only in `.env`) | Pre-mortem + Unknown unknowns | H | H | Add a deployment health-check step in GitHub Actions: after `wrangler pages deploy`, hit `/api/auth/signin` and assert a non-500 response |
 | Pages rollback requires dashboard navigation — agent or CI cannot automate it | Devil's advocate | M | M | Document the Cloudflare REST API rollback call (`/pages/projects/{name}/deployments/{id}/retry`) in the runbook; add it to the GitHub Actions reusable workflow |
 | `wrangler pages deployment tail` connection drops in production debugging | Devil's advocate | M | M | Set up a Cloudflare Log Drain (Workers Paid, $5/month) to forward logs to a persistent sink (R2, Logpush to S3); use Cloudflare MCP server `workers_observability` as fallback |
 | Fork PR preview deploys fail auth silently | Unknown unknowns | H | L | Document expected behavior in CONTRIBUTING.md; protect preview URLs with Cloudflare Access for internal testing |
@@ -130,7 +130,7 @@ The project shipped on time, but approximately one day of the three-week MVP win
    npx wrangler secret put SUPABASE_KEY
    ```
 
-3. **Verify local dev** reads `.dev.vars` correctly:
+3. **Verify local dev** reads `.env` correctly:
    ```bash
    npm run dev   # runs wrangler dev — do NOT use astro dev for runtime testing
    ```

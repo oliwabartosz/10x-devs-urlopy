@@ -49,7 +49,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | done     |
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
-| S-10 | dev-vars-rename              | (tech) plik .dev.vars przemianowany na .env.dev — spójne nazewnictwo plików środowiskowych                    | —             | —                                           | proposed |
+| S-10 | dev-vars-rename              | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie             | —             | —                                           | done     |
 | S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
 | S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
 
@@ -203,17 +203,17 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** Średnie — drag-and-drop na siatce z poziomym scrollem może być złożony UX; warto zprototypować layout przed pełną implementacją.
 - **Status:** done
 
-### S-10: Przemianowanie .dev.vars na .env.dev
+### S-10: Konsolidacja środowisk lokalnych do jednego pliku .env
 
-- **Outcome:** (tech) plik `.dev.vars` przemianowany na `.env.dev` — wszystkie pliki środowiskowe (.env, .env.example, .env.dev) podążają za konwencją `.env.*`. Żadna zmiana widoczna dla użytkownika.
+- **Outcome:** (tech) Jeden plik `.env` (gitignored) pokrywa zarówno Node tooling jak i Cloudflare local dev — wrangler czyta `.env` natywnie, zbędny drugi plik wyeliminowany. Żadna zmiana widoczna dla użytkownika.
 - **Change ID:** dev-vars-rename
 - **PRD refs:** —
 - **Prerequisites:** —
 - **Parallel with:** wszystkie slices
 - **Blockers:** —
-- **Unknowns:** Czy `wrangler dev` rozpoznaje `.env.dev` zamiast `.dev.vars`? Wymaga weryfikacji z dokumentacją Wrangler. Jeśli nie — konieczna konfiguracja aliasu lub aktualizacja `wrangler.jsonc`.
-- **Risk:** Niskie — czysto kosmetyczna zmiana nazwy pliku; `.dev.vars` jest gitignorowany i lokalny. Trzeba jednak zweryfikować, czy Wrangler obsługuje nową nazwę bez dodatkowej konfiguracji.
-- **Status:** proposed
+- **Unknowns:** —
+- **Risk:** Niskie — zrealizowane.
+- **Status:** done
 
 ### S-12: Integracja Sentry — error tracking i debugging
 

@@ -42,7 +42,7 @@ All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js`
 
 ### Connection strings
 
-- `DATABASE_URL` — Transaction Mode pooler (port 6543), service role password. Set in `.dev.vars` for `wrangler dev`; set as a Cloudflare Worker Secret for production. Used at runtime.
+- `DATABASE_URL` — Transaction Mode pooler (port 6543), service role password. Set in `.env` for `wrangler dev`; set as a Cloudflare Worker Secret for production. Used at runtime.
 - `DATABASE_URL_DIRECT` — Direct connection (port 5432). Set in `.env` for `drizzle-kit` Node.js tooling only; never injected into the Worker runtime.
 
 ### npm scripts
@@ -93,7 +93,7 @@ Drizzle wraps driver errors in `DrizzleQueryError`. The PostgreSQL error code is
 
 ## Env, Auth, And Deployment
 
-- Local Astro/Supabase env uses `.env`; Cloudflare local dev uses `.dev.vars`; both need `SUPABASE_URL` and `SUPABASE_KEY`.
+- Both local Node tooling and Cloudflare local dev use `.env`; it must contain `SUPABASE_URL` and `SUPABASE_KEY`.
 - Local Supabase is optional for auth work; `npx supabase start` requires Docker.
 - CI in `@.github/workflows/ci.yml` targets `master` and runs `npm ci`, `npx astro sync`, `npm run lint`, then `npm run build`. Build expects GitHub secrets for `SUPABASE_URL` and `SUPABASE_KEY`.
 - There is no commit-message convention in history yet; do not infer one until commits exist.

@@ -210,24 +210,24 @@ Remove every reference to `.dev.vars` from code and documentation now that the f
 
 #### Automated
 
-- [x] 1.1 `.dev.vars` files deleted: `ls .dev.vars .dev.vars.example 2>&1 | grep 'No such file'`
-- [x] 1.2 `.env` contains 3 new vars: `grep -E 'SUPABASE_SERVICE_KEY|^DATABASE_URL=|SENTRY_DSN' .env | wc -l` → 3
-- [x] 1.3 Typo `SUPABASE_SERIVCE_KEY` removed from `.env`: `grep SERIVCE .env` → no output
+- [x] 1.1 `.dev.vars` files deleted: `ls .dev.vars .dev.vars.example 2>&1 | grep 'No such file'` — 3a73792
+- [x] 1.2 `.env` contains 3 new vars: `grep -E 'SUPABASE_SERVICE_KEY|^DATABASE_URL=|SENTRY_DSN' .env | wc -l` → 3 — 3a73792
+- [x] 1.3 Typo `SUPABASE_SERIVCE_KEY` removed from `.env`: `grep SERIVCE .env` → no output — 3a73792
 
 #### Manual
 
-- [x] 1.4 Open `.env` and confirm all values (including the three new ones) are filled in with real credentials
+- [x] 1.4 Open `.env` and confirm all values (including the three new ones) are filled in with real credentials — 3a73792
 
 ### Phase 2: Update all references
 
 #### Automated
 
-- [ ] 2.1 No `.dev.vars` references in tracked files: `git grep -l 'dev\.vars' -- ':!context/archive/' ':!context/changes/dev-vars-rename/change.md'` → no output
-- [ ] 2.2 Build passes: `npm run build`
-- [ ] 2.3 Lint passes: `npm run lint`
-- [ ] 2.4 Tests pass: `npm test`
+- [x] 2.1 No `.dev.vars` references in tracked files: `git grep -l 'dev\.vars' -- ':!context/archive/' ':!context/changes/dev-vars-rename/change.md'` → no output
+- [x] 2.2 Build passes: `npm run build`
+- [x] 2.3 Lint passes: `npm run lint`
+- [x] 2.4 Tests pass: `npm test`
 
 #### Manual
 
-- [ ] 2.5 `npm run dev` starts without missing-var errors; auth and static pages load
-- [ ] 2.6 `.env.example` contains all required var names (verify against `astro.config.mjs` env schema)
+- [x] 2.5 `npm run dev` starts without missing-var errors; auth and static pages load
+- [x] 2.6 `.env.example` contains all required var names (verify against `astro.config.mjs` env schema)
