@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-06-03
+updated: 2026-06-10
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -51,6 +51,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
 | S-10 | dev-vars-rename              | (tech) plik .dev.vars przemianowany na .env.dev — spójne nazewnictwo plików środowiskowych                    | —             | —                                           | proposed |
 | S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
+| S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | proposed |
 
 ## Streams
 
@@ -214,6 +215,21 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** Niskie — czysto kosmetyczna zmiana nazwy pliku; `.dev.vars` jest gitignorowany i lokalny. Trzeba jednak zweryfikować, czy Wrangler obsługuje nową nazwę bez dodatkowej konfiguracji.
 - **Status:** proposed
 
+### S-12: Integracja Sentry — error tracking i debugging
+
+- **Outcome:** (tech) Sentry SDK (`@sentry/cloudflare`) wdrożone w aplikacji Cloudflare Workers — nieobsłużone wyjątki i odrzucone Promise'y są automatycznie raportowane do Sentry z pełnym stack trace'em i source mapami. Deweloper może debugować błędy produkcyjne bez ręcznego przeszukiwania `wrangler tail`. Opcjonalnie: alerty Sentry na Slack/e-mail przy nowych błędach.
+- **Change ID:** sentry-integration
+- **PRD refs:** —
+- **Prerequisites:** —
+- **Parallel with:** S-10, S-11
+- **Blockers:** —
+- **Unknowns:**
+  - Sentry DSN jako sekret Wranglera (`wrangler secret put SENTRY_DSN`) vs. zmienna env w `wrangler.jsonc` — DSN nie jest wrażliwy (public), ale konwencja projektu do ustalenia.
+  - Source maps: `@sentry/astro` może generować i uploadować source mapy automatycznie podczas `npm run build` (wymaga `SENTRY_AUTH_TOKEN` w CI), albo upload ręczny/pominięty dla MVP.
+  - Czy Sentry ma mieć wgląd w requesty i cookies (PII)? Wymaga konfiguracji `sendDefaultPii` i ewentualnej `beforeSend` scrub funkcji ze względu na RODO.
+- **Risk:** Niskie — Sentry SDK dla Cloudflare Workers jest dojrzały; instrumentacja przez `withSentry` wrapper w `src/middleware.ts` lub `src/pages/api/` jest addytywna i nie zmienia logiki biznesowej. Ryzyko wycieku PII w breadcrumbach/requestach jeśli `sendDefaultPii: true` bez scrubowania.
+- **Status:** proposed
+
 ### S-11: Bootstrap konta admin z plików env
 
 - **Outcome:** (tech/auth) pierwsze konto admina (rola: moderator) jest tworzone automatycznie z danych w `.env` / `.env.dev` (e-mail + hasło) przy starcie lub przez jednorazowy skrypt seed — bez potrzeby ręcznej rejestracji. Po wdrożeniu S-11 samorejestracja jest wyłączona: nowych użytkowników (pracowników i moderatorów) mogą dodawać wyłącznie moderatorzy. Konto admin jest kontem technicznym: niewidoczne w siatce miesięcznej, tabeli szczegółów i liście pracowników; nie może być usunięte przez innych moderatorów.
@@ -243,6 +259,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-06       | details-subcards             | [Urlopy] Szczegóły: karty Dzisiaj / Miesięcznie / Rocznie            | done                  | Zaimplementowane                             |
 | S-07       | employee-grid-order          | [Urlopy] Moderator: zmiana kolejności kolumn pracowników w siatce    | yes                   | Gotowy po S-04; równolegle z S-08            |
 | S-08       | deactivated-employee-grid    | [Urlopy] Bugfix: historyczne nieobecności zdezaktywowanych pracowników | yes                 | Bug odkryty w S-03; wymaga decyzji UX (widoczność kolumny) |
+| S-12       | sentry-integration           | [Urlopy] Sentry SDK — error tracking dla Cloudflare Workers           | yes                 | Niezależne; można realizować w dowolnym momencie           |
 
 ## Open Roadmap Questions
 
@@ -256,7 +273,7 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **Integracje zewnętrzne (inne platformy firmowe)** — Why parked: PRD §Non-Goals.
 - **Aplikacja natywna mobilna** — Why parked: PRD §Non-Goals; pierwsza wersja web-only.
 - **Osobne reguły widoczności statystyk dla pracownika i moderatora** — Why parked: PRD §Non-Goals.
-- **Observability (logging, error tracking)** — Why parked: brak wymogu w PRD NFRs; odkłada na post-MVP.
+- **Zaawansowane logowanie strukturalne** — Why parked: brak wymogu w PRD NFRs; podstawowy error tracking pokrywa S-12 (Sentry); pełne structured logging to post-MVP.
 
 ## Done
 
