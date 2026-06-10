@@ -257,9 +257,9 @@ No data migrations. The `SENTRY_DSN` secret must be set before Phase 1 changes a
 
 #### Automated
 
-- [ ] 1.1 Build succeeds: `npm run build`
-- [ ] 1.2 TypeScript compiles: `npx tsc --noEmit`
-- [ ] 1.3 Lint passes: `npm run lint`
+- [x] 1.1 Build succeeds: `npm run build`
+- [x] 1.2 TypeScript compiles: `npx tsc --noEmit`
+- [x] 1.3 Lint passes: `npm run lint`
 
 #### Manual
 

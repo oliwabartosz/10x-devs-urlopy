@@ -8,6 +8,7 @@ interface Env {
 export default Sentry.withSentry<Env>(
   (env) => ({
     dsn: env.SENTRY_DSN,
+    tracesSampleRate: 0.1,
     integrations: [Sentry.captureConsoleIntegration({ levels: ["warn", "error"] })],
   }),
   handler,
