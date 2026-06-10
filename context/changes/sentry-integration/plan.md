@@ -271,13 +271,13 @@ No data migrations. The `SENTRY_DSN` secret must be set before Phase 1 changes a
 
 #### Automated
 
-- [x] 2.1 TypeScript compiles: `npx tsc --noEmit`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Build succeeds: `npm run build`
+- [x] 2.1 TypeScript compiles: `npx tsc --noEmit` — 517e6e3
+- [x] 2.2 Lint passes: `npm run lint` — 517e6e3
+- [x] 2.3 Build succeeds: `npm run build` — 517e6e3
 
 #### Manual
 
-- [x] 2.4 POST `/api/absences` with missing field — Sentry event shows user ID, `user_role` tag, `route` tag, readable stack trace
-- [x] 2.5 Same test as moderator — event shows `user_role: moderator`
-- [x] 2.6 401 guard branch does NOT produce a Sentry event
-- [x] 2.7 Normal dashboard load produces no spurious Sentry events
+- [x] 2.4 POST `/api/absences` with missing field — Sentry event shows user ID, `user_role` tag, `route` tag, readable stack trace — 517e6e3
+- [x] 2.5 Same test as moderator — event shows `user_role: moderator` — 517e6e3
+- [x] 2.6 401 guard branch does NOT produce a Sentry event — 517e6e3
+- [x] 2.7 Normal dashboard load produces no spurious Sentry events — 517e6e3
