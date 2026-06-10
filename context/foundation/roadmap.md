@@ -51,7 +51,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
 | S-10 | dev-vars-rename              | (tech) plik .dev.vars przemianowany na .env.dev — spójne nazewnictwo plików środowiskowych                    | —             | —                                           | proposed |
 | S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
-| S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | proposed |
+| S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
 
 ## Streams
 
@@ -228,7 +228,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Source maps: `@sentry/astro` może generować i uploadować source mapy automatycznie podczas `npm run build` (wymaga `SENTRY_AUTH_TOKEN` w CI), albo upload ręczny/pominięty dla MVP.
   - Czy Sentry ma mieć wgląd w requesty i cookies (PII)? Wymaga konfiguracji `sendDefaultPii` i ewentualnej `beforeSend` scrub funkcji ze względu na RODO.
 - **Risk:** Niskie — Sentry SDK dla Cloudflare Workers jest dojrzały; instrumentacja przez `withSentry` wrapper w `src/middleware.ts` lub `src/pages/api/` jest addytywna i nie zmienia logiki biznesowej. Ryzyko wycieku PII w breadcrumbach/requestach jeśli `sendDefaultPii: true` bez scrubowania.
-- **Status:** proposed
+- **Status:** done
 
 ### S-11: Bootstrap konta admin z plików env
 
@@ -282,3 +282,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
 - **S-07: (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie** — Implemented 2026-06-09 → `context/changes/employee-grid-order/`. display_order column + seeding migration, PATCH /api/employees/order (UNNEST bulk update), dashboard orderBy with active-first CASE expression, @dnd-kit DnD with two SortableContexts + DragOverlay, self-first sort.
 - **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.
+- **S-12: Sentry SDK wdrożone dla Cloudflare Workers — error tracking, source maps, 10% performance sampling, captureException we wszystkich catch blokach API + middleware Sentry.setUser/setTag.** — Implemented 2026-06-10 → `context/changes/sentry-integration/`. Phase 1: tracesSampleRate + SENTRY_DSN secret. Phase 2: captureException in 12 files, userRole lookup in middleware.
