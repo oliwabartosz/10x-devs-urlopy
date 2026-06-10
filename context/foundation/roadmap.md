@@ -153,7 +153,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Blockers:** —
 - **Unknowns:** Drizzle nie wspiera Supabase Auth admin API — `createAdminClient()` (Supabase JS) pozostaje dla operacji auth; tylko zapytania do tabel aplikacji przechodzą na Drizzle.
 - **Risk:** Duże ryzyko regresji — każde zapytanie musi być przetestowane. RLS nadal egzekwowane przez Supabase, ale Drizzle omija klienta Supabase JS, więc konfiguracja połączenia z row-level security wymaga weryfikacji (connection string z `?role=authenticated` lub service role).
-- **Status:** proposed
+- **Status:** done
 
 ### S-06: Zakładka Szczegóły — karty Dzisiaj / Miesięcznie / Rocznie
 
@@ -282,4 +282,5 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
 - **S-07: (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie** — Implemented 2026-06-09 → `context/changes/employee-grid-order/`. display_order column + seeding migration, PATCH /api/employees/order (UNNEST bulk update), dashboard orderBy with active-first CASE expression, @dnd-kit DnD with two SortableContexts + DragOverlay, self-first sort.
 - **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.
+- **S-05: wszystkie zapytania do bazy danych używają Drizzle ORM zamiast klienta Supabase JS — typesafe queries, schemat bazy zdefiniowany w kodzie, migracje zarządzane przez Drizzle Kit.** — Implemented → `context/changes/drizzle-migration/`. Note: `createAdminClient()` (Supabase JS) retained for auth admin operations; only app table queries migrated to Drizzle.
 - **S-12: Sentry SDK wdrożone dla Cloudflare Workers — error tracking, source maps, 10% performance sampling, captureException we wszystkich catch blokach API + middleware Sentry.setUser/setTag.** — Implemented 2026-06-10 → `context/changes/sentry-integration/`. Phase 1: tracesSampleRate + SENTRY_DSN secret. Phase 2: captureException in 12 files, userRole lookup in middleware.

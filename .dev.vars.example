@@ -1,8 +1,0 @@
-# Cloudflare local dev secrets — copy to .dev.vars (gitignored) and fill in real values.
-# wrangler dev reads .dev.vars automatically; astro dev does NOT read this file.
-# See: https://developers.cloudflare.com/workers/configuration/secrets/#local-development-with-dev-vars
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key-here
-SUPABASE_SERVICE_KEY=your-service-role-key-here
-DATABASE_URL=postgresql://postgres.[project-ref]:[DB_PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres
-SENTRY_DSN=https://...@....ingest.de.sentry.io/...
