@@ -314,18 +314,18 @@ Negligible. The `is_system` filter is one extra boolean predicate on already-ind
 
 #### Automated
 
-- [x] 3.1 Type checking / lint passes (`npm run lint`)
-- [x] 3.2 Unit tests pass (`npm run test:run`)
+- [x] 3.1 Type checking / lint passes (`npm run lint`) — 4b76f8c
+- [x] 3.2 Unit tests pass (`npm run test:run`) — 4b76f8c
 
 #### Manual
 
-- [x] 3.3 Admin absent from moderator grid, `GET /api/employees`, management sheet, substitute dropdown
-- [x] 3.4 Admin absent from employee grid / employee `GET /api/employees`
-- [x] 3.5 Crafted DELETE on admin refused; admin stays active
-- [x] 3.6 Crafted PATCH (role, name) on admin refused
-- [x] 3.7 Crafted restore on admin refused/no-op
-- [x] 3.8 Crafted reorder payload including admin leaves admin unchanged, reorders the rest
-- [x] 3.9 No regression: normal employees list/edit/delete/restore/reorder correctly
+- [x] 3.3 Admin absent from moderator grid, `GET /api/employees`, management sheet, substitute dropdown — 4b76f8c
+- [x] 3.4 Admin absent from employee grid / employee `GET /api/employees` — 4b76f8c
+- [x] 3.5 Crafted DELETE on admin refused; admin stays active — 4b76f8c
+- [x] 3.6 Crafted PATCH (role, name) on admin refused — 4b76f8c
+- [x] 3.7 Crafted restore on admin refused/no-op — 4b76f8c
+- [x] 3.8 Crafted reorder payload including admin leaves admin unchanged, reorders the rest — 4b76f8c
+- [x] 3.9 No regression: normal employees list/edit/delete/restore/reorder correctly — 4b76f8c
 
 ### Phase 4: Disable Self-Registration
 
