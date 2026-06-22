@@ -74,6 +74,9 @@ if (currentEmployee) {
     deleted_at: employeesTable.deleted_at,
     created_at: employeesTable.created_at,
     display_order: employeesTable.display_order,
+    // Selected so the row type satisfies `Employee` after Phase 1 added the column.
+    // Phase 3 adds the visible-employees `where` filter; this is type-only.
+    is_system: employeesTable.is_system,
   };
 
   const absencesJoin =

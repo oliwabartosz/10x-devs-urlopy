@@ -290,25 +290,25 @@ Negligible. The `is_system` filter is one extra boolean predicate on already-ind
 
 #### Automated
 
-- [x] 1.1 Migration generates cleanly; diff is the additive column only (`npm run db:generate`)
-- [x] 1.2 Type checking / lint passes (`npm run lint`)
-- [x] 1.3 Unit tests pass (`npm run test:run`)
+- [x] 1.1 Migration generates cleanly; diff is the additive column only (`npm run db:generate`) — a61220e
+- [x] 1.2 Type checking / lint passes (`npm run lint`) — a61220e
+- [x] 1.3 Unit tests pass (`npm run test:run`) — a61220e
 
 #### Manual
 
-- [x] 1.4 Generated migration reviewed (adds `is_system` and nothing else) and applied (`npm run db:migrate`)
+- [x] 1.4 Generated migration reviewed (adds `is_system` and nothing else) and applied (`npm run db:migrate`) — a61220e
 
 ### Phase 2: Seed the First Admin
 
 #### Automated
 
-- [ ] 2.1 Type checking / lint passes (`npm run lint`)
-- [ ] 2.2 Seed script type-checks; build/lint clean
+- [x] 2.1 Type checking / lint passes (`npm run lint`)
+- [x] 2.2 Seed script type-checks; build/lint clean
 
 #### Manual
 
-- [ ] 2.3 `npm run seed:admin` creates exactly one `is_system=true` moderator + matching auth user
-- [ ] 2.4 Re-running `npm run seed:admin` is a no-op
+- [x] 2.3 `npm run seed:admin` creates exactly one `is_system=true` moderator + matching auth user
+- [x] 2.4 Re-running `npm run seed:admin` is a no-op
 
 ### Phase 3: Apply the Hidden-Account Invariant
 

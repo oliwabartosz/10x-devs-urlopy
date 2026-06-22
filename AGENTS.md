@@ -50,6 +50,7 @@ All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js`
 - `npm run db:generate` — generate a migration diff from schema changes (outputs to `supabase/migrations/`).
 - `npm run db:migrate` — apply pending migrations via drizzle-kit.
 - `npm run db:studio` — open Drizzle Studio connected to the direct DB.
+- `npm run seed:admin` — one-time-per-environment seed of the technical admin account (role `moderator`, `is_system = true`) from `ADMIN_LOGIN`/`ADMIN_PASSWORD`. Runs in Node via `tsx` (reads `.env`), not in `wrangler dev` — it connects over `DATABASE_URL_DIRECT` and uses the Supabase service-role key to create the auth user. Idempotent: re-running is a no-op once the `is_system` row exists.
 
 ### Migration discipline
 
