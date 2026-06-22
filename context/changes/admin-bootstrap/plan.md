@@ -302,30 +302,30 @@ Negligible. The `is_system` filter is one extra boolean predicate on already-ind
 
 #### Automated
 
-- [x] 2.1 Type checking / lint passes (`npm run lint`)
-- [x] 2.2 Seed script type-checks; build/lint clean
+- [x] 2.1 Type checking / lint passes (`npm run lint`) — d97ef20
+- [x] 2.2 Seed script type-checks; build/lint clean — d97ef20
 
 #### Manual
 
-- [x] 2.3 `npm run seed:admin` creates exactly one `is_system=true` moderator + matching auth user
-- [x] 2.4 Re-running `npm run seed:admin` is a no-op
+- [x] 2.3 `npm run seed:admin` creates exactly one `is_system=true` moderator + matching auth user — d97ef20
+- [x] 2.4 Re-running `npm run seed:admin` is a no-op — d97ef20
 
 ### Phase 3: Apply the Hidden-Account Invariant
 
 #### Automated
 
-- [ ] 3.1 Type checking / lint passes (`npm run lint`)
-- [ ] 3.2 Unit tests pass (`npm run test:run`)
+- [x] 3.1 Type checking / lint passes (`npm run lint`)
+- [x] 3.2 Unit tests pass (`npm run test:run`)
 
 #### Manual
 
-- [ ] 3.3 Admin absent from moderator grid, `GET /api/employees`, management sheet, substitute dropdown
-- [ ] 3.4 Admin absent from employee grid / employee `GET /api/employees`
-- [ ] 3.5 Crafted DELETE on admin refused; admin stays active
-- [ ] 3.6 Crafted PATCH (role, name) on admin refused
-- [ ] 3.7 Crafted restore on admin refused/no-op
-- [ ] 3.8 Crafted reorder payload including admin leaves admin unchanged, reorders the rest
-- [ ] 3.9 No regression: normal employees list/edit/delete/restore/reorder correctly
+- [x] 3.3 Admin absent from moderator grid, `GET /api/employees`, management sheet, substitute dropdown
+- [x] 3.4 Admin absent from employee grid / employee `GET /api/employees`
+- [x] 3.5 Crafted DELETE on admin refused; admin stays active
+- [x] 3.6 Crafted PATCH (role, name) on admin refused
+- [x] 3.7 Crafted restore on admin refused/no-op
+- [x] 3.8 Crafted reorder payload including admin leaves admin unchanged, reorders the rest
+- [x] 3.9 No regression: normal employees list/edit/delete/restore/reorder correctly
 
 ### Phase 4: Disable Self-Registration
 

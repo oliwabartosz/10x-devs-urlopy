@@ -5,6 +5,7 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, isNotNull, and } from "drizzle-orm";
+import { isProtectedAdmin } from "@/lib/employees";
 
 export const prerender = false;
 
@@ -47,10 +48,10 @@ export const POST: APIRoute = async (context) => {
   }
 
   // Service role sees all rows — no isNull filter needed to read soft-deleted employees
-  let target: { id: string; deleted_at: Date | null } | undefined;
+  let target: { id: string; deleted_at: Date | null; is_system: boolean } | undefined;
   try {
     target = await db
-      .select({ id: employees.id, deleted_at: employees.deleted_at })
+      .select({ id: employees.id, deleted_at: employees.deleted_at, is_system: employees.is_system })
       .from(employees)
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
@@ -60,6 +61,10 @@ export const POST: APIRoute = async (context) => {
   }
   if (!target) {
     return json({ error: "Employee not found" }, 404);
+  }
+  // The technical admin is never deletable, so it should never be restorable either.
+  if (isProtectedAdmin(target)) {
+    return json({ error: "Nie można przywrócić tego konta." }, 403);
   }
   if (target.deleted_at === null) {
     return json({ error: "Employee is already active" }, 409);

@@ -72,8 +72,11 @@ export const PATCH: APIRoute = async (context) => {
       parsed.data.order.map((item) => sql`${item.display_order}::int`),
       sql`, `,
     );
+    // `AND employees.is_system = false` keeps the technical admin out of the update
+    // set: a crafted payload carrying the admin id reorders everyone else but no-ops
+    // on the admin (RLS is bypassed, so this guard must live in the statement).
     await db.execute(
-      sql`UPDATE employees SET display_order = v.ord FROM (SELECT UNNEST(ARRAY[${idList}]) AS id, UNNEST(ARRAY[${ordList}]) AS ord) AS v WHERE employees.id = v.id`,
+      sql`UPDATE employees SET display_order = v.ord FROM (SELECT UNNEST(ARRAY[${idList}]) AS id, UNNEST(ARRAY[${ordList}]) AS ord) AS v WHERE employees.id = v.id AND employees.is_system = false`,
     );
     return json({ ok: true }, 200);
   } catch (err) {

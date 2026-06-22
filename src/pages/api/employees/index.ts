@@ -8,6 +8,7 @@ import { createDb, employees } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, asc, max } from "drizzle-orm";
 import { extractPgErrorCode } from "@/lib/db-errors";
+import { visibleEmployeesFilter } from "@/lib/employees";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -44,11 +45,15 @@ export const GET: APIRoute = async (context) => {
   try {
     const rows =
       caller.role === "moderator"
-        ? await db.select(cols).from(employees).orderBy(asc(employees.last_name), asc(employees.first_name))
+        ? await db
+            .select(cols)
+            .from(employees)
+            .where(visibleEmployeesFilter())
+            .orderBy(asc(employees.last_name), asc(employees.first_name))
         : await db
             .select(cols)
             .from(employees)
-            .where(isNull(employees.deleted_at))
+            .where(and(isNull(employees.deleted_at), visibleEmployeesFilter()))
             .orderBy(asc(employees.last_name), asc(employees.first_name));
     return json(rows, 200);
   } catch (err) {

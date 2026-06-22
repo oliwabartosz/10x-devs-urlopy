@@ -5,6 +5,7 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, and, count } from "drizzle-orm";
+import { isProtectedAdmin } from "@/lib/employees";
 
 export const prerender = false;
 
@@ -69,10 +70,15 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   // Service role sees all rows — no isNull filter needed to read deleted employees
-  let target: { id: string; role: "employee" | "moderator"; deleted_at: Date | null } | undefined;
+  let target: { id: string; role: "employee" | "moderator"; deleted_at: Date | null; is_system: boolean } | undefined;
   try {
     target = await db
-      .select({ id: employees.id, role: employees.role, deleted_at: employees.deleted_at })
+      .select({
+        id: employees.id,
+        role: employees.role,
+        deleted_at: employees.deleted_at,
+        is_system: employees.is_system,
+      })
       .from(employees)
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
@@ -82,6 +88,10 @@ export const PATCH: APIRoute = async (context) => {
   }
   if (!target) {
     return json({ error: "Employee not found" }, 404);
+  }
+  // The technical admin is immutable through every API path (RLS is bypassed).
+  if (isProtectedAdmin(target)) {
+    return json({ error: "Nie można modyfikować tego konta." }, 403);
   }
   if (target.deleted_at !== null) {
     return json({ error: "Cannot update a deactivated employee" }, 409);
@@ -147,10 +157,10 @@ export const DELETE: APIRoute = async (context) => {
   }
 
   // Service role sees all rows — no isNull filter needed
-  let target: { id: string; deleted_at: Date | null } | undefined;
+  let target: { id: string; deleted_at: Date | null; is_system: boolean } | undefined;
   try {
     target = await db
-      .select({ id: employees.id, deleted_at: employees.deleted_at })
+      .select({ id: employees.id, deleted_at: employees.deleted_at, is_system: employees.is_system })
       .from(employees)
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
@@ -160,6 +170,10 @@ export const DELETE: APIRoute = async (context) => {
   }
   if (!target) {
     return json({ error: "Employee not found" }, 404);
+  }
+  // The technical admin cannot be soft-deleted through the API (RLS is bypassed).
+  if (isProtectedAdmin(target)) {
+    return json({ error: "Nie można usunąć tego konta." }, 403);
   }
   if (target.deleted_at !== null) {
     return json({ error: "Employee is already deactivated" }, 409);
