@@ -52,6 +52,9 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-10 | dev-vars-rename              | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie             | —             | —                                           | done     |
 | S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
 | S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
+| S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | proposed |
+| S-14 | hours-onsite-training-only   | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09       | FR-004         | proposed |
+| S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | planned  |
 
 ## Streams
 
@@ -246,6 +249,48 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** Średnie — wyłączenie samorejestracji jest nieodwracalne dla użytkowników w produkcji; błąd w seedzie blokuje cały onboarding. Mechanizm tworzenia użytkowników przez moderatora (Supabase Admin API po stronie serwera) wymaga service role key — musi pozostać wyłącznie po stronie API, nigdy nie wyciekać do klienta. Jeśli admin jest w tabeli `employees`, każde zapytanie grid/details musi go filtrować — ryzyko pominięcia filtra w nowym kodzie.
 - **Status:** proposed
 
+### S-13: Nowa kategoria nieobecności — "urlop planowany"
+
+- **Outcome:** użytkownik wybiera nowy typ nieobecności "urlop planowany" z listy kategorii w formularzu dodawania/edycji wpisu; typ jest widoczny w siatce miesięcznej i tabeli szczegółów z własnym, odróżnialnym kolorem — tak jak istniejące kategorie (`urlop`, `choroba`, itd.).
+- **Change ID:** urlop-planowany-category
+- **PRD refs:** FR-001, FR-002
+- **Prerequisites:** F-01 (tabela `absence_types` + seed kanonicznych typów)
+- **Parallel with:** wszystkie slices — addytywna zmiana danych, nie blokuje i nie jest blokowana
+- **Blockers:** —
+- **Unknowns:**
+  - Kolor nowej kategorii — musi być odróżnialny od 6 istniejących (`#2f578c`, `#10bbef`, `#ffcc00`, `#58873e`, `#e50040`, `#6f6f6f`); do wyboru przy planowaniu.
+  - Czy formularz/siatka czytają typy dynamicznie z `absence_types` (wtedy wystarczy migracja seed), czy gdzieś istnieje zahardkodowana lista typów do zaktualizowania — do weryfikacji w researchu/planie.
+- **Risk:** Niskie — typy nieobecności były oznaczone jako "kanoniczne" w seedzie F-01 (`PRD Business Logic section`), więc to świadome rozszerzenie listy; sama zmiana to dodanie wiersza do `absence_types`. Ryzyko tylko jeśli lista typów jest zduplikowana/zahardkodowana poza bazą.
+- **Status:** proposed
+
+### S-14: Pole godzin tylko dla kategorii "szkolenie w miejscu pracy"
+
+- **Outcome:** w formularzu dodawania/edycji nieobecności możliwość wpisania zakresu godzin (nieobecność niepełnodniowa) jest dostępna wyłącznie po wybraniu kategorii "szkolenie w miejscu pracy"; pozostałe kategorie są traktowane jako całodniowe. Zawęża funkcję wprowadzoną w S-09.
+- **Change ID:** hours-onsite-training-only
+- **PRD refs:** FR-004
+- **Prerequisites:** S-09 (zakres godzin / `start_time`/`end_time` + przełącznik `is_full_day`)
+- **Parallel with:** wszystkie slices — zmiana logiki formularza, nie blokuje i nie jest blokowana
+- **Blockers:** —
+- **Unknowns:**
+  - Czy bramkowanie po kategorii ma być zahardkodowane do nazwy "szkolenie w miejscu pracy", czy zrobione jako per-kategoria zdolność (np. flaga na `absence_types`) — istotne, bo dochodzą nowe kategorie (S-13); do decyzji przy planowaniu.
+  - Egzekwowanie tylko w UI czy też walidacja po stronie API (`is_full_day`/czas vs typ) — do weryfikacji.
+- **Risk:** Niskie–średnie — głównie logika warunkowa formularza; ryzyko regresji istniejących wpisów godzinowych z innych kategorii, jeśli istnieją dane produkcyjne (pre-launch: brak).
+- **Status:** proposed
+
+### S-15: Saldo urlopu — wymiar z systemu kadrowego i licznik pozostałych dni
+
+- **Outcome:** pracownik wpisuje swój wymiar urlopu z zewnętrznego systemu kadrowego (Bieżący + Zaległy) oraz datę-wskazówkę "Do dnia:"; aplikacja zlicza wykorzystane wpisy typu `urlop` i pokazuje na karcie dashboardu, ile dni urlopu zostało (Pozostało = Bieżący + Zaległy − Wykorzystane), per rok kalendarzowy. Kartę widzą i edytują zarówno pracownicy, jak i moderatorzy.
+- **Change ID:** urlop-balance
+- **PRD refs:** FR-005, FR-006
+- **Prerequisites:** F-01 (tabele `employees`/`absences`/`absence_types`)
+- **Parallel with:** wszystkie slices — addytywna tabela + endpoint + karta; nie blokuje innych
+- **Blockers:** —
+- **Unknowns:**
+  - Niedoszacowanie "Wykorzystane" przy adopcji w trakcie roku (urlop sprzed wdrożenia aplikacji) — łagodzone opcjonalnym polem `used_adjustment_days`; szczegóły w planie.
+  - Interakcja z S-13: nowa kategoria "urlop planowany" NIE może być liczona jako wykorzystany `urlop` (dopasowanie po dokładnej nazwie + test regresji).
+- **Risk:** Niskie–średnie — wzorce (tabela + endpoint + karta) istnieją; główne ryzyko to poprawność zliczania (dzielnik /8 musi zgadzać się z `AbsenceStats.tsx`) i wykluczenie `urlop planowany`.
+- **Status:** planned (`/10x-plan` ukończony — `context/changes/urlop-balance/plan.md`)
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                    | Sugerowany tytuł issue                                                | Gotowy na `/10x-plan` | Uwagi                                        |
@@ -260,6 +305,9 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-07       | employee-grid-order          | [Urlopy] Moderator: zmiana kolejności kolumn pracowników w siatce    | yes                   | Gotowy po S-04; równolegle z S-08            |
 | S-08       | deactivated-employee-grid    | [Urlopy] Bugfix: historyczne nieobecności zdezaktywowanych pracowników | yes                 | Bug odkryty w S-03; wymaga decyzji UX (widoczność kolumny) |
 | S-12       | sentry-integration           | [Urlopy] Sentry SDK — error tracking dla Cloudflare Workers           | yes                 | Niezależne; można realizować w dowolnym momencie           |
+| S-13       | urlop-planowany-category     | [Urlopy] Nowa kategoria nieobecności "urlop planowany"                | yes                 | Gotowy — zależy tylko od F-01; addytywny seed `absence_types` |
+| S-14       | hours-onsite-training-only   | [Urlopy] Pole godzin tylko dla "szkolenie w miejscu pracy"            | yes                 | Zawęża S-09; zależy od S-09                                 |
+| S-15       | urlop-balance                | [Urlopy] Saldo urlopu — wymiar kadrowy i licznik pozostałych dni      | yes                 | Plan gotowy (`/10x-plan` ukończony); wyklucza `urlop planowany` z S-13 |
 
 ## Open Roadmap Questions
 

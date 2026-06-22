@@ -8,6 +8,13 @@
       "when": 1780928227311,
       "tag": "20260608141707_ambitious_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782118901318,
+      "tag": "20260622090141_condemned_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

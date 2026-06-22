@@ -1,0 +1,1 @@
+ALTER TABLE "employees" ADD COLUMN "is_system" boolean DEFAULT false NOT NULL;

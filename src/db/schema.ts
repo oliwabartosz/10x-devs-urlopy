@@ -23,6 +23,9 @@ export const employees = pgTable("employees", {
   deleted_at: timestamp("deleted_at", { withTimezone: true }),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   display_order: integer("display_order").notNull().default(0),
+  // Technical-admin marker. App-enforced (RLS is bypassed on the service-role connection):
+  // exactly one row is true; hidden from every user-facing list and immutable via every API path.
+  is_system: boolean("is_system").notNull().default(false),
 });
 
 export const absence_types = pgTable("absence_types", {
