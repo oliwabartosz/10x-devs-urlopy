@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
 import { isProtectedAdmin, visibleEmployeesFilter } from "@/lib/employees";
 import { employees } from "@/db/schema";
 
@@ -13,18 +14,9 @@ describe("isProtectedAdmin", () => {
 });
 
 describe("visibleEmployeesFilter", () => {
-  it("builds an equality predicate on employees.is_system = false", () => {
-    const filter = visibleEmployeesFilter();
-    // Drizzle eq() yields an SQL object; assert it references the is_system column
-    // and binds the literal false, so the predicate can only ever exclude system rows.
-    const { sql, params } = filter.getSQL().toQuery({
-      escapeName: (n) => `"${n}"`,
-      escapeParam: (i) => `$${i + 1}`,
-      escapeString: (s) => `'${s}'`,
-      casing: { getColumnCasing: (c) => c.name },
-    });
-
-    expect(sql).toContain(employees.is_system.name);
-    expect(params).toEqual([false]);
+  it("is the predicate `employees.is_system = false`", () => {
+    // Structural equality against the reference eq() — locks the filter to exclude
+    // system rows without coupling to Drizzle's internal SQL-builder API.
+    expect(visibleEmployeesFilter()).toEqual(eq(employees.is_system, false));
   });
 });
