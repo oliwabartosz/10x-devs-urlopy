@@ -22,5 +22,5 @@ export function visibleEmployeesFilter() {
 
 /** True iff the row is the protected technical admin. Call before any mutation. */
 export function isProtectedAdmin(row: { is_system: boolean }): boolean {
-  return row.is_system === true;
+  return row.is_system;
 }
