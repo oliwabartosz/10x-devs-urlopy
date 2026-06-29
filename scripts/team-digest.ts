@@ -19,13 +19,18 @@
  */
 import { execFileSync } from "node:child_process";
 import { globSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, basename } from "node:path";
+import { dirname } from "node:path";
 import { z } from "zod";
 
 /** Statusy zmiany „w toku" — kandydaci do sekcji „W toku". */
 const IN_PROGRESS = ["new", "planned", "implementing"] as const;
 /** Scope'y commitów, które nie mapują się na folder zmiany. */
 const NON_CHANGE_SCOPES = new Set(["roadmap", "lint", "build", "ai", "deps", "ci"]);
+
+/** Sentry — z DSN w `sentry.client.config.js` (org id, host regionalny, project id). */
+const SENTRY_HOST = "de.sentry.io";
+const SENTRY_ORG_ID = "4511534802993152";
+const SENTRY_PROJECT_ID = "4511534806007888";
 
 const changeFrontmatterSchema = z.object({
   id: z.string().min(1),
@@ -194,7 +199,55 @@ function changeLink(id: string): string {
   return `[${id}](../../changes/${id}/)`;
 }
 
-function buildDigest(now: Date): string {
+/** Status ostatniego runu GitHub Actions przez `gh` (sync). Błąd/brak `gh` → „niedostępne". */
+function githubCiLines(): string[] {
+  try {
+    const out = execFileSync(
+      "gh",
+      ["run", "list", "--limit", "1", "--json", "status,conclusion,headBranch,createdAt"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    const runs = JSON.parse(out) as {
+      status: string;
+      conclusion: string | null;
+      headBranch: string;
+      createdAt: string;
+    }[];
+    if (runs.length === 0) return ["- **GitHub Actions**: brak runów."];
+    const r = runs[0];
+    const outcome = r.conclusion ?? r.status;
+    return [`- **GitHub Actions**: ostatni run \`${outcome}\` na \`${r.headBranch}\` (${r.createdAt.slice(0, 10)}).`];
+  } catch {
+    return ["- **GitHub Actions**: niedostępne."];
+  }
+}
+
+/** Nowe issues z Sentry (okno 24h) przez REST. Brak tokena/błąd → „niedostępne". */
+async function sentryLines(): Promise<string[]> {
+  const token = process.env.SENTRY_AUTH_TOKEN;
+  if (!token) return ["- **Sentry**: niedostępne (brak SENTRY_AUTH_TOKEN)."];
+  try {
+    const url =
+      `https://${SENTRY_HOST}/api/0/organizations/${SENTRY_ORG_ID}/issues/` +
+      `?project=${SENTRY_PROJECT_ID}&statsPeriod=24h&query=is:unresolved&limit=5`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return [`- **Sentry**: niedostępne (HTTP ${res.status}).`];
+    const issues = (await res.json()) as { title: string; permalink?: string }[];
+    if (issues.length === 0) return ["- **Sentry**: brak nowych issues w ostatnich 24h."];
+    const out = [`- **Sentry**: ${issues.length} nowych issue(s) w ostatnich 24h:`];
+    for (const i of issues) {
+      out.push(`  - ${i.permalink ? `[${i.title}](${i.permalink})` : i.title}`);
+    }
+    return out;
+  } catch (err) {
+    return [`- **Sentry**: niedostępne (${err instanceof Error ? err.message : String(err)}).`];
+  }
+}
+
+function buildDigest(now: Date, ciLines: string[]): string {
   const { changes, errors } = readChanges(now);
   const changed = commitsSinceYesterday();
   const roadmap = readRoadmapStatuses();
@@ -306,11 +359,10 @@ function buildDigest(now: Date): string {
   }
   lines.push("");
 
-  // 5. CI / Błędy (sygnały zewnętrzne dochodzą w Fazie C)
+  // 5. CI / Błędy (sygnały zewnętrzne, graceful degradation)
   lines.push("## CI / Błędy");
   lines.push("");
-  lines.push("- **GitHub Actions**: sygnał zewnętrzny — dodawany w Fazie C.");
-  lines.push("- **Sentry**: sygnał zewnętrzny — dodawany w Fazie C.");
+  for (const l of ciLines) lines.push(l);
   lines.push("");
 
   // 6. ⚠️ Nie udało się sparsować
@@ -326,8 +378,9 @@ function buildDigest(now: Date): string {
   return lines.join("\n");
 }
 
-function main(): void {
-  // Faza C potrzebuje SENTRY_AUTH_TOKEN z .env; ładujemy je tu, ignorując brak pliku.
+async function main(): Promise<void> {
+  // Sygnały zewnętrzne potrzebują SENTRY_AUTH_TOKEN z .env; ładujemy je tu, ignorując
+  // brak pliku — bez tokena sekcja Sentry zdegraduje się łaskawie.
   try {
     process.loadEnvFile();
   } catch {
@@ -335,7 +388,8 @@ function main(): void {
   }
 
   const now = new Date();
-  const content = buildDigest(now);
+  const ciLines = [...githubCiLines(), ...(await sentryLines())];
+  const content = buildDigest(now, ciLines);
 
   mkdirSync("context/team/digests", { recursive: true });
   const outPath = `context/team/digests/${localDateStr(now)}.md`;
@@ -344,6 +398,8 @@ function main(): void {
   console.log(`✔ Digest zapisany: ${outPath}`);
 }
 
-main();
-// basename importowany na potrzeby Fazy C (linkowanie plików); cisza dla lintera
-void basename;
+main().catch((err: unknown) => {
+  // eslint-disable-next-line no-console
+  console.error("✖ digest failed:", err);
+  process.exit(1);
+});

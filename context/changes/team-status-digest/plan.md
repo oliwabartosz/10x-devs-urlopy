@@ -282,30 +282,30 @@ Brak migracji danych. Jedyna zmiana w repo poza skryptem to wpis w `.gitignore` 
 
 #### Automated
 
-- [x] B.1 Lint przechodzi (`npm run lint`)
-- [x] B.2 Type-check przechodzi (`npx astro check`)
-- [x] B.3 `npm run digest` tworzy datowany plik
-- [x] B.4 Uszkodzony `change.md` → exit 0, plik powstaje
+- [x] B.1 Lint przechodzi (`npm run lint`) — 68b9a9d
+- [x] B.2 Type-check przechodzi (`npx astro check`) — 68b9a9d
+- [x] B.3 `npm run digest` tworzy datowany plik — 68b9a9d
+- [x] B.4 Uszkodzony `change.md` → exit 0, plik powstaje — 68b9a9d
 
 #### Manual
 
-- [x] B.5 Wygenerowany plik odpowiada mockowi Fazy A
-- [x] B.6 Sekcja „W toku" poprawnie posortowana po dniach bez ruchu
-- [x] B.7 Rozjazd git↔frontmatter i mirror-drift pokazują realne rozbieżności
-- [x] B.8 Uszkodzony `change.md` ląduje w sekcji ⚠️
-- [x] B.9 „Decyzje na dziś" zawierają 1–3 sensowne pytania z linkami
+- [x] B.5 Wygenerowany plik odpowiada mockowi Fazy A — 68b9a9d
+- [x] B.6 Sekcja „W toku" poprawnie posortowana po dniach bez ruchu — 68b9a9d
+- [x] B.7 Rozjazd git↔frontmatter i mirror-drift pokazują realne rozbieżności — 68b9a9d
+- [x] B.8 Uszkodzony `change.md` ląduje w sekcji ⚠️ — 68b9a9d
+- [x] B.9 „Decyzje na dziś" zawierają 1–3 sensowne pytania z linkami — 68b9a9d
 
 ### Phase C: Sygnały zewnętrzne (GitHub Actions + Sentry)
 
 #### Automated
 
-- [ ] C.1 Lint przechodzi (`npm run lint`)
-- [ ] C.2 Type-check przechodzi (`npx astro check`)
-- [ ] C.3 Bez `SENTRY_AUTH_TOKEN` skrypt kończy exit 0 i tworzy plik
-- [ ] C.4 `.env.example` zawiera `SENTRY_AUTH_TOKEN`
+- [x] C.1 Lint przechodzi (`npm run lint`)
+- [x] C.2 Type-check przechodzi (`npx astro check`)
+- [x] C.3 Bez `SENTRY_AUTH_TOKEN` skrypt kończy exit 0 i tworzy plik
+- [x] C.4 `.env.example` zawiera `SENTRY_AUTH_TOKEN`
 
 #### Manual
 
-- [ ] C.5 Z `gh` sekcja „CI" pokazuje realny ostatni run
-- [ ] C.6 Z `SENTRY_AUTH_TOKEN` sekcja „Błędy" pokazuje realne issues (24h)
-- [ ] C.7 Bez tokena / wylogowany `gh` → „niedostępne", digest dalej powstaje
+- [x] C.5 Z `gh` sekcja „CI" pokazuje realny ostatni run
+- [x] C.6 Z `SENTRY_AUTH_TOKEN` sekcja „Błędy" pokazuje realne issues (24h)
+- [x] C.7 Bez tokena / wylogowany `gh` → „niedostępne", digest dalej powstaje
