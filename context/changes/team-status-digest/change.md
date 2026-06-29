@@ -1,7 +1,7 @@
 ---
 change_id: team-status-digest
 title: Poranny digest statusu projektu (cienki helper M5L1)
-status: implementing
+status: implemented
 created: 2026-06-29
 updated: 2026-06-29
 archived_at: null

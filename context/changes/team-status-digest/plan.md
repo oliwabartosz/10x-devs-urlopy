@@ -299,13 +299,13 @@ Brak migracji danych. Jedyna zmiana w repo poza skryptem to wpis w `.gitignore` 
 
 #### Automated
 
-- [x] C.1 Lint przechodzi (`npm run lint`)
-- [x] C.2 Type-check przechodzi (`npx astro check`)
-- [x] C.3 Bez `SENTRY_AUTH_TOKEN` skrypt kończy exit 0 i tworzy plik
-- [x] C.4 `.env.example` zawiera `SENTRY_AUTH_TOKEN`
+- [x] C.1 Lint przechodzi (`npm run lint`) — 936ce7d
+- [x] C.2 Type-check przechodzi (`npx astro check`) — 936ce7d
+- [x] C.3 Bez `SENTRY_AUTH_TOKEN` skrypt kończy exit 0 i tworzy plik — 936ce7d
+- [x] C.4 `.env.example` zawiera `SENTRY_AUTH_TOKEN` — 936ce7d
 
 #### Manual
 
-- [x] C.5 Z `gh` sekcja „CI" pokazuje realny ostatni run
-- [x] C.6 Z `SENTRY_AUTH_TOKEN` sekcja „Błędy" pokazuje realne issues (24h)
-- [x] C.7 Bez tokena / wylogowany `gh` → „niedostępne", digest dalej powstaje
+- [x] C.5 Z `gh` sekcja „CI" pokazuje realny ostatni run — 936ce7d
+- [x] C.6 Z `SENTRY_AUTH_TOKEN` sekcja „Błędy" pokazuje realne issues (24h) — 936ce7d
+- [x] C.7 Bez tokena / wylogowany `gh` → „niedostępne", digest dalej powstaje — 936ce7d
