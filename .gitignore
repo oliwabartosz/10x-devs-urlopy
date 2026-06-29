@@ -39,3 +39,7 @@ supabase/snippets/
 tests/e2e/.auth/user.json
 playwright-report/
 test-results/
+
+# team status digests (derived state — keep the dir, ignore the reports)
+context/team/digests/*
+!context/team/digests/.gitkeep
