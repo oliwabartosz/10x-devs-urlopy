@@ -268,32 +268,32 @@ Brak migracji danych. Jedyna zmiana w repo poza skryptem to wpis w `.gitignore` 
 
 #### Automated
 
-- [x] A.1 Plik mocka istnieje (`test -f context/team/digests/2026-06-29.md`)
-- [x] A.2 Katalog ignorowany (`git check-ignore` zwraca ścieżkę)
-- [x] A.3 `.gitkeep` jest śledzony
+- [x] A.1 Plik mocka istnieje (`test -f context/team/digests/2026-06-29.md`) — 1c851b4
+- [x] A.2 Katalog ignorowany (`git check-ignore` zwraca ścieżkę) — 1c851b4
+- [x] A.3 `.gitkeep` jest śledzony — 1c851b4
 
 #### Manual
 
-- [x] A.4 Sekcje i kolejność zgodne z „Desired End State"
-- [x] A.5 Dane mocka zgodne z realnym stanem repo
-- [x] A.6 Format „Decyzje na dziś" odtwarzalny regułami
+- [x] A.4 Sekcje i kolejność zgodne z „Desired End State" — 1c851b4
+- [x] A.5 Dane mocka zgodne z realnym stanem repo — 1c851b4
+- [x] A.6 Format „Decyzje na dziś" odtwarzalny regułami — 1c851b4
 
 ### Phase B: Skrypt lokalny `scripts/team-digest.ts`
 
 #### Automated
 
-- [ ] B.1 Lint przechodzi (`npm run lint`)
-- [ ] B.2 Type-check przechodzi (`npx astro check`)
-- [ ] B.3 `npm run digest` tworzy datowany plik
-- [ ] B.4 Uszkodzony `change.md` → exit 0, plik powstaje
+- [x] B.1 Lint przechodzi (`npm run lint`)
+- [x] B.2 Type-check przechodzi (`npx astro check`)
+- [x] B.3 `npm run digest` tworzy datowany plik
+- [x] B.4 Uszkodzony `change.md` → exit 0, plik powstaje
 
 #### Manual
 
-- [ ] B.5 Wygenerowany plik odpowiada mockowi Fazy A
-- [ ] B.6 Sekcja „W toku" poprawnie posortowana po dniach bez ruchu
-- [ ] B.7 Rozjazd git↔frontmatter i mirror-drift pokazują realne rozbieżności
-- [ ] B.8 Uszkodzony `change.md` ląduje w sekcji ⚠️
-- [ ] B.9 „Decyzje na dziś" zawierają 1–3 sensowne pytania z linkami
+- [x] B.5 Wygenerowany plik odpowiada mockowi Fazy A
+- [x] B.6 Sekcja „W toku" poprawnie posortowana po dniach bez ruchu
+- [x] B.7 Rozjazd git↔frontmatter i mirror-drift pokazują realne rozbieżności
+- [x] B.8 Uszkodzony `change.md` ląduje w sekcji ⚠️
+- [x] B.9 „Decyzje na dziś" zawierają 1–3 sensowne pytania z linkami
 
 ### Phase C: Sygnały zewnętrzne (GitHub Actions + Sentry)
 
