@@ -260,6 +260,14 @@ Brak migracji danych. Jedyna zmiana w repo poza skryptem to wpis w `.gitignore` 
 - Roadmap parsing: `context/foundation/roadmap.md:40-57`, `:101-292`
 - Opportunity / walidacja: `context/foundation/opportunity-map.md`, `context/team/mom-test-validation.md`
 
+## Addenda
+
+### A1 — Rozjazdy (a) zawężone do przypadku „brak commita" (impl-review 2026-06-29)
+
+Sekcja „Rozjazdy" punkt (a) w implementacji wykrywa **wyłącznie** zmiany bez żadnej historii git (`lastTouch === null`) — czyli krytyczny przypadek #4 z „Critical Implementation Details". Szersze porównanie „deklarowany status vs realny ruch" naszkicowane w Contrakcie (`Phase B, #2`) **nie zostało zaimplementowane świadomie**: każda jego sensowna forma („`implementing` od N dni bez commita") wymaga progu „utknięcia", który plan jawnie odrzuca (sekcja „What We're NOT Doing" + decyzja „sortowanie, nie binarna etykieta"). Sygnał „brak commita" jest deterministyczny i bez progu, więc spełnia intencję bez łamania tej zasady.
+
+Konsekwencja: mapa statusów z roadmapy (`readRoadmapStatuses`) jest parsowana, ale jej **wartości statusów nie są konsumowane** — używany jest tylko `roadmap.has(scope)` do decyzji o linkowaniu nagłówka w sekcji „Co się zmieniło". To akceptowany, świadomy stan; rozszerzenie (np. „deklarowane done, a zero commitów") to potencjalna przyszła iteracja, nie dług do natychmiastowej spłaty.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

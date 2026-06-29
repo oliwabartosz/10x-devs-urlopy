@@ -94,7 +94,13 @@ function localDateStr(d: Date): string {
 
 /** Wczytaj i znormalizuj wszystkie change.md; błędy → lista skip-and-warn. */
 function readChanges(now: Date): { changes: Change[]; errors: ParseError[] } {
-  const files = globSync("context/changes/*/change.md").sort();
+  let files: string[];
+  try {
+    files = globSync("context/changes/*/change.md").sort();
+  } catch {
+    // Brak/niedostępny katalog zmian → zero zmian, digest i tak powstaje.
+    return { changes: [], errors: [] };
+  }
   const changes: Change[] = [];
   const errors: ParseError[] = [];
 
@@ -235,7 +241,9 @@ async function sentryLines(): Promise<string[]> {
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return [`- **Sentry**: niedostępne (HTTP ${res.status}).`];
-    const issues = (await res.json()) as { title: string; permalink?: string }[];
+    const payload: unknown = await res.json();
+    if (!Array.isArray(payload)) return ["- **Sentry**: niedostępne (nieoczekiwany format)."];
+    const issues = payload as { title: string; permalink?: string }[];
     if (issues.length === 0) return ["- **Sentry**: brak nowych issues w ostatnich 24h."];
     const out = [`- **Sentry**: ${issues.length} nowych issue(s) w ostatnich 24h:`];
     for (const i of issues) {
