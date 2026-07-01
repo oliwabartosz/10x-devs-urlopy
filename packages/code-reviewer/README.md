@@ -1,15 +1,26 @@
 # @10xdevs/code-reviewer
 
-AI-powered code reviewer built on the [Vercel AI SDK](https://ai-sdk.dev), the
-[OpenRouter](https://openrouter.ai) provider, and [zod](https://zod.dev) for
-validated structured output. This is the base entry point (`src/index.ts`) that
-further features build on.
+AI-powered code reviewer built on the [Vercel AI SDK](https://ai-sdk.dev)'s
+`ToolLoopAgent`, the [OpenRouter](https://openrouter.ai) provider, and
+[zod](https://zod.dev) for validated structured output. The barrel
+(`src/index.ts`) re-exports the reusable surface that further features build on.
+
+## Module layout
+
+```
+src/
+  models/review.ts   # ReviewFinding, ReviewResult zod schemas + inferred types
+  prompts/review.ts  # SYSTEM_INSTRUCTIONS + buildReviewPrompt() + language hint
+  agent.ts           # createCodeReviewer() factory, codeReviewer singleton, reviewCode()
+  index.ts           # barrel: re-exports the public surface (no side effects)
+  demo.ts            # runnable npm start / npm run dev demo
+```
 
 ## Stack
 
 | Package                        | Version | Notes                                          |
 | ------------------------------ | ------- | ---------------------------------------------- |
-| `ai`                           | ^6      | AI SDK core (`generateText` + `Output.object`) |
+| `ai`                           | ^6      | AI SDK core (`ToolLoopAgent` + `Output.object`) |
 | `@openrouter/ai-sdk-provider`  | ^2.10   | OpenRouter model access                        |
 | `zod`                          | ^4      | Schema + runtime validation                    |
 | `tsx` / `typescript`           | dev     | Run/typecheck TS directly on Node              |
@@ -26,23 +37,37 @@ cp .env.example .env   # then add your OPENROUTER_API_KEY
 npm install
 ```
 
+`npm start` / `npm run dev` auto-load `.env` (via tsx's `--env-file-if-exists`),
+so a local `.env` is picked up without exporting the key. In environments
+without a `.env` file (e.g. CI), export `OPENROUTER_API_KEY` in the environment
+instead — the flag skips the missing file gracefully.
+
 ## Usage
 
 Run the demo review:
 
 ```bash
-npm start          # tsx src/index.ts
+npm start          # tsx src/cli.ts
 npm run dev        # watch mode
 npm run typecheck  # tsc --noEmit
 ```
 
-Or import the reusable API:
+Or import the reusable API from the barrel:
 
 ```ts
-import { reviewCode } from "./src/index.ts";
+import { reviewCode, createCodeReviewer, codeReviewer } from "./src/index.ts";
 
+// Simplest entry point — uses the default singleton.
 const result = await reviewCode(source, { language: "TypeScript" });
 console.log(result.summary, result.findings);
+
+// Build a reviewer bound to a specific model (e.g. for evals).
+const reviewer = createCodeReviewer({ model: "openai/gpt-4o" });
+// `options` is required once callOptionsSchema is set — pass `{}` when no hint.
+const { output } = await reviewer.generate({ prompt: source, options: {} });
+
+// Or reuse the shared default agent directly.
+await codeReviewer.generate({ prompt: source, options: { language: "TypeScript" } });
 ```
 
 `reviewCode` reads `OPENROUTER_API_KEY` from the environment and defaults to the
