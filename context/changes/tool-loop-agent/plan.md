@@ -240,23 +240,23 @@ Back-compat is preserved: `index.ts` re-exports `reviewCode`, `ReviewFinding`, `
 
 #### Automated
 
-- [x] 1.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck`
-- [x] 1.2 New files exist: `src/models/review.ts`, `src/prompts/review.ts`
+- [x] 1.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck` — a372156
+- [x] 1.2 New files exist: `src/models/review.ts`, `src/prompts/review.ts` — a372156
 
 #### Manual
 
-- [x] 1.3 `git diff` shows schemas/prompts moved verbatim (no wording/severity changes)
+- [x] 1.3 `git diff` shows schemas/prompts moved verbatim (no wording/severity changes) — a372156
 
 ### Phase 2: Agent Module
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck`
-- [ ] 2.2 `src/agent.ts` exports `codeReviewer`, `createCodeReviewer`, `reviewCode`
+- [x] 2.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck`
+- [x] 2.2 `src/agent.ts` exports `codeReviewer`, `createCodeReviewer`, `reviewCode`
 
 #### Manual
 
-- [ ] 2.3 `codeReviewer.generate({ prompt, options: {} })` shape typechecks (generics resolved)
+- [x] 2.3 `codeReviewer.generate({ prompt, options: {} })` shape typechecks (generics resolved)
 
 ### Phase 3: Barrel, Demo Split & Packaging
 
