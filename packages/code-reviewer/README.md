@@ -13,7 +13,7 @@ src/
   prompts/review.ts  # SYSTEM_INSTRUCTIONS + buildReviewPrompt() + language hint
   agent.ts           # createCodeReviewer() factory, codeReviewer singleton, reviewCode()
   index.ts           # barrel: re-exports the public surface (no side effects)
-  demo.ts            # runnable npm start / npm run dev demo
+  cli.ts             # runnable npm start / npm run dev demo
 ```
 
 ## Stack
