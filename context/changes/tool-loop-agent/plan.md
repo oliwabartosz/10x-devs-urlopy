@@ -262,11 +262,11 @@ Back-compat is preserved: `index.ts` re-exports `reviewCode`, `ReviewFinding`, `
 
 #### Automated
 
-- [x] 3.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck`
-- [x] 3.2 Barrel import does not execute the demo (no side effects on import)
-- [x] 3.3 `src/cli.ts` (renamed from `demo.ts`) exists; `index.ts` contains no `main()`
+- [x] 3.1 Type checking passes: `cd packages/code-reviewer && npm run typecheck` — 3f4c1c9
+- [x] 3.2 Barrel import does not execute the demo (no side effects on import) — 3f4c1c9
+- [x] 3.3 `src/cli.ts` (renamed from `demo.ts`) exists; `index.ts` contains no `main()` — 3f4c1c9
 
 #### Manual
 
-- [x] 3.4 `OPENROUTER_API_KEY=... npm start` runs the sample review and prints summary + findings
-- [x] 3.5 Importing `reviewCode` from the barrel returns a validated `ReviewResult` with the language hint applied
+- [x] 3.4 `OPENROUTER_API_KEY=... npm start` runs the sample review and prints summary + findings — 3f4c1c9
+- [x] 3.5 Importing `reviewCode` from the barrel returns a validated `ReviewResult` with the language hint applied — 3f4c1c9
