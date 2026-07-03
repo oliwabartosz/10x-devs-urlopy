@@ -337,25 +337,25 @@ Add the thin `pull_request_target` workflow that guards triggers, sets permissio
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `cd packages/code-reviewer && npm test`
-- [x] 1.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
+- [x] 1.1 Unit tests pass: `cd packages/code-reviewer && npm test` — 25fb1c0
+- [x] 1.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit` — 25fb1c0
 
 #### Manual
 
-- [x] 1.3 Ad-hoc `reviewPr()` call returns schema-valid result with all six scores populated
+- [x] 1.3 Ad-hoc `reviewPr()` call returns schema-valid result with all six scores populated — 25fb1c0
 
 ### Phase 2: CLI Contract
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass (truncation boundary cases): `cd packages/code-reviewer && npm test`
-- [ ] 2.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
+- [x] 2.1 Unit tests pass (truncation boundary cases): `cd packages/code-reviewer && npm test`
+- [x] 2.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
 
 #### Manual
 
-- [ ] 2.3 Real diff piped through CLI emits valid JSON with scores, findings, verdict; exit 0
-- [ ] 2.4 Missing `OPENROUTER_API_KEY` exits 1 with clear stderr message, no stdout JSON
-- [ ] 2.5 Empty stdin exits 1 with clear stderr message
+- [x] 2.3 Real diff piped through CLI emits valid JSON with scores, findings, verdict; exit 0
+- [x] 2.4 Missing `OPENROUTER_API_KEY` exits 1 with clear stderr message, no stdout JSON
+- [x] 2.5 Empty stdin exits 1 with clear stderr message
 
 ### Phase 3: Composite Action
 

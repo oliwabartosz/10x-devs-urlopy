@@ -9,11 +9,17 @@ AI-powered code reviewer built on the [Vercel AI SDK](https://ai-sdk.dev)'s
 
 ```
 src/
-  models/review.ts   # ReviewFinding, ReviewResult zod schemas + inferred types
-  prompts/review.ts  # SYSTEM_INSTRUCTIONS + buildReviewPrompt() + language hint
-  agent.ts           # createCodeReviewer() factory, codeReviewer singleton, reviewCode()
-  index.ts           # barrel: re-exports the public surface (no side effects)
-  cli.ts             # runnable npm start / npm run dev demo
+  models/review.ts      # ReviewFinding, ReviewResult zod schemas + inferred types
+  models/pr-review.ts   # CriterionScore, PrReviewResult zod schemas (PR review mode)
+  prompts/review.ts     # SYSTEM_INSTRUCTIONS + buildReviewPrompt() + language hint
+  prompts/pr-review.ts  # PR_REVIEW_INSTRUCTIONS (6-criteria rubric) + buildPrReviewPrompt()
+  agent.ts              # createCodeReviewer() factory, codeReviewer singleton, reviewCode()
+  pr-agent.ts           # createPrReviewer() factory, prReviewer singleton, reviewPr()
+  verdict.ts            # deriveVerdict() — deterministic pass/fail from the six scores
+  truncate.ts           # truncateDiff() — caps the diff at MAX_DIFF_CHARS for the prompt
+  index.ts              # barrel: re-exports the public surface (no side effects)
+  cli.ts                # PR-review CLI (npm start): env + stdin in, JSON out
+  demo.ts               # runnable npm run demo snippet-review sanity check
 ```
 
 ## Stack
@@ -42,13 +48,40 @@ so a local `.env` is picked up without exporting the key. In environments
 without a `.env` file (e.g. CI), export `OPENROUTER_API_KEY` in the environment
 instead — the flag skips the missing file gracefully.
 
-## Usage
+## PR-review CLI
 
-Run the demo review:
+`npm start` runs the PR-review CLI (`src/cli.ts`) — the seam the CI composite
+action calls. It scores a pull request against six criteria (implementation,
+idiomaticity, complexity, test coverage, documentation, security) and derives a
+deterministic verdict.
+
+**Contract:**
+
+- **Input**: `PR_TITLE` and `PR_BODY` environment variables (body may be
+  empty), and the unified diff on **stdin**. Diffs are truncated at 100,000
+  characters (`MAX_DIFF_CHARS`); truncation is flagged to both the model and
+  the output.
+- **Output**: a single JSON object on stdout —
+  `{ summary, scores, findings, verdict, truncated, model }` where `verdict`
+  is `"passed"` / `"failed"` (fails iff any criterion scores below 5) and
+  `model` is the resolved OpenRouter model id. Diagnostics go to stderr only;
+  stdout stays pure JSON.
+- **Exit codes**: `0` when the review completed, regardless of verdict. `1` on
+  infrastructure errors: missing `OPENROUTER_API_KEY`, empty stdin/diff, or a
+  model/API/schema failure.
 
 ```bash
-npm start          # tsx src/cli.ts
-npm run dev        # watch mode
+git diff main...HEAD | PR_TITLE="Add feature" PR_BODY="Details..." npm start
+```
+
+## Usage
+
+Other scripts:
+
+```bash
+npm run demo       # snippet-review demo against a hardcoded buggy sample
+npm run dev        # demo in watch mode
+npm test           # node:test unit tests (verdict, truncation)
 npm run typecheck  # tsc --noEmit
 ```
 

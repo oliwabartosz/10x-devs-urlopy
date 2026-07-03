@@ -8,8 +8,9 @@
     "node": ">=20.11"
   },
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=.env src/cli.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/demo.ts",
     "start": "tsx --env-file-if-exists=.env src/cli.ts",
+    "demo": "tsx --env-file-if-exists=.env src/demo.ts",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },

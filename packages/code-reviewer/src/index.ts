@@ -5,7 +5,8 @@
  * wrapper, schemas, and prompts) so consumers — including promptfoo evals and
  * tests — can import from one place. Importing runs no demo and makes no network
  * call: the eager `codeReviewer` singleton only resolves the API key lazily at
- * request time, so a keyless import is safe. The runnable demo lives in `./cli.ts`.
+ * request time, so a keyless import is safe. The runnable PR-review CLI lives
+ * in `./cli.ts`; the snippet demo lives in `./demo.ts`.
  */
 
 export { reviewCode, createCodeReviewer, codeReviewer, DEFAULT_MODEL } from "./agent.js";
@@ -28,3 +29,5 @@ export { deriveVerdict, PASS_FLOOR } from "./verdict.js";
 
 export { PR_REVIEW_INSTRUCTIONS, buildPrReviewPrompt } from "./prompts/pr-review.js";
 export type { PrReviewInput } from "./prompts/pr-review.js";
+
+export { truncateDiff, MAX_DIFF_CHARS } from "./truncate.js";
