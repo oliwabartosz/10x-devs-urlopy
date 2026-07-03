@@ -17,3 +17,14 @@ export type { ReviewOptions } from "./agent.js";
 export { ReviewFinding, ReviewResult } from "./models/review.js";
 
 export { SYSTEM_INSTRUCTIONS, buildReviewPrompt } from "./prompts/review.js";
+
+export { reviewPr, createPrReviewer, prReviewer } from "./pr-agent.js";
+export type { PrReviewOptions } from "./pr-agent.js";
+
+// Zod value + inferred type under one name, same as `ReviewResult` above.
+export { CriterionScore, PrReviewResult } from "./models/pr-review.js";
+
+export { deriveVerdict, PASS_FLOOR } from "./verdict.js";
+
+export { PR_REVIEW_INSTRUCTIONS, buildPrReviewPrompt } from "./prompts/pr-review.js";
+export type { PrReviewInput } from "./prompts/pr-review.js";
