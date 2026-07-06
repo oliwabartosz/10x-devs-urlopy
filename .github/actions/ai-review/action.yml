@@ -33,6 +33,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        GH_REPO: ${{ github.repository }}
       run: |
         gh label create "ai-cr:passed" --color "2ea44f" --description "AI code review verdict: passed" --force
         gh label create "ai-cr:failed" --color "d73a4a" --description "AI code review verdict: failed" --force
@@ -49,6 +50,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        GH_REPO: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr-number }}
       run: |
         gh pr view "$PR_NUMBER" --json title --jq '.title' > "$RUNNER_TEMP/pr-title.txt"
@@ -87,7 +89,11 @@ runs:
           const { owner, repo } = context.repo;
           const marker = "<!-- ai-cr -->";
           const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
-          const existing = comments.find((c) => c.body && c.body.includes(marker));
+          // Author filter: without it, anyone who comments the marker literal
+          // first would capture the sticky slot and own the "official" review.
+          const existing = comments.find(
+            (c) => c.user && c.user.login === "github-actions[bot]" && c.body && c.body.includes(marker),
+          );
           if (existing) {
             await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
           } else {
@@ -100,6 +106,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        GH_REPO: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr-number }}
       run: |
         verdict="$(jq -r '.verdict' "$RUNNER_TEMP/review.json")"

@@ -23,6 +23,9 @@ export type RenderableReview = z.infer<typeof RenderableReview>;
 /** Hidden marker the comment-upsert step searches for to find the sticky comment. */
 export const COMMENT_MARKER = "<!-- ai-cr -->";
 
+/** Stay safely under GitHub's 65,536-char comment body limit. */
+export const MAX_COMMENT_CHARS = 60_000;
+
 /** Display order and labels for the six rubric criteria. */
 const CRITERIA: [keyof RenderableReview["scores"], string][] = [
   ["implementation", "Implementation"],
@@ -33,9 +36,18 @@ const CRITERIA: [keyof RenderableReview["scores"], string][] = [
   ["security", "Security & safety"],
 ];
 
+/**
+ * Break `@user` / `@org/team` mentions in model-authored text with a
+ * zero-width space so a prompt-injected review can't ping people from the
+ * bot's comment. Model text derives from attacker-controlled PR content.
+ */
+function neutralizeMentions(text: string): string {
+  return text.replace(/@(\w)/g, "@\u200b$1");
+}
+
 /** Keep model-authored text from breaking out of a markdown table cell. */
 function cell(text: string): string {
-  return text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  return neutralizeMentions(text).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
 
 /** Turn a review JSON object into the full sticky-comment markdown. */
@@ -57,7 +69,9 @@ export function renderComment(result: RenderableReview): string {
       : result.findings
           .map((f) => {
             const where = f.line === null ? "" : ` (line ${f.line})`;
-            return `- **${f.severity}**${where}: ${f.issue}\n  - Suggestion: ${f.suggestion}`;
+            const issue = neutralizeMentions(f.issue);
+            const suggestion = neutralizeMentions(f.suggestion);
+            return `- **${f.severity}**${where}: ${issue}\n  - Suggestion: ${suggestion}`;
           })
           .join("\n");
 
@@ -65,22 +79,33 @@ export function renderComment(result: RenderableReview): string {
     ? "\n> ⚠️ The diff exceeded the size budget and was truncated before review; scores cover only the visible part.\n"
     : "";
 
-  return `${COMMENT_MARKER}
+  const footer = `
+---
+
+_Model: \`${result.model}\` · Add the \`ai-cr:review\` label to re-run this review._
+`;
+
+  let body = `${COMMENT_MARKER}
 
 ## ${headline}
 
-${result.summary}
+${neutralizeMentions(result.summary)}
 
 ${table}
 
 ### Findings
 
 ${findings}
-${truncationNotice}
----
+${truncationNotice}`;
 
-_Model: \`${result.model}\` · Add the \`ai-cr:review\` label to re-run this review._
-`;
+  // Cut the body (never the footer) so an oversized review can't 422 the
+  // comment API after a paid model call.
+  const clampNotice = "\n\n> ⚠️ Comment truncated to fit GitHub's size limit.\n";
+  if (body.length + footer.length > MAX_COMMENT_CHARS) {
+    body = body.slice(0, MAX_COMMENT_CHARS - footer.length - clampNotice.length) + clampNotice;
+  }
+
+  return body + footer;
 }
 
 // CLI mode for the composite action: render a review JSON file to stdout.
@@ -90,7 +115,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.error("usage: tsx src/render-comment.ts <review.json>");
     process.exitCode = 1;
   } else {
-    const review = RenderableReview.parse(JSON.parse(readFileSync(path, "utf8")));
-    console.log(renderComment(review));
+    try {
+      const review = RenderableReview.parse(JSON.parse(readFileSync(path, "utf8")));
+      console.log(renderComment(review));
+    } catch (error: unknown) {
+      console.error(`ai-review: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    }
   }
 }

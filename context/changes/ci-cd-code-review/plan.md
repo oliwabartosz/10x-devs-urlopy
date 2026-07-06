@@ -361,12 +361,12 @@ Add the thin `pull_request_target` workflow that guards triggers, sets permissio
 
 #### Automated
 
-- [x] 3.1 Renderer unit tests pass: `cd packages/code-reviewer && npm test`
-- [x] 3.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
+- [x] 3.1 Renderer unit tests pass: `cd packages/code-reviewer && npm test` — f9e1c0e
+- [x] 3.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit` — f9e1c0e
 
 #### Manual
 
-- [x] 3.3 `npx tsx src/render-comment.ts` on sample JSON produces well-formed markdown (table, marker, retry hint)
+- [x] 3.3 `npx tsx src/render-comment.ts` on sample JSON produces well-formed markdown (table, marker, retry hint) — f9e1c0e
 
 ### Phase 4: Workflow + End-to-End Verification
 

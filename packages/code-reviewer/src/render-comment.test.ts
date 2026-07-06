@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderComment, COMMENT_MARKER, type RenderableReview } from "./render-comment.js";
+import { renderComment, COMMENT_MARKER, MAX_COMMENT_CHARS, type RenderableReview } from "./render-comment.js";
 
 function review(overrides: Partial<RenderableReview> = {}): RenderableReview {
   const criterion = { score: 8, justification: "solid work" };
@@ -74,6 +74,42 @@ void test("the footer names the model and the retry label", () => {
   const md = renderComment(review());
   assert.match(md, /`anthropic\/claude-sonnet-5`/);
   assert.match(md, /`ai-cr:review`/);
+});
+
+void test("@-mentions in model-authored text are neutralized everywhere", () => {
+  const md = renderComment(
+    review({
+      summary: "Ping @maintainers about this.",
+      findings: [{ severity: "info", line: null, issue: "cc @octocat", suggestion: "ask @org/team" }],
+      scores: {
+        ...review().scores,
+        security: { score: 6, justification: "flagged by @security-bot" },
+      },
+    }),
+  );
+  assert.doesNotMatch(md, /@maintainers/);
+  assert.doesNotMatch(md, /@octocat/);
+  assert.doesNotMatch(md, /@org\/team/);
+  assert.doesNotMatch(md, /@security-bot/);
+  // The visible text survives, just with the mention broken.
+  assert.ok(md.includes("@\u200boctocat"));
+});
+
+void test("an oversized review is clamped under the comment limit, keeping the footer", () => {
+  const finding = {
+    severity: "minor" as const,
+    line: null,
+    issue: "x".repeat(1000),
+    suggestion: "y".repeat(1000),
+  };
+  const md = renderComment(review({ findings: Array.from({ length: 50 }, () => finding) }));
+  assert.ok(md.length <= MAX_COMMENT_CHARS);
+  assert.match(md, /> ⚠️ Comment truncated to fit GitHub's size limit\./);
+  assert.match(md, /`ai-cr:review`/);
+});
+
+void test("a normal-sized review carries no clamp notice", () => {
+  assert.doesNotMatch(renderComment(review()), /Comment truncated/);
 });
 
 void test("pipes and newlines in justifications cannot break the table", () => {
