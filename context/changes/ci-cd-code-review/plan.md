@@ -372,14 +372,14 @@ Add the thin `pull_request_target` workflow that guards triggers, sets permissio
 
 #### Automated
 
-- [ ] 4.1 `gh workflow list` shows "AI Code Review" after push
-- [x] 4.2 Package tests still pass: `cd packages/code-reviewer && npm test`
+- [x] 4.1 `gh workflow list` shows "AI Code Review" after push — 50df98b
+- [x] 4.2 Package tests still pass: `cd packages/code-reviewer && npm test` — 50df98b
 
 #### Manual
 
-- [ ] 4.3 Test PR gets sticky comment (score table + findings + verdict) and exactly one `ai-cr:*` verdict label
-- [ ] 4.4 New commit updates the comment in place; label reflects fresh verdict
-- [ ] 4.5 Adding `ai-cr:review` re-runs the review and the label is removed afterward
-- [ ] 4.6 No self-loop from the action's own label writes (guarded runs skipped)
-- [ ] 4.7 Workflow check green even when verdict is `failed`
-- [ ] 4.8 Run logs confirm PR-head code is never checked out or executed
+- [x] 4.3 Test PR gets sticky comment (score table + findings + verdict) and exactly one `ai-cr:*` verdict label — 50df98b
+- [x] 4.4 New commit updates the comment in place; label reflects fresh verdict — 50df98b
+- [x] 4.5 Adding `ai-cr:review` re-runs the review and the label is removed afterward — 50df98b
+- [x] 4.6 No self-loop from the action's own label writes (guarded runs skipped) — 50df98b
+- [x] 4.7 Workflow check green even when verdict is `failed` — 50df98b
+- [x] 4.8 Run logs confirm PR-head code is never checked out or executed — 50df98b
