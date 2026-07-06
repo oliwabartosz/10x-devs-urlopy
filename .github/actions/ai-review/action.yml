@@ -1,0 +1,114 @@
+name: "AI Code Review"
+description: >-
+  Runs the AI PR reviewer end-to-end: installs the reviewer package, fetches
+  PR data via gh (never from payload interpolation), scores the PR, upserts a
+  sticky comment, and swaps the ai-cr verdict labels.
+
+inputs:
+  openrouter-api-key:
+    description: "OpenRouter API key for the reviewer. Inputs are NOT auto-masked — never echo it."
+    required: true
+  github-token:
+    description: "Token with pull-requests/issues write access, used for gh calls and the comment upsert."
+    required: true
+  pr-number:
+    description: "Number of the pull request to review."
+    required: true
+  model:
+    description: "Optional OpenRouter model id override (maps to OPENROUTER_MODEL)."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: packages/code-reviewer/package-lock.json
+
+    - name: Ensure ai-cr labels exist
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        gh label create "ai-cr:passed" --color "2ea44f" --description "AI code review verdict: passed" --force
+        gh label create "ai-cr:failed" --color "d73a4a" --description "AI code review verdict: failed" --force
+        gh label create "ai-cr:review" --color "0075ca" --description "Add to re-run the AI code review" --force
+
+    - name: Install reviewer dependencies
+      shell: bash
+      working-directory: packages/code-reviewer
+      run: npm ci
+
+    # PR title/body/diff are attacker-controlled data: fetch them with gh and
+    # hand them over via files/env only — never expression-interpolate them.
+    - name: Fetch PR data
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        gh pr view "$PR_NUMBER" --json title --jq '.title' > "$RUNNER_TEMP/pr-title.txt"
+        gh pr view "$PR_NUMBER" --json body --jq '.body' > "$RUNNER_TEMP/pr-body.txt"
+        gh pr diff "$PR_NUMBER" --patch > "$RUNNER_TEMP/pr.diff"
+
+    - name: Run AI review
+      shell: bash
+      working-directory: packages/code-reviewer
+      env:
+        OPENROUTER_API_KEY: ${{ inputs.openrouter-api-key }}
+        MODEL_INPUT: ${{ inputs.model }}
+      run: |
+        if [ -n "$MODEL_INPUT" ]; then
+          export OPENROUTER_MODEL="$MODEL_INPUT"
+        fi
+        PR_TITLE="$(cat "$RUNNER_TEMP/pr-title.txt")" \
+        PR_BODY="$(cat "$RUNNER_TEMP/pr-body.txt")" \
+          npx tsx src/cli.ts < "$RUNNER_TEMP/pr.diff" > "$RUNNER_TEMP/review.json"
+
+    - name: Render comment markdown
+      shell: bash
+      working-directory: packages/code-reviewer
+      run: npx tsx src/render-comment.ts "$RUNNER_TEMP/review.json" > "$RUNNER_TEMP/comment.md"
+
+    - name: Upsert sticky comment
+      uses: actions/github-script@v7
+      env:
+        PR_NUMBER: ${{ inputs.pr-number }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require("node:fs");
+          const body = fs.readFileSync(`${process.env.RUNNER_TEMP}/comment.md`, "utf8");
+          const issue_number = Number(process.env.PR_NUMBER);
+          const { owner, repo } = context.repo;
+          const marker = "<!-- ai-cr -->";
+          const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+          const existing = comments.find((c) => c.body && c.body.includes(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }
+
+    # gh no-ops on absent labels instead of 404ing (unlike the removeLabel API),
+    # so one call both swaps the verdict pair and clears the retry trigger.
+    - name: Swap verdict labels
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        verdict="$(jq -r '.verdict' "$RUNNER_TEMP/review.json")"
+        if [ "$verdict" = "passed" ]; then
+          add_label="ai-cr:passed"; remove_label="ai-cr:failed"
+        else
+          add_label="ai-cr:failed"; remove_label="ai-cr:passed"
+        fi
+        gh pr edit "$PR_NUMBER" \
+          --add-label "$add_label" \
+          --remove-label "$remove_label" \
+          --remove-label "ai-cr:review"

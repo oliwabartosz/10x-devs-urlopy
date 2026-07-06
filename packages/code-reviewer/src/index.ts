@@ -31,3 +31,6 @@ export { PR_REVIEW_INSTRUCTIONS, buildPrReviewPrompt } from "./prompts/pr-review
 export type { PrReviewInput } from "./prompts/pr-review.js";
 
 export { truncateDiff, MAX_DIFF_CHARS } from "./truncate.js";
+
+// Zod value + inferred type under one name, same as `ReviewResult` above.
+export { renderComment, RenderableReview, COMMENT_MARKER } from "./render-comment.js";

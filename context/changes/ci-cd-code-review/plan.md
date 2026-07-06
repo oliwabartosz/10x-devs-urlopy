@@ -348,25 +348,25 @@ Add the thin `pull_request_target` workflow that guards triggers, sets permissio
 
 #### Automated
 
-- [x] 2.1 Unit tests pass (truncation boundary cases): `cd packages/code-reviewer && npm test`
-- [x] 2.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
+- [x] 2.1 Unit tests pass (truncation boundary cases): `cd packages/code-reviewer && npm test` — 7c7b73c
+- [x] 2.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit` — 7c7b73c
 
 #### Manual
 
-- [x] 2.3 Real diff piped through CLI emits valid JSON with scores, findings, verdict; exit 0
-- [x] 2.4 Missing `OPENROUTER_API_KEY` exits 1 with clear stderr message, no stdout JSON
-- [x] 2.5 Empty stdin exits 1 with clear stderr message
+- [x] 2.3 Real diff piped through CLI emits valid JSON with scores, findings, verdict; exit 0 — 7c7b73c
+- [x] 2.4 Missing `OPENROUTER_API_KEY` exits 1 with clear stderr message, no stdout JSON — 7c7b73c
+- [x] 2.5 Empty stdin exits 1 with clear stderr message — 7c7b73c
 
 ### Phase 3: Composite Action
 
 #### Automated
 
-- [ ] 3.1 Renderer unit tests pass: `cd packages/code-reviewer && npm test`
-- [ ] 3.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
+- [x] 3.1 Renderer unit tests pass: `cd packages/code-reviewer && npm test`
+- [x] 3.2 Type checking passes: `cd packages/code-reviewer && npx tsc --noEmit`
 
 #### Manual
 
-- [ ] 3.3 `npx tsx src/render-comment.ts` on sample JSON produces well-formed markdown (table, marker, retry hint)
+- [x] 3.3 `npx tsx src/render-comment.ts` on sample JSON produces well-formed markdown (table, marker, retry hint)
 
 ### Phase 4: Workflow + End-to-End Verification
 
