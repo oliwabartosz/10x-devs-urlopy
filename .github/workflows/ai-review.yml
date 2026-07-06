@@ -38,6 +38,7 @@ jobs:
           openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
           github-token: ${{ github.token }}
           pr-number: ${{ github.event.pull_request.number }}
+          model: deepseek/deepseek-v4-pro
 
       # Fail closed: an errored review must not leave a stale passed verdict
       # from an earlier run (gh no-ops when the label is absent).
