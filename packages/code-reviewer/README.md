@@ -67,8 +67,8 @@ deterministic verdict.
   `model` is the resolved OpenRouter model id. Diagnostics go to stderr only;
   stdout stays pure JSON.
 - **Exit codes**: `0` when the review completed, regardless of verdict. `1` on
-  infrastructure errors: missing `OPENROUTER_API_KEY`, empty stdin/diff, or a
-  model/API/schema failure.
+  infrastructure errors: missing `OPENROUTER_API_KEY`, missing/empty
+  `PR_TITLE`, empty stdin/diff, or a model/API/schema failure.
 
 ```bash
 git diff main...HEAD | PR_TITLE="Add feature" PR_BODY="Details..." npm start

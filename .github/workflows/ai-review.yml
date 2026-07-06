@@ -15,10 +15,12 @@ permissions:
   pull-requests: write
   issues: write
 
-# Rapid successive pushes shouldn't stack paid reviews.
+# Rapid successive pushes shouldn't stack paid reviews. Labeled events never
+# cancel an in-flight run: the action's own verdict-label writes share this
+# concurrency group and could otherwise cancel the original run's tail.
 concurrency:
   group: ai-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'labeled' }}
 
 jobs:
   review:
@@ -29,10 +31,20 @@ jobs:
     if: github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review'
     steps:
       # Trusted base-ref checkout only (loads ./.github/actions/ai-review).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - uses: ./.github/actions/ai-review
         with:
           openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
           github-token: ${{ github.token }}
           pr-number: ${{ github.event.pull_request.number }}
+
+      # Fail closed: an errored review must not leave a stale passed verdict
+      # from an earlier run (gh no-ops when the label is absent).
+      - name: Remove stale passed label on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUMBER" --remove-label "ai-cr:passed"
