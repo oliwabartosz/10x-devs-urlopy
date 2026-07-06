@@ -1,13 +1,8 @@
-/** Turn a title into a URL slug. */
+/** Turn a title into a URL slug: lowercase, spaces collapsed to hyphens. */
 export function slugify(title: string): string {
-  let slug = "";
-  for (let i = 0; i <= title.length; i++) {
-    const ch = title[i];
-    if (ch == " ") {
-      slug += "-";
-    } else {
-      slug += ch.toLowerCase();
-    }
-  }
-  return slug;
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
 }
