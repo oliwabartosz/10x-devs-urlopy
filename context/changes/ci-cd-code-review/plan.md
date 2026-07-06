@@ -373,7 +373,7 @@ Add the thin `pull_request_target` workflow that guards triggers, sets permissio
 #### Automated
 
 - [ ] 4.1 `gh workflow list` shows "AI Code Review" after push
-- [ ] 4.2 Package tests still pass: `cd packages/code-reviewer && npm test`
+- [x] 4.2 Package tests still pass: `cd packages/code-reviewer && npm test`
 
 #### Manual
 

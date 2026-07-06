@@ -55,6 +55,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR t
 - **`ci` job**: lint + build + bundle size dry-run. Requires `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` repository secrets.
 - **`deploy` job**: deploys to Cloudflare Workers on push to `main` only (not PRs). Runs a post-deploy health check against `/auth/signin`.
 
+A separate **AI review workflow** (`.github/workflows/ai-review.yml`, `pull_request_target`) runs on every PR to `main`: it scores the PR against six criteria via `packages/code-reviewer`, posts a sticky comment, and applies exactly one of the `ai-cr:passed`/`ai-cr:failed` labels. Adding the `ai-cr:review` label re-runs the review. The check is always green when the review completes — the verdict is advisory (label + comment only); only infrastructure errors fail the job. Requires the `OPENROUTER_API_KEY` repository secret. The workflow never checks out PR-head code (`pull_request_target` safety) — keep it that way.
+
 ## Deployment
 
 Production deploy is automated via the `deploy` CI job on every push to `main`.

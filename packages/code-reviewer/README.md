@@ -74,6 +74,29 @@ deterministic verdict.
 git diff main...HEAD | PR_TITLE="Add feature" PR_BODY="Details..." npm start
 ```
 
+## CI integration
+
+Every PR to `main` is reviewed automatically by the `AI Code Review` workflow
+(`.github/workflows/ai-review.yml`, `pull_request_target`), which delegates to
+the composite action `.github/actions/ai-review`. The action:
+
+1. bootstraps the `ai-cr:passed` / `ai-cr:failed` / `ai-cr:review` labels,
+2. installs this package (`npm ci`, cached on its lockfile),
+3. fetches the PR title/body/diff via `gh` (the PR is passive data — its code
+   is never checked out or executed),
+4. runs the CLI above, renders `src/render-comment.ts`, upserts one sticky
+   comment (marked `<!-- ai-cr -->`), and swaps the verdict labels.
+
+Action inputs: `openrouter-api-key` (required), `github-token` (required),
+`pr-number` (required), `model` (optional → `OPENROUTER_MODEL`).
+
+The verdict is advisory: the check is green whenever the review completes;
+only infrastructure errors (missing key, model/API failure) fail the job.
+Add the `ai-cr:review` label to a PR to re-run its review on demand.
+
+**Prerequisite**: the `OPENROUTER_API_KEY` repository secret must be set once
+(`gh secret set OPENROUTER_API_KEY`).
+
 ## Usage
 
 Other scripts:

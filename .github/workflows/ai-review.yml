@@ -1,0 +1,38 @@
+name: AI Code Review
+
+# pull_request_target: runs on the BASE ref with secrets and a write token.
+# Safety invariant: the PR is treated strictly as passive data — the only
+# checkout below is the trusted base ref (to load the composite action);
+# never check out github.event.pull_request.head.* in this workflow.
+on:
+  pull_request_target:
+    # types: replaces the defaults — all four must be listed explicitly.
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+# Rapid successive pushes shouldn't stack paid reviews.
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: AI review
+    runs-on: ubuntu-latest
+    # Self-loop guard: the action's own ai-cr:passed/failed label writes fire
+    # `labeled` events — only the ai-cr:review trigger label may re-run us.
+    if: github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review'
+    steps:
+      # Trusted base-ref checkout only (loads ./.github/actions/ai-review).
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/ai-review
+        with:
+          openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          github-token: ${{ github.token }}
+          pr-number: ${{ github.event.pull_request.number }}
