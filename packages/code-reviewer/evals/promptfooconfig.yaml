@@ -10,9 +10,11 @@
 # Run:  npm run eval        (from packages/code-reviewer/)
 # View: npm run eval:view
 #
-# NOTE: Phase 1 carries a trivial smoke test only, to prove the plumbing
-# (TS provider loading, env, three-model fan-out). Phase 2 replaces it with the
-# real react-16-to-19-migration fixture; Phase 3 adds the rubrics + asserts.
+# The single test case is the react-16-to-19-migration seeded-flaw fixture.
+# Each review is judged per planted flaw (three llm-rubric assertions graded by
+# the OpenRouter Sonnet override below) plus two deterministic checks
+# (evals/asserts/deterministic.ts): that the production verdict is "failed" and
+# that the six scores are well-formed integers.
 
 description: "PR-review agent: 3-model comparison on seeded-flaw fixtures"
 
@@ -56,8 +58,11 @@ tests:
   # `truncated` is intentionally NOT a var: the provider derives it by running
   # the diff through the production `truncateDiff`, mirroring the CLI.
   #
-  # Assertions stay minimal here (a JSON-shape sanity check). Phase 3 adds the
-  # per-flaw llm-rubric assertions and the deterministic verdict/score checks.
+  # Assertions are split by nature: three per-flaw llm-rubric checks (one per
+  # planted flaw, graded by the defaultTest Sonnet override) plus two
+  # deterministic javascript checks. Each rubric names exactly one flaw so the
+  # matrix shows per-flaw detection per model; the rubric text paraphrases
+  # fixtures/react-16-to-19-migration/ground-truth.md — keep them in sync.
   - description: "react-16-to-19-migration: three seeded flaws in a plausible migration"
     vars:
       title: "Modernize LeaveRequestsPanel: migrate to a function component for React 19"
@@ -70,5 +75,43 @@ tests:
         events subscription, and the filtered view all carry over.
       diff: file://fixtures/react-16-to-19-migration/pr.diff
     assert:
+      # Flaw 1 — stale-closure poll interval (ground-truth.md § Flaw 1)
+      - type: llm-rubric
+        value: >
+          The review identifies that the polling useEffect reads `requests` from
+          a stale closure — the effect has an empty dependency array `[]` and
+          calls `setRequests(mergeById(requests, incoming))` using the captured
+          initial `requests` instead of a functional update, so each poll merges
+          against a frozen (empty) base and drops rows between polls. Pass only
+          if a finding or the summary concretely describes this stale-closure /
+          missing-functional-update mechanism or its data-loss symptom; a vague
+          mention of "possible hook/closure issues" without naming the polling
+          effect does not pass.
+      # Flaw 2 — dropped cleanup leaks subscription / set-state after unmount (ground-truth.md § Flaw 2)
+      - type: llm-rubric
+        value: >
+          The review identifies that the load-and-subscribe useEffect never
+          cleans up: it calls `leaveEvents.subscribe(loadRequests)` but discards
+          the returned unsubscribe handle and returns no cleanup function, so the
+          subscription leaks across mounts and an async fetch can call a state
+          setter after unmount. Pass only if a finding or the summary concretely
+          describes the missing cleanup / unsubscribe (or the resulting leak /
+          set-state-after-unmount); a generic "add cleanups to effects" remark
+          that does not tie to the subscription does not pass.
+      # Flaw 3 — inline object in dependency array → infinite render loop (ground-truth.md § Flaw 3)
+      - type: llm-rubric
+        value: >
+          The review identifies that the derived-view useEffect has an inline
+          object literal `{ status: statusFilter }` in its dependency array,
+          which allocates a new reference every render, so the effect (which
+          calls `setVisibleRequests`) re-runs after every commit — an infinite
+          render loop / "Maximum update depth exceeded". Pass only if a finding
+          or the summary concretely describes the unstable object dependency and
+          the resulting re-render loop; merely noting the effect could be a
+          useMemo without identifying the loop cause does not pass.
+      # Deterministic: the production verdict must be "failed" for this PR.
       - type: javascript
-        value: "typeof output === 'object' && output !== null && typeof output.summary === 'string' && !!output.scores"
+        value: file://asserts/deterministic.ts:verdictFailed
+      # Deterministic: all six criterion scores are integers within 1–10.
+      - type: javascript
+        value: file://asserts/deterministic.ts:scoresWellFormed

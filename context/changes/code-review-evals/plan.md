@@ -276,27 +276,27 @@ Nothing migrates. Rollback = delete `evals/`, drop the devDependency and the two
 
 #### Automated
 
-- [x] 2.1 `pr.diff` is syntactically valid; promptfoo loads the fixture without errors
-- [x] 2.2 `npm run eval` completes across all three models with the real fixture
+- [x] 2.1 `pr.diff` is syntactically valid; promptfoo loads the fixture without errors — 234bf12
+- [x] 2.2 `npm run eval` completes across all three models with the real fixture — 234bf12
 
 #### Manual
 
-- [x] 2.3 Human read: exactly three findable impactful flaws, no accidental extras
-- [x] 2.4 Correct-migration parts read as idiomatic React 19
-- [x] 2.5 Ground-truth doc matches the diff (locations, symptoms)
-- [x] 2.6 Spot-check one model's raw review output for substantive content
+- [x] 2.3 Human read: exactly three findable impactful flaws, no accidental extras — 234bf12
+- [x] 2.4 Correct-migration parts read as idiomatic React 19 — 234bf12
+- [x] 2.5 Ground-truth doc matches the diff (locations, symptoms) — 234bf12
+- [x] 2.6 Spot-check one model's raw review output for substantive content — 234bf12
 
 ### Phase 3: Assertions, Live Run, Documentation
 
 #### Automated
 
-- [ ] 3.1 `npm run typecheck` passes with the assertion file
-- [ ] 3.2 `npm test` still passes
-- [ ] 3.3 Full live run: 3 providers × 5 assertions, every cell resolved, zero harness errors
+- [x] 3.1 `npm run typecheck` passes with the assertion file
+- [x] 3.2 `npm test` still passes
+- [x] 3.3 Full live run: 3 providers × 5 assertions, every cell resolved, zero harness errors
 
 #### Manual
 
-- [ ] 3.4 Judge reasoning coherent; spot-check one pass and one fail cell
-- [ ] 3.5 Hand-verify one model's verdict assertion against `PASS_FLOOR`
-- [ ] 3.6 Matrix answers the motivating question (which model catches which flaws)
-- [ ] 3.7 README "Evals" section works verbatim on a clean shell
+- [x] 3.4 Judge reasoning coherent; spot-check one pass and one fail cell
+- [x] 3.5 Hand-verify one model's verdict assertion against `PASS_FLOOR`
+- [x] 3.6 Matrix answers the motivating question (which model catches which flaws)
+- [x] 3.7 README "Evals" section works verbatim on a clean shell

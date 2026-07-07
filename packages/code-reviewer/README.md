@@ -97,6 +97,65 @@ Add the `ai-cr:review` label to a PR to re-run its review on demand.
 **Prerequisite**: the `OPENROUTER_API_KEY` repository secret must be set once
 (`gh secret set OPENROUTER_API_KEY`).
 
+## Evals
+
+The `evals/` directory holds a [promptfoo](https://promptfoo.dev) harness that
+runs the **production PR-review agent** (`reviewPr`, via
+`evals/providers/pr-review.ts`) across three OpenRouter models
+(`z-ai/glm-5.1`, `deepseek/deepseek-v4-flash`, `deepseek/deepseek-v4-pro`)
+against a seeded-flaw fixture, producing a model-comparison matrix. The provider
+wraps the real agent — prompt building, the OpenRouter round-trip,
+structured-output parsing, and diff truncation — so the eval exercises the true
+production path rather than a re-implementation.
+
+**Fixture** — `evals/fixtures/react-16-to-19-migration/` is a React 16 → 19
+class-to-function migration diff (`pr.diff`) that is mostly correct and
+idiomatic but hides three impactful bugs: a stale-closure poll interval, a
+dropped effect cleanup (subscription leak + set-state-after-unmount), and an
+inline-object dependency that causes an infinite render loop. `ground-truth.md`
+documents each planted flaw (location, symptom, correct fix) and is the
+authoritative reference the per-flaw rubrics paraphrase — keep the two in sync.
+
+**Assertions per review** — five per model cell:
+
+- three `llm-rubric` checks, one per planted flaw (did the review concretely
+  identify that specific bug), and
+- two deterministic `javascript` checks from `evals/asserts/deterministic.ts`:
+  `verdictFailed` (the production `deriveVerdict` returns `"failed"` — a
+  competent review must fail a PR shipping three severe defects) and
+  `scoresWellFormed` (all six criterion scores are integers within 1–10, the
+  range the zod schema can't enforce).
+
+**Judge model** — the rubrics are graded by `anthropic/claude-sonnet-5` **via
+OpenRouter**, set once at `defaultTest.options.provider` in the config. This
+override is mandatory: promptfoo's default grader is OpenAI, so without it every
+`llm-rubric` silently demands an `OPENAI_API_KEY`. Sonnet is stronger than and
+distinct from all three systems under test.
+
+**Run it** (from `packages/code-reviewer/`, with `OPENROUTER_API_KEY` in `.env` —
+the same file the CLI uses; no OpenAI key needed):
+
+```bash
+npm run eval        # run the matrix against the fixture
+npm run eval:view   # open the promptfoo web viewer on the results
+```
+
+**Cost** — one full run is ~3 agent calls (one large diff prompt each) + 9 judge
+calls (3 rubrics × 3 models) + 0-cost deterministic asserts, all through
+OpenRouter on the one key. promptfoo caches provider responses
+(`~/.cache/promptfoo`), so iterating on rubric text re-runs only the judge calls.
+
+**Adding a fixture** — drop a `pr.diff` + `ground-truth.md` under
+`evals/fixtures/<name>/`, add a test entry in `promptfooconfig.yaml` pointing
+`vars.diff` at `file://fixtures/<name>/pr.diff` with an inline `title` /
+`description`, and write one `llm-rubric` per planted flaw paraphrasing the
+ground truth. The deterministic asserts are fixture-agnostic and can be reused
+verbatim.
+
+> **promptfoo is pinned exact** (no `^`) in `package.json`: it is a fast-moving
+> 0.x with config-surface churn between minors, so an unpinned range can break
+> the harness on an unrelated `npm install`. Bump it deliberately.
+
 ## Usage
 
 Other scripts:
