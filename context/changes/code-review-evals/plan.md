@@ -290,13 +290,13 @@ Nothing migrates. Rollback = delete `evals/`, drop the devDependency and the two
 
 #### Automated
 
-- [x] 3.1 `npm run typecheck` passes with the assertion file
-- [x] 3.2 `npm test` still passes
-- [x] 3.3 Full live run: 3 providers × 5 assertions, every cell resolved, zero harness errors
+- [x] 3.1 `npm run typecheck` passes with the assertion file — 7c16aca
+- [x] 3.2 `npm test` still passes — 7c16aca
+- [x] 3.3 Full live run: 3 providers × 5 assertions, every cell resolved, zero harness errors — 7c16aca
 
 #### Manual
 
-- [x] 3.4 Judge reasoning coherent; spot-check one pass and one fail cell
-- [x] 3.5 Hand-verify one model's verdict assertion against `PASS_FLOOR`
-- [x] 3.6 Matrix answers the motivating question (which model catches which flaws)
-- [x] 3.7 README "Evals" section works verbatim on a clean shell
+- [x] 3.4 Judge reasoning coherent; spot-check one pass and one fail cell — 7c16aca
+- [x] 3.5 Hand-verify one model's verdict assertion against `PASS_FLOOR` — 7c16aca
+- [x] 3.6 Matrix answers the motivating question (which model catches which flaws) — 7c16aca
+- [x] 3.7 README "Evals" section works verbatim on a clean shell — 7c16aca
