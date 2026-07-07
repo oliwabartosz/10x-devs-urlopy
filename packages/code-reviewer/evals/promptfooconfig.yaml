@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Eval harness for the PR-review agent (packages/code-reviewer).
+#
+# Runs the production `reviewPr` path (via evals/providers/pr-review.ts) across
+# three OpenRouter models against a seeded-flaw fixture, then judges each review
+# per planted flaw (LLM rubric) plus deterministic checks. Everything runs on
+# the single OPENROUTER_API_KEY in the package's .env.
+#
+# Run:  npm run eval        (from packages/code-reviewer/)
+# View: npm run eval:view
+#
+# NOTE: Phase 1 carries a trivial smoke test only, to prove the plumbing
+# (TS provider loading, env, three-model fan-out). Phase 2 replaces it with the
+# real react-16-to-19-migration fixture; Phase 3 adds the rubrics + asserts.
+
+description: "PR-review agent: 3-model comparison on seeded-flaw fixtures"
+
+# Vestigial prompt: the custom provider ignores promptfoo's rendered prompt and
+# builds its own via buildPrReviewPrompt from the test vars. promptfoo's schema
+# still requires at least one prompt entry.
+prompts:
+  - "Review PR: {{title}}"
+
+# Same provider file, three model configs — "same prompt, three models" as three
+# entries over one test case. Labels are the model ids so the matrix is
+# self-describing.
+providers:
+  - id: file://providers/pr-review.ts
+    label: z-ai/glm-5.1
+    config:
+      model: z-ai/glm-5.1
+  - id: file://providers/pr-review.ts
+    label: deepseek/deepseek-v4-flash
+    config:
+      model: deepseek/deepseek-v4-flash
+  - id: file://providers/pr-review.ts
+    label: deepseek/deepseek-v4-pro
+    config:
+      model: deepseek/deepseek-v4-pro
+
+# Grade every model-graded assertion (llm-rubric) through OpenRouter, not the
+# default OpenAI grader — otherwise the run silently demands OPENAI_API_KEY.
+# Sonnet is stronger than and distinct from all three systems under test.
+defaultTest:
+  options:
+    provider: openrouter:anthropic/claude-sonnet-5
+
+tests:
+  # --- Phase 1 smoke test (replaced by the real fixture in Phase 2) ---
+  - description: "smoke: provider returns a well-formed review object"
+    vars:
+      title: "Add a null check to formatName"
+      description: "Guard against a null user before reading .name."
+      diff: |
+        --- a/format.ts
+        +++ b/format.ts
+        @@ -1,3 +1,3 @@
+        -export function formatName(user) {
+        -  return user.name.trim();
+        +export function formatName(user) {
+        +  return user?.name?.trim() ?? "";
+         }
+    assert:
+      - type: javascript
+        value: "typeof output === 'object' && output !== null && typeof output.summary === 'string' && !!output.scores"

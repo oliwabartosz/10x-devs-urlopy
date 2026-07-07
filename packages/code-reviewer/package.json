@@ -12,7 +12,9 @@
     "start": "tsx --env-file-if-exists=.env src/cli.ts",
     "demo": "tsx --env-file-if-exists=.env src/demo.ts",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval": "promptfoo eval -c evals/promptfooconfig.yaml",
+    "eval:view": "promptfoo view"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^2.10.0",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
+    "promptfoo": "0.121.17",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
