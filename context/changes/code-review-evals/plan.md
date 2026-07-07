@@ -262,29 +262,29 @@ Nothing migrates. Rollback = delete `evals/`, drop the devDependency and the two
 
 #### Automated
 
-- [x] 1.1 `npm install` succeeds; lockfile updated; promptfoo pinned exact
-- [x] 1.2 `npm run typecheck` passes with the new `evals/**/*.ts` files
-- [x] 1.3 `npm test` still passes
-- [x] 1.4 Smoke run: `npm run eval` completes with all three providers returning structured output
+- [x] 1.1 `npm install` succeeds; lockfile updated; promptfoo pinned exact — 0712306
+- [x] 1.2 `npm run typecheck` passes with the new `evals/**/*.ts` files — 0712306
+- [x] 1.3 `npm test` still passes — 0712306
+- [x] 1.4 Smoke run: `npm run eval` completes with all three providers returning structured output — 0712306
 
 #### Manual
 
-- [x] 1.5 `npm run eval:view` shows a 3-column model matrix
-- [x] 1.6 Each column ran the intended model (labels / token usage)
+- [x] 1.5 `npm run eval:view` shows a 3-column model matrix — 0712306
+- [x] 1.6 Each column ran the intended model (labels / token usage) — 0712306
 
 ### Phase 2: The Seeded-Flaw Fixture
 
 #### Automated
 
-- [ ] 2.1 `pr.diff` is syntactically valid; promptfoo loads the fixture without errors
-- [ ] 2.2 `npm run eval` completes across all three models with the real fixture
+- [x] 2.1 `pr.diff` is syntactically valid; promptfoo loads the fixture without errors
+- [x] 2.2 `npm run eval` completes across all three models with the real fixture
 
 #### Manual
 
-- [ ] 2.3 Human read: exactly three findable impactful flaws, no accidental extras
-- [ ] 2.4 Correct-migration parts read as idiomatic React 19
-- [ ] 2.5 Ground-truth doc matches the diff (locations, symptoms)
-- [ ] 2.6 Spot-check one model's raw review output for substantive content
+- [x] 2.3 Human read: exactly three findable impactful flaws, no accidental extras
+- [x] 2.4 Correct-migration parts read as idiomatic React 19
+- [x] 2.5 Ground-truth doc matches the diff (locations, symptoms)
+- [x] 2.6 Spot-check one model's raw review output for substantive content
 
 ### Phase 3: Assertions, Live Run, Documentation
 

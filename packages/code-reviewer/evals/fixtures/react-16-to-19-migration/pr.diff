@@ -1,0 +1,160 @@
+diff --git a/src/components/leave/LeaveRequestsPanel.tsx b/src/components/leave/LeaveRequestsPanel.tsx
+index a33080a..988f142 100644
+--- a/src/components/leave/LeaveRequestsPanel.tsx
++++ b/src/components/leave/LeaveRequestsPanel.tsx
+@@ -1,4 +1,4 @@
+-import React from "react";
++import { useContext, useEffect, useState } from "react";
+ import { OrgContext } from "@/context/OrgContext";
+ import { leaveEvents } from "@/lib/leaveEvents";
+ import { fetchLeaveRequests, fetchPendingSummary } from "@/lib/leaveApi";
+@@ -12,84 +12,54 @@ interface Props {
+   statusFilter: StatusFilter;
+ }
+ 
+-interface State {
+-  requests: LeaveRequest[];
+-  visibleRequests: LeaveRequest[];
+-  pendingCount: number;
+-}
+-
+-export class LeaveRequestsPanel extends React.Component<Props, State> {
+-  static contextType = OrgContext;
+-  declare context: React.ContextType<typeof OrgContext>;
+-
+-  private pollId?: ReturnType<typeof setInterval>;
+-  private unsubscribe?: () => void;
+-
+-  constructor(props: Props) {
+-    super(props);
+-    this.state = {
+-      requests: [],
+-      visibleRequests: [],
+-      pendingCount: 0,
+-    };
+-    this.handleExternalChange = this.handleExternalChange.bind(this);
+-  }
++export function LeaveRequestsPanel({ statusFilter }: Props) {
++  const { orgId } = useContext(OrgContext);
++  const [requests, setRequests] = useState<LeaveRequest[]>([]);
++  const [visibleRequests, setVisibleRequests] = useState<LeaveRequest[]>([]);
++  const [pendingCount, setPendingCount] = useState(0);
+ 
+-  // Keep the filtered view in sync with the incoming `statusFilter` prop and
+-  // whatever requests we currently hold.
+-  static getDerivedStateFromProps(props: Props, state: State): Partial<State> {
+-    return {
+-      visibleRequests: state.requests.filter((r) => matchesFilter(r, props.statusFilter)),
+-    };
++  function loadRequests() {
++    fetchLeaveRequests(orgId).then((next) => {
++      setRequests(next);
++    });
+   }
+ 
+-  componentDidMount(): void {
+-    this.loadRequests();
+-
+-    // Poll for fresh requests and merge them into the list we already hold, so
+-    // rows added optimistically between polls are preserved.
+-    this.pollId = setInterval(() => {
+-      fetchLeaveRequests(this.context.orgId).then((incoming) => {
+-        this.setState((prev) => ({ requests: mergeById(prev.requests, incoming) }));
++  // Poll for fresh requests and merge them into the list we already hold, so
++  // rows added optimistically between polls are preserved.
++  useEffect(() => {
++    const pollId = setInterval(() => {
++      fetchLeaveRequests(orgId).then((incoming) => {
++        setRequests(mergeById(requests, incoming));
+       });
+-      fetchPendingSummary(this.context.orgId).then((summary) => {
+-        this.setState({ pendingCount: summary.pending });
++      fetchPendingSummary(orgId).then((summary) => {
++        setPendingCount(summary.pending);
+       });
+     }, POLL_INTERVAL_MS);
++    return () => clearInterval(pollId);
++  }, []);
+ 
+-    // Reload when another surface (approve/reject flows) mutates leave data.
+-    this.unsubscribe = leaveEvents.subscribe(this.handleExternalChange);
+-  }
++  // Load once on mount and reload when another surface mutates leave data.
++  useEffect(() => {
++    loadRequests();
++    leaveEvents.subscribe(loadRequests);
++  }, []);
+ 
+-  componentWillUnmount(): void {
+-    clearInterval(this.pollId);
+-    this.unsubscribe?.();
+-  }
+-
+-  handleExternalChange(): void {
+-    this.loadRequests();
+-  }
++  // Keep the filtered view in sync with the requests and the status filter.
++  useEffect(() => {
++    setVisibleRequests(requests.filter((r) => matchesFilter(r, statusFilter)));
++  }, [requests, { status: statusFilter }]);
+ 
+-  loadRequests(): void {
+-    fetchLeaveRequests(this.context.orgId).then((requests) => {
+-      this.setState({ requests });
+-    });
+-  }
+-
+-  render(): React.ReactNode {
+-    const { visibleRequests, pendingCount } = this.state;
+-    return (
+-      <section className="leave-panel">
+-        <header className="leave-panel__head">
+-          <h2>Leave requests</h2>
+-          <span className="leave-panel__badge">{pendingCount} pending</span>
+-        </header>
+-        <ul className="leave-panel__list">
+-          {visibleRequests.map((request) => (
+-            <RequestRow key={request.id} request={request} />
+-          ))}
+-        </ul>
+-      </section>
+-    );
+-  }
++  return (
++    <section className="leave-panel">
++      <header className="leave-panel__head">
++        <h2>Leave requests</h2>
++        <span className="leave-panel__badge">{pendingCount} pending</span>
++      </header>
++      <ul className="leave-panel__list">
++        {visibleRequests.map((request) => (
++          <RequestRow key={request.id} request={request} />
++        ))}
++      </ul>
++    </section>
++  );
+ }
+diff --git a/src/components/leave/mountLeaveRequestsPanel.tsx b/src/components/leave/mountLeaveRequestsPanel.tsx
+index 9a13868..324e8ee 100644
+--- a/src/components/leave/mountLeaveRequestsPanel.tsx
++++ b/src/components/leave/mountLeaveRequestsPanel.tsx
+@@ -1,5 +1,4 @@
+-import React from "react";
+-import ReactDOM from "react-dom";
++import { createRoot } from "react-dom/client";
+ import { OrgContext } from "@/context/OrgContext";
+ import type { StatusFilter } from "@/types";
+ import { LeaveRequestsPanel } from "./LeaveRequestsPanel";
+@@ -10,10 +9,10 @@ export function mountLeaveRequestsPanel(
+   orgId: string,
+   statusFilter: StatusFilter,
+ ): void {
+-  ReactDOM.render(
++  const root = createRoot(el);
++  root.render(
+     <OrgContext.Provider value={{ orgId }}>
+       <LeaveRequestsPanel statusFilter={statusFilter} />
+     </OrgContext.Provider>,
+-    el,
+   );
+ }

@@ -15,12 +15,7 @@
  * from the package barrel — never from env for the model id.
  */
 
-import type {
-  ApiProvider,
-  CallApiContextParams,
-  ProviderOptions,
-  ProviderResponse,
-} from "promptfoo";
+import type { ApiProvider, CallApiContextParams, ProviderOptions, ProviderResponse } from "promptfoo";
 import { reviewPr, truncateDiff, type PrReviewResult } from "../../src/index.js";
 
 export default class PrReviewProvider implements ApiProvider {
@@ -32,11 +27,11 @@ export default class PrReviewProvider implements ApiProvider {
 
     // The model id comes from provider config (one entry per model in the
     // config), never from env — so the three config entries stay independent.
-    const model = options.config?.model;
+    // promptfoo types `config` as `any`; read it through a narrow shape so the
+    // value is `unknown` and the guard below does the real type-narrowing.
+    const model: unknown = (options.config as { model?: unknown } | undefined)?.model;
     if (typeof model !== "string" || model.trim() === "") {
-      throw new Error(
-        `pr-review provider requires a non-empty string 'config.model' (got ${JSON.stringify(model)})`,
-      );
+      throw new Error(`pr-review provider requires a non-empty string 'config.model' (got ${JSON.stringify(model)})`);
     }
     this.model = model;
   }
@@ -62,10 +57,7 @@ export default class PrReviewProvider implements ApiProvider {
     const { diff, truncated } = truncateDiff(rawDiff);
 
     try {
-      const result: PrReviewResult = await reviewPr(
-        { title, description, diff, truncated },
-        { model: this.model },
-      );
+      const result: PrReviewResult = await reviewPr({ title, description, diff, truncated }, { model: this.model });
       return { output: result };
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };

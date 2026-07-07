@@ -47,20 +47,28 @@ defaultTest:
     provider: openrouter:anthropic/claude-sonnet-5
 
 tests:
-  # --- Phase 1 smoke test (replaced by the real fixture in Phase 2) ---
-  - description: "smoke: provider returns a well-formed review object"
+  # The seeded-flaw fixture: a React 16 -> 19 class-to-function migration that is
+  # mostly correct and idiomatic, with three impactful bugs planted (see
+  # fixtures/react-16-to-19-migration/ground-truth.md). The title/description are
+  # a plausible, confident PR submission that does NOT hint at the flaws — this
+  # is the untrusted-content framing the reviewer must see through.
+  #
+  # `truncated` is intentionally NOT a var: the provider derives it by running
+  # the diff through the production `truncateDiff`, mirroring the CLI.
+  #
+  # Assertions stay minimal here (a JSON-shape sanity check). Phase 3 adds the
+  # per-flaw llm-rubric assertions and the deterministic verdict/score checks.
+  - description: "react-16-to-19-migration: three seeded flaws in a plausible migration"
     vars:
-      title: "Add a null check to formatName"
-      description: "Guard against a null user before reading .name."
-      diff: |
-        --- a/format.ts
-        +++ b/format.ts
-        @@ -1,3 +1,3 @@
-        -export function formatName(user) {
-        -  return user.name.trim();
-        +export function formatName(user) {
-        +  return user?.name?.trim() ?? "";
-         }
+      title: "Modernize LeaveRequestsPanel: migrate to a function component for React 19"
+      description: |
+        Converts LeaveRequestsPanel from a legacy class component to a function
+        component with hooks as part of the React 19 upgrade. Lifecycle methods
+        map to useEffect, class state to useState, and the context read to
+        useContext. Also switches the island entry point from the deprecated
+        ReactDOM.render to createRoot. Behavior is unchanged; polling, the leave
+        events subscription, and the filtered view all carry over.
+      diff: file://fixtures/react-16-to-19-migration/pr.diff
     assert:
       - type: javascript
         value: "typeof output === 'object' && output !== null && typeof output.summary === 'string' && !!output.scores"
