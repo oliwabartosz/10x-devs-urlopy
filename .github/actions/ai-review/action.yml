@@ -31,7 +31,9 @@ runs:
       with:
         node-version: 22
         cache: npm
-        cache-dependency-path: packages/code-reviewer/package-lock.json
+        # Single root lock: code-reviewer is an npm workspace, so its deps
+        # resolve from the root lockfile — there is no nested lock anymore.
+        cache-dependency-path: package-lock.json
 
     - name: Ensure ai-cr labels exist
       shell: bash
@@ -43,9 +45,12 @@ runs:
         gh label create "ai-cr:failed" --color "d73a4a" --description "AI code review verdict: failed" --force
         gh label create "ai-cr:review" --color "0075ca" --description "Add to re-run the AI code review" --force
 
+    # Install from the repo root: code-reviewer is a workspace, so `npm ci` at
+    # root installs its deps (hoisted) against the single root lockfile. The
+    # later `working-directory: packages/code-reviewer` steps resolve them by
+    # walking up to the root node_modules.
     - name: Install reviewer dependencies
       shell: bash
-      working-directory: packages/code-reviewer
       run: npm ci
 
     # PR title/body/diff are attacker-controlled data: fetch them with gh and
