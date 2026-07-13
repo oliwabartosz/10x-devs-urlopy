@@ -2,6 +2,9 @@
   "name": "urlopy",
   "type": "module",
   "version": "0.0.1",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "predev": "echo '\\n[urlopy] wrangler dev — Cloudflare Workers runtime. Do NOT run astro dev directly.\\n'",
     "dev": "wrangler dev",
