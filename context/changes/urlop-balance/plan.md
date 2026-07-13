@@ -249,8 +249,8 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Automated
 
-- [x] 2.1 Linting passes (`npm run lint`)
-- [x] 2.2 Gated integration tests pass (`npm run test:run`)
+- [x] 2.1 Linting passes (`npm run lint`) — 19d3f0d
+- [x] 2.2 Gated integration tests pass (`npm run test:run`) — 19d3f0d
 
 #### Manual
 
@@ -260,8 +260,8 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Automated
 
-- [ ] 3.1 Linting passes (`npm run lint`)
-- [ ] 3.2 Build passes (`npm run build`)
+- [x] 3.1 Linting passes (`npm run lint`)
+- [x] 3.2 Build passes (`npm run build`)
 
 #### Manual
 

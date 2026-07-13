@@ -5,13 +5,21 @@ import MonthNav from "@/components/MonthNav.astro";
 import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
+import HolidayBalanceCard from "@/components/holiday/HolidayBalanceCard";
 import * as Sentry from "@sentry/cloudflare";
-import { createDb, employees as employeesTable, absence_types, absences as absencesTable } from "@/db/index";
+import {
+  createDb,
+  employees as employeesTable,
+  absence_types,
+  absences as absencesTable,
+  holiday_balances as holidayBalancesTable,
+} from "@/db/index";
+import { buildBalanceView } from "@/lib/services/holiday-balance";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import { visibleEmployeesFilter } from "@/lib/employees";
-import type { Employee, Absence, AbsenceType } from "@/types";
+import type { Employee, Absence, AbsenceType, HolidayBalanceView } from "@/types";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
@@ -60,6 +68,7 @@ let allEmployees: Employee[] = [];
 let gridEmployees: Employee[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
+let holidayBalance: HolidayBalanceView | null = null;
 
 if (currentEmployee) {
   const firstDay = `${year}-${String(month).padStart(2, "0")}-01`;
@@ -123,6 +132,14 @@ if (currentEmployee) {
       db.select().from(absence_types).orderBy(asc(absence_types.id)),
     ]);
 
+    // Server-fed holiday balance for the current employee/year so the card renders without a flash.
+    const balanceRow = await db
+      .select()
+      .from(holidayBalancesTable)
+      .where(and(eq(holidayBalancesTable.employee_id, currentEmployee.id), eq(holidayBalancesTable.year, year)))
+      .then((r) => r.at(0) ?? null);
+    holidayBalance = await buildBalanceView(db, currentEmployee.id, year, balanceRow);
+
     allEmployees = employeesResult;
     gridEmployees =
       currentEmployee.role === "moderator"
@@ -184,6 +201,15 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
       ) : currentEmployee ? (
         <div class="px-4 pt-4">
           <MonthNav prevMonthUrl={prevMonthUrl} nextMonthUrl={nextMonthUrl} year={year} month={month} />
+
+          {holidayBalance && (
+            <HolidayBalanceCard
+              client:load
+              initialBalance={holidayBalance}
+              currentEmployee={currentEmployee}
+              year={year}
+            />
+          )}
 
           <nav class="mt-3 flex gap-1 border-b">
             <a
