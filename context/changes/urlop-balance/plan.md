@@ -237,20 +237,20 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Automated
 
-- [x] 1.1 Migration diff is the new table only and generates cleanly (`npm run db:generate`)
-- [x] 1.2 Linting passes (`npm run lint`)
+- [x] 1.1 Migration diff is the new table only and generates cleanly (`npm run db:generate`) — af4903e
+- [x] 1.2 Linting passes (`npm run lint`) — af4903e
 
 #### Manual
 
-- [x] 1.3 Migration reviewed, CHECK constraints hand-added, `npm run db:migrate` applies cleanly
-- [x] 1.4 Table + constraints + unique index present in `db:studio`
+- [x] 1.3 Migration reviewed, CHECK constraints hand-added, `npm run db:migrate` applies cleanly — af4903e
+- [x] 1.4 Table + constraints + unique index present in `db:studio` — af4903e
 
 ### Phase 2: API + Used Computation
 
 #### Automated
 
-- [ ] 2.1 Linting passes (`npm run lint`)
-- [ ] 2.2 Gated integration tests pass (`npm run test:run`)
+- [x] 2.1 Linting passes (`npm run lint`)
+- [x] 2.2 Gated integration tests pass (`npm run test:run`)
 
 #### Manual
 
