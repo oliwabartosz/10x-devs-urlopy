@@ -58,3 +58,27 @@ export const absences = pgTable(
   },
   (table) => [unique().on(table.employee_id, table.date)],
 );
+
+export const holiday_balances = pgTable(
+  "holiday_balances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    employee_id: uuid("employee_id")
+      .notNull()
+      .references(() => employees.id),
+    year: integer("year").notNull(),
+    // Bieżące — current-year statutory entitlement (whole days).
+    current_entitlement_days: integer("current_entitlement_days").notNull().default(0),
+    // Zaległe — carried-over days from prior years (whole days).
+    carryover_days: integer("carryover_days").notNull().default(0),
+    // Reconciliation baseline for pre-app usage; keeps Left correct on mid-year adoption.
+    used_adjustment_days: integer("used_adjustment_days").notNull().default(0),
+    // "Do dnia" — informational HR provenance date; nullable.
+    valid_until: date("valid_until"),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // DB-level CHECK constraints (year range; the three day-columns >= 0) are hand-added to the
+  // generated migration — Drizzle cannot express them. Re-add manually after any db:generate diff.
+  (table) => [unique().on(table.employee_id, table.year)],
+);
