@@ -304,7 +304,7 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Manual
 
-- [ ] 2.3 Deployment: GET returns correct used_days/left_days; POST upserts and re-GET reflects it
+- [x] 2.3 Deployment: GET returns correct used_days/left_days; POST upserts and re-GET reflects it
 
 ### Phase 3: UI — Dashboard Card + Edit Dialog
 
@@ -315,22 +315,22 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Manual
 
-- [ ] 3.3 Card shows correct Left + breakdown + "Do dnia"; empty state when no record
-- [ ] 3.4 Editing via dialog persists and card updates after reload
-- [ ] 3.5 Negative Left shows the warning
-- [ ] 3.6 Year-boundary switch shows the new year's balance
-- [ ] 3.7 Both an employee and a moderator can edit a balance
+- [x] 3.3 Card shows correct Left + breakdown + "Do dnia"; empty state when no record
+- [x] 3.4 Editing via dialog persists and card updates after reload
+- [x] 3.5 Negative Left shows the warning
+- [x] 3.6 Year-boundary switch shows the new year's balance
+- [x] 3.7 Both an employee and a moderator can edit a balance
 
 ### Phase 4: DELETE endpoint + card delete affordance
 
 #### Automated
 
-- [x] 4.1 Linting passes (`npm run lint`)
-- [x] 4.2 Build passes (`npm run build`)
-- [x] 4.3 Gated integration tests pass (`npm run test:run`)
+- [x] 4.1 Linting passes (`npm run lint`) — a856aa6
+- [x] 4.2 Build passes (`npm run build`) — a856aa6
+- [x] 4.3 Gated integration tests pass (`npm run test:run`) — a856aa6
 
 #### Manual
 
-- [ ] 4.4 Deleting via the dialog removes the record; card returns to empty state after reload
-- [ ] 4.5 Delete affordance hidden when no record exists (`balance_id === null`)
-- [ ] 4.6 DELETE of a non-existent id returns 404; unauthenticated returns 401
+- [x] 4.4 Deleting via the dialog removes the record; card returns to empty state after reload
+- [x] 4.5 Delete affordance hidden when no record exists (`balance_id === null`)
+- [x] 4.6 DELETE of a non-existent id returns 404; unauthenticated returns 401
