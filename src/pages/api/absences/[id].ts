@@ -9,6 +9,8 @@ import { employees, absences } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
+import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
+import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -78,28 +80,55 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Employee record not found" }, 403);
   }
 
+  const ownershipWhere =
+    employeeRow.role === "moderator"
+      ? eq(absences.id, id)
+      : and(eq(absences.id, id), eq(absences.employee_id, employeeRow.id));
+
+  // Load the existing row (ownership-scoped) to resolve the *effective* type/full-day state
+  // for the partial-day guard: a PATCH may omit either field, and a body that changes only
+  // the type must not leave an existing partial-day range on a now-ineligible type.
+  let existing: { absence_type_id: number; is_full_day: boolean } | undefined;
   try {
-    const rows = await db
-      .update(absences)
-      .set(parsed.data)
-      .where(
-        employeeRow.role === "moderator"
-          ? eq(absences.id, id)
-          : and(eq(absences.id, id), eq(absences.employee_id, employeeRow.id)),
-      )
-      .returning({
-        id: absences.id,
-        employee_id: absences.employee_id,
-        absence_type_id: absences.absence_type_id,
-        date: absences.date,
-        is_full_day: absences.is_full_day,
-        start_time: absences.start_time,
-        end_time: absences.end_time,
-        comment: absences.comment,
-        substitute_employee_id: absences.substitute_employee_id,
-        created_at: absences.created_at,
-        updated_at: absences.updated_at,
-      });
+    existing = await db
+      .select({ absence_type_id: absences.absence_type_id, is_full_day: absences.is_full_day })
+      .from(absences)
+      .where(ownershipWhere)
+      .then((r) => r[0]);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    return json({ error: "Database error" }, 503);
+  }
+  if (!existing) return json({ error: "Not found" }, 404);
+
+  const effectiveTypeId = parsed.data.absence_type_id ?? existing.absence_type_id;
+  const effectiveIsFullDay = parsed.data.is_full_day ?? existing.is_full_day;
+
+  let partialDayViolation: boolean;
+  try {
+    partialDayViolation = await isPartialDayViolation(db, effectiveTypeId, effectiveIsFullDay);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    return json({ error: "Database error" }, 503);
+  }
+  if (partialDayViolation) {
+    return json({ error: `Godziny są dostępne tylko dla typu: ${ONSITE_TRAINING_TYPE_NAME}` }, 400);
+  }
+
+  try {
+    const rows = await db.update(absences).set(parsed.data).where(ownershipWhere).returning({
+      id: absences.id,
+      employee_id: absences.employee_id,
+      absence_type_id: absences.absence_type_id,
+      date: absences.date,
+      is_full_day: absences.is_full_day,
+      start_time: absences.start_time,
+      end_time: absences.end_time,
+      comment: absences.comment,
+      substitute_employee_id: absences.substitute_employee_id,
+      created_at: absences.created_at,
+      updated_at: absences.updated_at,
+    });
     if (rows.length === 0) return json({ error: "Not found" }, 404);
     return json(rows[0], 200);
   } catch (err) {

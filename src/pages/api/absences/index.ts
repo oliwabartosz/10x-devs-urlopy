@@ -9,6 +9,8 @@ import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
+import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
+import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -189,6 +191,18 @@ export const POST: APIRoute = async (context) => {
       return json({ error: "Pracownik nie został znaleziony." }, 404);
     }
     targetEmployeeId = targetRow.id;
+  }
+
+  // Domain rule: partial-day (time-range) entries are allowed only for onsite training.
+  let partialDayViolation: boolean;
+  try {
+    partialDayViolation = await isPartialDayViolation(db, absenceData.absence_type_id, absenceData.is_full_day);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
+    return json({ error: "Database error" }, 503);
+  }
+  if (partialDayViolation) {
+    return json({ error: `Godziny są dostępne tylko dla typu: ${ONSITE_TRAINING_TYPE_NAME}` }, 400);
   }
 
   try {

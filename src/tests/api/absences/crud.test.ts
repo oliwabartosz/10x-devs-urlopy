@@ -1,18 +1,31 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import type { Db } from "@/db/index";
-import { absences } from "@/db/schema";
+import { absences, absence_types } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
 import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
 
 // Requires: 20260526000002_seed_absence_types.sql applied (absence_type_id: 1 must exist)
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration", () => {
   let db!: Db;
   let testEmployeeId!: string;
+  let onsiteTypeId!: number;
+  let nonTrainingTypeId!: number;
 
   beforeAll(async () => {
     db = getTestDb();
     testEmployeeId = await createTestEmployee(db);
+    onsiteTypeId = (
+      await db
+        .select({ id: absence_types.id })
+        .from(absence_types)
+        .where(eq(absence_types.name, ONSITE_TRAINING_TYPE_NAME))
+    )[0].id;
+    nonTrainingTypeId = (
+      await db.select({ id: absence_types.id }).from(absence_types).where(eq(absence_types.name, "urlop"))
+    )[0].id;
   });
 
   afterAll(async () => {
@@ -180,5 +193,52 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
     });
 
     await db.delete(absences).where(eq(absences.employee_id, testEmployeeId));
+  });
+
+  // S-14: partial-day (time-range) entries are allowed only for the onsite-training type.
+  // The rule is a handler-level guard (`isPartialDayViolation`), not a DB constraint, so these
+  // exercise the guard against the seeded absence_types rather than a raw INSERT.
+  describe("partial-day type restriction (S-14)", () => {
+    it("guard allows onsite-training + partial-day", async () => {
+      expect(await isPartialDayViolation(db, onsiteTypeId, false)).toBe(false);
+    });
+
+    it("guard rejects a non-training type + partial-day", async () => {
+      expect(await isPartialDayViolation(db, nonTrainingTypeId, false)).toBe(true);
+    });
+
+    it("guard allows a non-training type + full-day", async () => {
+      expect(await isPartialDayViolation(db, nonTrainingTypeId, true)).toBe(false);
+    });
+
+    it("PATCH effective-state — changing only the type of an onsite partial-day entry to a non-training type is rejected", async () => {
+      const [inserted] = await db
+        .insert(absences)
+        .values({
+          employee_id: testEmployeeId,
+          absence_type_id: onsiteTypeId,
+          date: "2026-02-01",
+          is_full_day: false,
+          start_time: "09:00",
+          end_time: "11:00",
+        })
+        .returning();
+
+      // Simulate a PATCH body that changes only the type; the effective is_full_day is resolved
+      // from the existing row, exactly as the PATCH handler does.
+      const existing = (
+        await db
+          .select({ absence_type_id: absences.absence_type_id, is_full_day: absences.is_full_day })
+          .from(absences)
+          .where(eq(absences.id, inserted.id))
+      )[0];
+      const body: { absence_type_id?: number; is_full_day?: boolean } = { absence_type_id: nonTrainingTypeId };
+      const effectiveTypeId = body.absence_type_id ?? existing.absence_type_id;
+      const effectiveIsFullDay = body.is_full_day ?? existing.is_full_day;
+
+      expect(await isPartialDayViolation(db, effectiveTypeId, effectiveIsFullDay)).toBe(true);
+
+      await db.delete(absences).where(eq(absences.id, inserted.id));
+    });
   });
 });
