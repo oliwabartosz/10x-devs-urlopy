@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-06-10
+updated: 2026-07-14
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -54,7 +54,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
 | S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | proposed |
 | S-14 | hours-onsite-training-only   | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09       | FR-004         | proposed |
-| S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | planned  |
+| S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | done     |
 
 ## Streams
 
@@ -289,7 +289,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Niedoszacowanie "Wykorzystane" przy adopcji w trakcie roku (urlop sprzed wdrożenia aplikacji) — łagodzone opcjonalnym polem `used_adjustment_days`; szczegóły w planie.
   - Interakcja z S-13: nowa kategoria "urlop planowany" NIE może być liczona jako wykorzystany `urlop` (dopasowanie po dokładnej nazwie + test regresji).
 - **Risk:** Niskie–średnie — wzorce (tabela + endpoint + karta) istnieją; główne ryzyko to poprawność zliczania (dzielnik /8 musi zgadzać się z `AbsenceStats.tsx`) i wykluczenie `urlop planowany`.
-- **Status:** planned (`/10x-plan` ukończony — `context/changes/urlop-balance/plan.md`)
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -307,7 +307,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-12       | sentry-integration           | [Urlopy] Sentry SDK — error tracking dla Cloudflare Workers           | yes                 | Niezależne; można realizować w dowolnym momencie           |
 | S-13       | urlop-planowany-category     | [Urlopy] Nowa kategoria nieobecności "urlop planowany"                | yes                 | Gotowy — zależy tylko od F-01; addytywny seed `absence_types` |
 | S-14       | hours-onsite-training-only   | [Urlopy] Pole godzin tylko dla "szkolenie w miejscu pracy"            | yes                 | Zawęża S-09; zależy od S-09                                 |
-| S-15       | urlop-balance                | [Urlopy] Saldo urlopu — wymiar kadrowy i licznik pozostałych dni      | yes                 | Plan gotowy (`/10x-plan` ukończony); wyklucza `urlop planowany` z S-13 |
+| S-15       | urlop-balance                | [Urlopy] Saldo urlopu — wymiar kadrowy i licznik pozostałych dni      | done                | Zaimplementowane + impl-review; wyklucza `urlop planowany` z S-13 |
 
 ## Open Roadmap Questions
 
@@ -332,3 +332,4 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.
 - **S-05: wszystkie zapytania do bazy danych używają Drizzle ORM zamiast klienta Supabase JS — typesafe queries, schemat bazy zdefiniowany w kodzie, migracje zarządzane przez Drizzle Kit.** — Implemented → `context/changes/drizzle-migration/`. Note: `createAdminClient()` (Supabase JS) retained for auth admin operations; only app table queries migrated to Drizzle.
 - **S-12: Sentry SDK wdrożone dla Cloudflare Workers — error tracking, source maps, 10% performance sampling, captureException we wszystkich catch blokach API + middleware Sentry.setUser/setTag.** — Implemented 2026-06-10 → `context/changes/sentry-integration/`. Phase 1: tracesSampleRate + SENTRY_DSN secret. Phase 2: captureException in 12 files, userRole lookup in middleware.
+- **S-15: pracownik wpisuje wymiar urlopu (Bieżący + Zaległy) i widzi saldo pozostałych dni na karcie dashboardu, per rok; aplikacja zlicza wykorzystane wpisy `urlop` (z wykluczeniem `urlop planowany`).** — Implemented + impl-reviewed 2026-07-14 → `context/changes/urlop-balance/`. 4 fazy: `holiday_balances` + migracja (CHECK constraints), API GET/POST z serwerowym liczeniem Used (`/8` = `AbsenceStats.FULL_DAY_HOURS`, upsert on `(employee_id, year)`), karta dashboardu + dialog edycji, oraz Faza 4 (dodana ad-hoc): endpoint `DELETE /api/holiday-balances/[id]` + delete w dialogu. Impl-review: 5 findings, wszystkie naprawione (m.in. dodano RLS na `holiday_balances` przez ręczną migrację `20260714114608_holiday_balances_rls.sql`, zastosowaną na prod przez `supabase db push` po `migration repair`). Report: `context/changes/urlop-balance/reviews/impl-review.md`.
