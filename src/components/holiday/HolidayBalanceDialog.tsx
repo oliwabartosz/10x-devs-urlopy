@@ -22,14 +22,38 @@ export function HolidayBalanceDialog({ open, onOpenChange, balance, employeeId, 
   const [usedAdjustment, setUsedAdjustment] = useState(String(balance.used_adjustment_days));
   const [validUntil, setValidUntil] = useState(balance.valid_until ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const busy = isSubmitting || isDeleting;
 
   // Non-negative integers only; entitlement + carryover are required, adjustment defaults to 0.
   const isNonNegInt = (v: string) => /^\d+$/.test(v.trim());
   const saveDisabled =
-    isSubmitting ||
+    busy ||
     !isNonNegInt(currentEntitlement) ||
     !isNonNegInt(carryover) ||
     (usedAdjustment.trim() !== "" && !isNonNegInt(usedAdjustment));
+
+  // Only an already-stored record can be deleted; a synthesized view (balance_id null) has nothing to remove.
+  const canDelete = balance.balance_id !== null;
+
+  const handleDelete = async () => {
+    if (balance.balance_id === null) return;
+    if (!window.confirm("Usunąć wprowadzony wymiar urlopu na ten rok?")) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/holiday-balances/${balance.balance_id}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(data.error ?? "Nie udało się usunąć. Spróbuj ponownie.");
+        setIsDeleting(false);
+      }
+    } catch {
+      toast.error("Nie udało się usunąć. Spróbuj ponownie.");
+      setIsDeleting(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -128,20 +152,27 @@ export function HolidayBalanceDialog({ open, onOpenChange, balance, employeeId, 
           </div>
         </div>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-            }}
-            disabled={isSubmitting}
-          >
-            Anuluj
-          </Button>
-          <Button type="button" onClick={handleSave} disabled={saveDisabled}>
-            Zapisz
-          </Button>
+        <DialogFooter className={canDelete ? "sm:justify-between" : undefined}>
+          {canDelete && (
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={busy}>
+              Usuń
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+              disabled={busy}
+            >
+              Anuluj
+            </Button>
+            <Button type="button" onClick={handleSave} disabled={saveDisabled}>
+              Zapisz
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -3,7 +3,7 @@ change_id: urlop-balance
 title: Per-employee annual vacation (urlop) day-balance tracker
 status: implementing
 created: 2026-06-22
-updated: 2026-07-13
+updated: 2026-07-14
 archived_at: null
 ---
 

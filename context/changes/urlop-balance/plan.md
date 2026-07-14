@@ -194,6 +194,56 @@ Surface the balance as a card above the dashboard tabs with an edit dialog.
 
 ---
 
+## Phase 4: DELETE endpoint + card delete affordance
+
+### Overview
+
+Add the ability to remove a stored balance record (explicitly deferred from v1), with a delete affordance in the edit dialog. After deletion the card falls back to its empty state (`balance_id === null`), since GET synthesizes a zeroed view when no row exists.
+
+### Changes Required:
+
+#### 1. DELETE route
+
+**File**: `src/pages/api/holiday-balances/[id].ts` (new)
+
+**Intent**: Remove a single balance record by its id, mirroring the absences DELETE pattern.
+
+**Contract**: `DELETE /api/holiday-balances/:id` where `:id` is the balance uuid (`holiday_balances.id`). Auth present → else 401; path `id` is a valid uuid → else 400; caller resolves to a non-deleted `employees` row → else 403. Consistent with the "both roles can edit any balance" rule (POST has no role gate), DELETE also has **no owner/role gate** — any valid caller may delete any balance. `delete ... where(eq(holiday_balances.id, id)).returning({ id })`; zero rows deleted → 404; success → `204 No Content`. Error mapping via `extractPgErrorCode` (`42501` → 403; else 500). Sentry-log on DB errors.
+
+#### 2. Dialog delete affordance
+
+**File**: `src/components/holiday/HolidayBalanceDialog.tsx`
+
+**Intent**: Let a user delete an existing record from the edit dialog.
+
+**Contract**: A destructive "Usuń" button rendered in the dialog footer **only when `balance.balance_id !== null`** (an empty/synthesized view has nothing to delete). On click, confirm via `window.confirm`, then `DELETE /api/holiday-balances/${balance.balance_id}`; `sonner` toast on error; `window.location.reload()` on success (204). Disabled while any submit is in flight.
+
+#### 3. Integration test
+
+**File**: `src/tests/api/holiday-balances/delete.test.ts` (new)
+
+**Intent**: Cover the delete semantics at the DB level, consistent with the existing gated integration tests.
+
+**Contract**: Gated on `DATABASE_URL_DIRECT`, reusing `createTestEmployee`/`teardownTestEmployee`. Insert a balance, `delete ... where(eq(id, ...)).returning({ id })` returns the deleted id and a follow-up SELECT returns zero rows; deleting a non-existent id returns an empty `returning()` array (the route maps this to 404).
+
+### Success Criteria:
+
+#### Automated Verification:
+
+- Linting passes: `npm run lint`
+- Build passes: `npm run build`
+- Gated integration tests pass: `npm run test:run`
+
+#### Manual Verification (deployment):
+
+- Deleting via the dialog removes the record; the card returns to its empty state after reload.
+- The delete affordance is hidden when no record exists (`balance_id === null`).
+- DELETE of a non-existent id returns 404; unauthenticated returns 401.
+
+**Implementation Note**: After automated verification passes, pause for manual confirmation of the deployment checks.
+
+---
+
 ## Testing Strategy
 
 ### Unit / Integration Tests:
@@ -260,8 +310,8 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 
 #### Automated
 
-- [x] 3.1 Linting passes (`npm run lint`)
-- [x] 3.2 Build passes (`npm run build`)
+- [x] 3.1 Linting passes (`npm run lint`) — 6ad87ad
+- [x] 3.2 Build passes (`npm run build`) — 6ad87ad
 
 #### Manual
 
@@ -270,3 +320,17 @@ Negligible — one indexed-by-FK aggregate per card render and a single-row upse
 - [ ] 3.5 Negative Left shows the warning
 - [ ] 3.6 Year-boundary switch shows the new year's balance
 - [ ] 3.7 Both an employee and a moderator can edit a balance
+
+### Phase 4: DELETE endpoint + card delete affordance
+
+#### Automated
+
+- [x] 4.1 Linting passes (`npm run lint`)
+- [x] 4.2 Build passes (`npm run build`)
+- [x] 4.3 Gated integration tests pass (`npm run test:run`)
+
+#### Manual
+
+- [ ] 4.4 Deleting via the dialog removes the record; card returns to empty state after reload
+- [ ] 4.5 Delete affordance hidden when no record exists (`balance_id === null`)
+- [ ] 4.6 DELETE of a non-existent id returns 404; unauthenticated returns 401
