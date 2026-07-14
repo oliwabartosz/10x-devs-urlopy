@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HolidayBalanceDialog } from "@/components/holiday/HolidayBalanceDialog";
-import type { Employee, HolidayBalanceView } from "@/types";
+import type { HolidayBalanceView } from "@/types";
 
 interface HolidayBalanceCardProps {
   initialBalance: HolidayBalanceView;
-  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
+  employeeId: string;
   year: number;
 }
 
@@ -14,7 +14,7 @@ function formatDays(n: number): string {
   return (Math.round(n * 100) / 100).toLocaleString("pl-PL", { maximumFractionDigits: 2 });
 }
 
-export default function HolidayBalanceCard({ initialBalance, currentEmployee, year }: HolidayBalanceCardProps) {
+export default function HolidayBalanceCard({ initialBalance, employeeId, year }: HolidayBalanceCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const balance = initialBalance;
   const isEmpty = balance.balance_id === null;
@@ -61,7 +61,7 @@ export default function HolidayBalanceCard({ initialBalance, currentEmployee, ye
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         balance={balance}
-        employeeId={currentEmployee.id}
+        employeeId={employeeId}
         year={year}
       />
     </div>

@@ -38,7 +38,7 @@ A logged-in user sees a holiday-balance card on the dashboard showing days left 
 - **Not** storing HR's "Wykorzystane" — Used is computed; reconciliation for pre-app usage is the `used_adjustment_days` baseline only.
 - **Not** auto-rolling carryover between years — `Zaległe` is entered manually each year.
 - **Not** counting `urlop planowany` (S-13) or any non-`urlop` type toward Used.
-- **Not** adding a DELETE endpoint for balances in v1.
+- **Not** adding a DELETE endpoint for balances in v1. *(Superseded: Phase 4 added `DELETE /api/holiday-balances/[id]` plus a dialog delete affordance.)*
 - **Not** clamping negative Left — it's surfaced as a warning.
 - **Not** relying on RLS — all authz in handler code.
 - **Not** building automated UI/E2E tests — that's a later lesson; UI is manually verified.

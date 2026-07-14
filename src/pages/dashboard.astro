@@ -95,7 +95,7 @@ if (currentEmployee) {
       : and(eq(absencesTable.employee_id, employeesTable.id), isNull(employeesTable.deleted_at));
 
   try {
-    const [employeesResult, absencesResult, typesResult] = await Promise.all([
+    const [employeesResult, absencesResult, typesResult, balanceRow] = await Promise.all([
       currentEmployee.role === "moderator"
         ? db
             .select(empCols)
@@ -130,14 +130,16 @@ if (currentEmployee) {
         .innerJoin(employeesTable, absencesJoin)
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
       db.select().from(absence_types).orderBy(asc(absence_types.id)),
+      // Server-fed holiday balance row for the current employee/year so the card renders without a
+      // flash; batched with the grid queries. The Used aggregate (buildBalanceView) runs after,
+      // since it depends on this row's stored adjustment.
+      db
+        .select()
+        .from(holidayBalancesTable)
+        .where(and(eq(holidayBalancesTable.employee_id, currentEmployee.id), eq(holidayBalancesTable.year, year)))
+        .then((r) => r.at(0) ?? null),
     ]);
 
-    // Server-fed holiday balance for the current employee/year so the card renders without a flash.
-    const balanceRow = await db
-      .select()
-      .from(holidayBalancesTable)
-      .where(and(eq(holidayBalancesTable.employee_id, currentEmployee.id), eq(holidayBalancesTable.year, year)))
-      .then((r) => r.at(0) ?? null);
     holidayBalance = await buildBalanceView(db, currentEmployee.id, year, balanceRow);
 
     allEmployees = employeesResult;
@@ -206,7 +208,7 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
             <HolidayBalanceCard
               client:load
               initialBalance={holidayBalance}
-              currentEmployee={currentEmployee}
+              employeeId={currentEmployee.id}
               year={year}
             />
           )}

@@ -10,7 +10,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
-import type { HolidayBalance } from "@/types";
+import type { HolidayBalance, HolidayBalanceView } from "@/types";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -165,8 +165,9 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Pracownik nie został znaleziony." }, 404);
   }
 
+  let row: HolidayBalance;
   try {
-    const [row] = await db
+    const inserted = await db
       .insert(holiday_balances)
       .values({
         employee_id,
@@ -187,8 +188,7 @@ export const POST: APIRoute = async (context) => {
         },
       })
       .returning();
-    const view = await buildBalanceView(db, employee_id, year, row);
-    return json(view, 200);
+    row = inserted[0];
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances" } });
     const code = extractPgErrorCode(err);
@@ -196,5 +196,31 @@ export const POST: APIRoute = async (context) => {
     if (code === "23503") return json({ error: "Pracownik nie został znaleziony." }, 404);
     if (code === "23514") return json({ error: "Invalid balance values" }, 400);
     return json({ error: "Database error" }, 500);
+  }
+
+  // The upsert has committed. A failure building the response view (the Used aggregate query)
+  // must NOT be mapped as a write error — report success with a degraded view (Used falls back
+  // to the stored adjustment, matching buildBalanceView's own missing-type degradation) and let
+  // the client reload to fetch the fully computed values.
+  try {
+    const view = await buildBalanceView(db, employee_id, year, row);
+    return json(view, 200);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances (post-write view)" } });
+    const usedFallback = row.used_adjustment_days;
+    return json(
+      {
+        balance_id: row.id,
+        employee_id,
+        year,
+        current_entitlement_days: row.current_entitlement_days,
+        carryover_days: row.carryover_days,
+        used_adjustment_days: row.used_adjustment_days,
+        valid_until: row.valid_until,
+        used_days: usedFallback,
+        left_days: row.current_entitlement_days + row.carryover_days - usedFallback,
+      } satisfies HolidayBalanceView,
+      200,
+    );
   }
 };
