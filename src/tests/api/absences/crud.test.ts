@@ -5,13 +5,14 @@ import { absences, absence_types } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
 import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
-import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
+import { ONSITE_TRAINING_TYPE_NAME, OFFSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
 
 // Requires: 20260526000002_seed_absence_types.sql applied (absence_type_id: 1 must exist)
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration", () => {
   let db!: Db;
   let testEmployeeId!: string;
   let onsiteTypeId!: number;
+  let offsiteTypeId!: number;
   let nonTrainingTypeId!: number;
 
   beforeAll(async () => {
@@ -22,6 +23,12 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
         .select({ id: absence_types.id })
         .from(absence_types)
         .where(eq(absence_types.name, ONSITE_TRAINING_TYPE_NAME))
+    )[0].id;
+    offsiteTypeId = (
+      await db
+        .select({ id: absence_types.id })
+        .from(absence_types)
+        .where(eq(absence_types.name, OFFSITE_TRAINING_TYPE_NAME))
     )[0].id;
     nonTrainingTypeId = (
       await db.select({ id: absence_types.id }).from(absence_types).where(eq(absence_types.name, "urlop"))
@@ -201,6 +208,10 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
   describe("partial-day type restriction (S-14)", () => {
     it("guard allows onsite-training + partial-day", async () => {
       expect(await isPartialDayViolation(db, onsiteTypeId, false)).toBe(false);
+    });
+
+    it("guard allows offsite-training + partial-day", async () => {
+      expect(await isPartialDayViolation(db, offsiteTypeId, false)).toBe(false);
     });
 
     it("guard rejects a non-training type + partial-day", async () => {

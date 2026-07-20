@@ -267,9 +267,9 @@ any type, so no backfill is required.
 
 #### Automated
 
-- [x] 1.1 Linting passes: `npm run lint`
-- [x] 1.2 Build passes: `npm run build`
-- [x] 1.3 Absence CRUD integration tests pass (including four new cases)
+- [x] 1.1 Linting passes: `npm run lint` — 03a0249
+- [x] 1.2 Build passes: `npm run build` — 03a0249
+- [x] 1.3 Absence CRUD integration tests pass (including four new cases) — 03a0249
 
 #### Manual
 
@@ -281,13 +281,14 @@ any type, so no backfill is required.
 
 #### Automated
 
-- [ ] 2.1 Linting passes: `npm run lint`
-- [ ] 2.2 Build passes: `npm run build`
+- [x] 2.1 Linting passes: `npm run lint`
+- [x] 2.2 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.3 Non-training type hides the toggle and time inputs
-- [ ] 2.4 Onsite training shows toggle; unchecking reveals time inputs
-- [ ] 2.5 Switching away from onsite training clears times and saves as full-day
-- [ ] 2.6 Editing an existing onsite-training partial-day entry pre-fills its time range
-- [ ] 2.7 No regression: a normal full-day absence of any type saves as before
+- [x] 2.3 Non-training type hides the toggle and time inputs
+- [x] 2.4 Onsite training shows toggle; unchecking reveals time inputs
+- [x] 2.5 Switching away from onsite training clears times and saves as full-day
+- [x] 2.6 Editing an existing onsite-training partial-day entry pre-fills its time range
+- [x] 2.7 No regression: a normal full-day absence of any type saves as before
+- [x] 2.8 Both training types show the toggle; all other types hide it (widened rule)

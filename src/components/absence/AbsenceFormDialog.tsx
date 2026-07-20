@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { typeAllowsPartialDay } from "@/lib/absence-types";
 import type { Absence, AbsenceType, Employee } from "@/types";
 
 interface AbsenceFormDialogProps {
@@ -28,10 +29,20 @@ export function AbsenceFormDialog({
   currentEmployee,
   targetEmployee,
 }: AbsenceFormDialogProps) {
+  // Defensive: an existing entry whose type is not partial-day eligible opens as full-day,
+  // so the form can never resubmit a combination the API rejects. No such data is expected.
+  const existingAllowsPartialDay = typeAllowsPartialDay(
+    absenceTypes.find((t) => t.id === existingAbsence?.absence_type_id)?.name,
+  );
+
   const [absenceTypeId, setAbsenceTypeId] = useState<number | null>(existingAbsence?.absence_type_id ?? null);
-  const [isFullDay, setIsFullDay] = useState(existingAbsence?.is_full_day ?? true);
-  const [startTime, setStartTime] = useState(existingAbsence?.start_time?.slice(0, 5) ?? "");
-  const [endTime, setEndTime] = useState(existingAbsence?.end_time?.slice(0, 5) ?? "");
+  const [isFullDay, setIsFullDay] = useState(existingAllowsPartialDay ? (existingAbsence?.is_full_day ?? true) : true);
+  const [startTime, setStartTime] = useState(
+    existingAllowsPartialDay ? (existingAbsence?.start_time?.slice(0, 5) ?? "") : "",
+  );
+  const [endTime, setEndTime] = useState(
+    existingAllowsPartialDay ? (existingAbsence?.end_time?.slice(0, 5) ?? "") : "",
+  );
   const [comment, setComment] = useState(existingAbsence?.comment ?? "");
   const [substituteEmployeeId, setSubstituteEmployeeId] = useState<string | null>(
     existingAbsence?.substitute_employee_id ?? null,
@@ -44,6 +55,9 @@ export function AbsenceFormDialog({
     day: "numeric",
     month: "long",
   });
+
+  const selectedType = absenceTypes.find((t) => t.id === absenceTypeId);
+  const canBePartialDay = typeAllowsPartialDay(selectedType?.name);
 
   const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
 
@@ -122,7 +136,16 @@ export function AbsenceFormDialog({
             <Select
               value={absenceTypeId?.toString() ?? ""}
               onValueChange={(val) => {
-                setAbsenceTypeId(val ? parseInt(val, 10) : null);
+                const nextTypeId = val ? parseInt(val, 10) : null;
+                setAbsenceTypeId(nextTypeId);
+                // Only onsite training may be partial-day; any other type reverts to full-day
+                // and drops whatever range was entered.
+                const nextType = absenceTypes.find((t) => t.id === nextTypeId);
+                if (!typeAllowsPartialDay(nextType?.name)) {
+                  setIsFullDay(true);
+                  setStartTime("");
+                  setEndTime("");
+                }
               }}
             >
               <SelectTrigger id="absence-type" className="w-full">
@@ -138,52 +161,56 @@ export function AbsenceFormDialog({
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is-full-day"
-              checked={isFullDay}
-              onChange={(e) => {
-                setIsFullDay(e.target.checked);
-                if (e.target.checked) {
-                  setStartTime("");
-                  setEndTime("");
-                }
-              }}
-              className="h-4 w-4"
-            />
-            <Label htmlFor="is-full-day">Cały dzień</Label>
-          </div>
-
-          {!isFullDay && (
-            <div className="grid gap-1.5">
-              <Label>Godziny</Label>
+          {canBePartialDay && (
+            <>
               <div className="flex items-center gap-2">
-                <Input
-                  id="start-time"
-                  aria-label="Czas od"
-                  type="time"
-                  lang="en-GB"
-                  value={startTime}
+                <input
+                  type="checkbox"
+                  id="is-full-day"
+                  checked={isFullDay}
                   onChange={(e) => {
-                    setStartTime(e.target.value);
+                    setIsFullDay(e.target.checked);
+                    if (e.target.checked) {
+                      setStartTime("");
+                      setEndTime("");
+                    }
                   }}
-                  className="w-32"
+                  className="h-4 w-4"
                 />
-                <span className="text-muted-foreground">–</span>
-                <Input
-                  id="end-time"
-                  aria-label="Czas do"
-                  type="time"
-                  lang="en-GB"
-                  value={endTime}
-                  onChange={(e) => {
-                    setEndTime(e.target.value);
-                  }}
-                  className="w-32"
-                />
+                <Label htmlFor="is-full-day">Cały dzień</Label>
               </div>
-            </div>
+
+              {!isFullDay && (
+                <div className="grid gap-1.5">
+                  <Label>Godziny</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="start-time"
+                      aria-label="Czas od"
+                      type="time"
+                      lang="pl-PL"
+                      value={startTime}
+                      onChange={(e) => {
+                        setStartTime(e.target.value);
+                      }}
+                      className="w-32"
+                    />
+                    <span className="text-muted-foreground">–</span>
+                    <Input
+                      id="end-time"
+                      aria-label="Czas do"
+                      type="time"
+                      lang="pl-PL"
+                      value={endTime}
+                      onChange={(e) => {
+                        setEndTime(e.target.value);
+                      }}
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <div className="grid gap-1.5">

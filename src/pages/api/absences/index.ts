@@ -9,7 +9,7 @@ import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
-import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
+import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
 const json = (data: unknown, status: number) =>
@@ -135,7 +135,7 @@ const AbsenceCreateSchema = z
       d.is_full_day
         ? d.start_time === null && d.end_time === null
         : d.start_time !== null && d.end_time !== null && d.end_time > d.start_time, // string compare valid: TimeSchema guarantees HH:MM format
-    { message: "start_time and end_time must be null for full-day; both set with end_time > start_time otherwise" },
+    { message: "Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia." },
   );
 
 export const POST: APIRoute = async (context) => {
@@ -202,7 +202,7 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Database error" }, 503);
   }
   if (partialDayViolation) {
-    return json({ error: `Godziny są dostępne tylko dla typu: ${ONSITE_TRAINING_TYPE_NAME}` }, 400);
+    return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
   try {
