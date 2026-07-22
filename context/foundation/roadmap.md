@@ -52,7 +52,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-10 | dev-vars-rename              | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie             | —             | —                                           | done     |
 | S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
 | S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
-| S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | proposed |
+| S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | done |
 | S-14 | hours-onsite-training-only   | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09       | FR-004         | done     |
 | S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | done     |
 
@@ -261,7 +261,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Kolor nowej kategorii — musi być odróżnialny od 6 istniejących (`#2f578c`, `#10bbef`, `#ffcc00`, `#58873e`, `#e50040`, `#6f6f6f`); do wyboru przy planowaniu.
   - Czy formularz/siatka czytają typy dynamicznie z `absence_types` (wtedy wystarczy migracja seed), czy gdzieś istnieje zahardkodowana lista typów do zaktualizowania — do weryfikacji w researchu/planie.
 - **Risk:** Niskie — typy nieobecności były oznaczone jako "kanoniczne" w seedzie F-01 (`PRD Business Logic section`), więc to świadome rozszerzenie listy; sama zmiana to dodanie wiersza do `absence_types`. Ryzyko tylko jeśli lista typów jest zduplikowana/zahardkodowana poza bazą.
-- **Status:** proposed
+- **Status:** done
 
 ### S-14: Pole godzin tylko dla kategorii "szkolenie w miejscu pracy"
 
@@ -325,6 +325,7 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Done
 
+- **S-13: użytkownik wybiera nowy typ nieobecności "urlop planowany" z listy kategorii w formularzu dodawania/edycji wpisu; typ jest widoczny w siatce miesięcznej i tabeli szczegółów z własnym, odróżnialnym kolorem — tak jak istniejące kategorie (`urlop`, `choroba`, itd.).** — Archived 2026-07-22 → `context/archive/2026-06-22-urlop-planowany-category/`. Lesson: —.
 - **S-14: w formularzu dodawania/edycji nieobecności możliwość wpisania zakresu godzin (nieobecność niepełnodniowa) jest dostępna wyłącznie po wybraniu kategorii "szkolenie w miejscu pracy"; pozostałe kategorie są traktowane jako całodniowe. Zawęża funkcję wprowadzoną w S-09.** — Archived 2026-07-22 → `context/archive/2026-06-22-hours-onsite-training-only/`. Lesson: —.
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
 - **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31 → `context/changes/moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).

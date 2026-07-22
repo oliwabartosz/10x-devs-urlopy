@@ -1,10 +1,10 @@
 ---
 change_id: urlop-planowany-category
 title: Add "urlop planowany" absence category to the selectable list
-status: impl_reviewed
+status: archived
 created: 2026-06-22
 updated: 2026-07-22
-archived_at: null
+archived_at: 2026-07-22T15:08:02Z
 ---
 
 ## Notes
