@@ -161,14 +161,14 @@ to production is a `supabase db push` of the new migration (same path used for t
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly against a local/test DB (`supabase db push` / `migration up`)
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Build passes: `npm run build`
-- [x] 1.4 Test suite passes incl. `used-computation.test.ts`: `npm run test:run`
+- [x] 1.1 Migration applies cleanly against a local/test DB (`supabase db push` / `migration up`) — 56f060e
+- [x] 1.2 Linting passes: `npm run lint` — 56f060e
+- [x] 1.3 Build passes: `npm run build` — 56f060e
+- [x] 1.4 Test suite passes incl. `used-computation.test.ts`: `npm run test:run` — 56f060e
 
 #### Manual
 
-- [x] 1.5 "urlop planowany" appears in the type dropdown with a violet swatch
-- [x] 1.6 A saved entry renders in the grid with `#7c3aed` and shows in the legend
-- [x] 1.7 Selecting the type shows no time-range inputs (full-day only — S-14)
-- [x] 1.8 A "urlop planowany" entry is not counted in the vacation balance (S-15)
+- [x] 1.5 "urlop planowany" appears in the type dropdown with a violet swatch — 56f060e
+- [x] 1.6 A saved entry renders in the grid with `#7c3aed` and shows in the legend — 56f060e
+- [x] 1.7 Selecting the type shows no time-range inputs (full-day only — S-14) — 56f060e
+- [x] 1.8 A "urlop planowany" entry is not counted in the vacation balance (S-15) — 56f060e
