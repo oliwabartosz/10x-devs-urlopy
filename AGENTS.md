@@ -6,7 +6,8 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 
 - Do not write to `context/archive/`; archived changes are immutable.
 - Do not edit generated or ignored output: `.astro/`, `dist/`, `.wrangler/`, or `node_modules/`.
-- No test runner is configured yet: there is no `npm test`, `vitest`, `jest`, or Playwright config. Do not invent test commands in status reports.
+- Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. There is no Playwright/E2E setup — do not invent commands beyond these.
+- The DB integration suites under `src/tests/` hit a **real** database and self-skip unless `DATABASE_URL_DIRECT` is set (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` are also needed for the auth-user fixtures). A green run with those unset means *skipped*, not *passed* — check the reported test count before claiming coverage.
 
 ## Commands
 

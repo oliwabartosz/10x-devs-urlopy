@@ -20,6 +20,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(dir, "./src"),
+      // `astro:env/server` is a virtual module that only exists during an Astro build.
+      // Stub it so API route handlers can be imported and invoked directly in tests.
+      "astro:env/server": resolve(dir, "./src/tests/helpers/astro-env.ts"),
     },
   },
 });

@@ -273,22 +273,27 @@ any type, so no backfill is required.
 
 #### Manual
 
-- [ ] 1.4 Crafted POST: non-training type + partial-day ⇒ 400 with Polish message
-- [ ] 1.5 Crafted PATCH: onsite-training partial-day → non-training type ⇒ 400
-- [ ] 1.6 Onsite-training partial-day POST still succeeds and stores both times
+- [x] 1.4 Crafted POST: non-training type + partial-day ⇒ 400 with Polish message — impl-review
+- [x] 1.5 Crafted PATCH: onsite-training partial-day → non-training type ⇒ 400 — impl-review
+- [x] 1.6 Onsite-training partial-day POST still succeeds and stores both times — impl-review
+
+> 1.4–1.6 were promoted from manual to automated during impl-review: they are now asserted
+> by `src/tests/api/absences/partial-day-guard.test.ts`, which invokes the real `POST`/`PATCH`
+> handlers and checks status + response body. Mutation-verified — removing the guard from
+> either route fails these tests.
 
 ### Phase 2: Form UI gating
 
 #### Automated
 
-- [x] 2.1 Linting passes: `npm run lint`
-- [x] 2.2 Build passes: `npm run build`
+- [x] 2.1 Linting passes: `npm run lint` — be75d00
+- [x] 2.2 Build passes: `npm run build` — be75d00
 
 #### Manual
 
-- [x] 2.3 Non-training type hides the toggle and time inputs
-- [x] 2.4 Onsite training shows toggle; unchecking reveals time inputs
-- [x] 2.5 Switching away from onsite training clears times and saves as full-day
-- [x] 2.6 Editing an existing onsite-training partial-day entry pre-fills its time range
-- [x] 2.7 No regression: a normal full-day absence of any type saves as before
-- [x] 2.8 Both training types show the toggle; all other types hide it (widened rule)
+- [x] 2.3 Non-training type hides the toggle and time inputs — be75d00
+- [x] 2.4 Onsite training shows toggle; unchecking reveals time inputs — be75d00
+- [x] 2.5 Switching away from onsite training clears times and saves as full-day — be75d00
+- [x] 2.6 Editing an existing onsite-training partial-day entry pre-fills its time range — be75d00
+- [x] 2.7 No regression: a normal full-day absence of any type saves as before — be75d00
+- [x] 2.8 Both training types show the toggle; all other types hide it (widened rule) — be75d00

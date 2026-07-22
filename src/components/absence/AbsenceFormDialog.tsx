@@ -138,8 +138,8 @@ export function AbsenceFormDialog({
               onValueChange={(val) => {
                 const nextTypeId = val ? parseInt(val, 10) : null;
                 setAbsenceTypeId(nextTypeId);
-                // Only onsite training may be partial-day; any other type reverts to full-day
-                // and drops whatever range was entered.
+                // Only the training types (PARTIAL_DAY_TYPE_NAMES) may be partial-day; any
+                // other type reverts to full-day and drops whatever range was entered.
                 const nextType = absenceTypes.find((t) => t.id === nextTypeId);
                 if (!typeAllowsPartialDay(nextType?.name)) {
                   setIsFullDay(true);

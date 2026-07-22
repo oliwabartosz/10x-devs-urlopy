@@ -8,7 +8,7 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
@@ -32,7 +32,10 @@ const AbsenceUpdateSchemaRefined = AbsenceUpdateSchema.refine(
     (d.is_full_day
       ? d.start_time === null && d.end_time === null
       : d.start_time != null && d.end_time != null && d.end_time > d.start_time), // string compare valid: TimeSchema guarantees HH:MM format
-  { message: "Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia." },
+  {
+    message:
+      "Dla całego dnia godziny muszą pozostać puste; dla wpisu godzinowego podaj obie godziny, a zakończenie musi być późniejsze niż rozpoczęcie.",
+  },
 );
 
 const json = (data: unknown, status: number) =>
@@ -43,19 +46,19 @@ const json = (data: unknown, status: number) =>
 
 export const PATCH: APIRoute = async (context) => {
   if (!context.locals.user) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ error: "Brak autoryzacji." }, 401);
   }
 
   const id = context.params.id;
   if (!id || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)) {
-    return json({ error: "Invalid id" }, 400);
+    return json({ error: "Nieprawidłowy identyfikator." }, 400);
   }
 
   let body: unknown;
   try {
     body = await context.request.json();
   } catch {
-    return json({ error: "Invalid JSON body" }, 400);
+    return json({ error: "Nieprawidłowe dane żądania." }, 400);
   }
 
   const parsed = AbsenceUpdateSchemaRefined.safeParse(body);
@@ -74,10 +77,10 @@ export const PATCH: APIRoute = async (context) => {
       .then((r) => r[0]);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
-    return json({ error: "Employee record not found" }, 403);
+    return json({ error: "Nie znaleziono rekordu pracownika." }, 403);
   }
 
   const ownershipWhere =
@@ -97,9 +100,9 @@ export const PATCH: APIRoute = async (context) => {
       .then((r) => r[0]);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
-  if (!existing) return json({ error: "Not found" }, 404);
+  if (!existing) return json({ error: "Nie znaleziono." }, 404);
 
   const effectiveTypeId = parsed.data.absence_type_id ?? existing.absence_type_id;
   const effectiveIsFullDay = parsed.data.is_full_day ?? existing.is_full_day;
@@ -109,14 +112,25 @@ export const PATCH: APIRoute = async (context) => {
     partialDayViolation = await isPartialDayViolation(db, effectiveTypeId, effectiveIsFullDay);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
+  // The guard above judged the *effective* state, which for any field the body omitted was
+  // read from `existing` a moment ago. Pin exactly those fields in the UPDATE's WHERE so a
+  // concurrent write that changes them makes this statement match zero rows instead of
+  // landing on stale premises (e.g. another PATCH flips the type to an ineligible one after
+  // we read it, and this UPDATE then writes a time range onto it).
+  const casConditions = [
+    parsed.data.absence_type_id === undefined ? eq(absences.absence_type_id, existing.absence_type_id) : undefined,
+    parsed.data.is_full_day === undefined ? eq(absences.is_full_day, existing.is_full_day) : undefined,
+  ].filter((c) => c !== undefined);
+  const updateWhere = casConditions.length > 0 ? and(ownershipWhere, ...casConditions) : ownershipWhere;
+
   try {
-    const rows = await db.update(absences).set(parsed.data).where(ownershipWhere).returning({
+    const rows = await db.update(absences).set(parsed.data).where(updateWhere).returning({
       id: absences.id,
       employee_id: absences.employee_id,
       absence_type_id: absences.absence_type_id,
@@ -129,27 +143,41 @@ export const PATCH: APIRoute = async (context) => {
       created_at: absences.created_at,
       updated_at: absences.updated_at,
     });
-    if (rows.length === 0) return json({ error: "Not found" }, 404);
+    if (rows.length === 0) {
+      // Zero rows means either the target is gone (404) or a concurrent write moved one of
+      // the fields we pinned above (409). Only worth a second query on this rare path.
+      const stillExists =
+        casConditions.length > 0 &&
+        (await db.select({ id: absences.id }).from(absences).where(ownershipWhere)).length > 0;
+      return stillExists
+        ? json({ error: "Wpis został w międzyczasie zmieniony. Odśwież stronę i spróbuj ponownie." }, 409)
+        : json({ error: "Nie znaleziono." }, 404);
+    }
     return json(rows[0], 200);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
     const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
-    if (code === "23503") return json({ error: "Substitute employee not found." }, 422);
-    if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
-    if (code === "23514") return json({ error: "Invalid time/is_full_day combination" }, 400);
-    return json({ error: "Database error" }, 500);
+    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
+    if (code === "23503") {
+      // 23503 can come from either FK on absences; name the right one.
+      if (extractPgErrorConstraint(err) === "absences_absence_type_id_fkey")
+        return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
+      return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
+    }
+    if (code === "23505") return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+    if (code === "23514") return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    return json({ error: "Błąd bazy danych." }, 500);
   }
 };
 
 export const DELETE: APIRoute = async (context) => {
   if (!context.locals.user) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ error: "Brak autoryzacji." }, 401);
   }
 
   const id = context.params.id;
   if (!id || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(id)) {
-    return json({ error: "Invalid id" }, 400);
+    return json({ error: "Nieprawidłowy identyfikator." }, 400);
   }
 
   const db = createDb(DATABASE_URL);
@@ -163,10 +191,10 @@ export const DELETE: APIRoute = async (context) => {
       .then((r) => r[0]);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
-    return json({ error: "Employee record not found" }, 403);
+    return json({ error: "Nie znaleziono rekordu pracownika." }, 403);
   }
 
   try {
@@ -178,12 +206,12 @@ export const DELETE: APIRoute = async (context) => {
           : and(eq(absences.id, id), eq(absences.employee_id, employeeRow.id)),
       )
       .returning({ id: absences.id });
-    if (deleted.length === 0) return json({ error: "Not found" }, 404);
+    if (deleted.length === 0) return json({ error: "Nie znaleziono." }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
     const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
-    return json({ error: "Database error" }, 500);
+    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
+    return json({ error: "Błąd bazy danych." }, 500);
   }
 };

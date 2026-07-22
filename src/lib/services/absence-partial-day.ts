@@ -10,8 +10,9 @@ import { typeAllowsPartialDay } from "@/lib/absence-types";
  * Does the given (absence type, is_full_day) combination violate the partial-day rule?
  *
  * Full-day entries are always allowed. Partial-day entries (`isFullDay === false`) are
- * allowed only when the type is onsite training. A nonexistent `absenceTypeId` resolves to
- * an undefined name → treated as ineligible → violation. Callers pass the *effective*
+ * allowed only for the training types in `PARTIAL_DAY_TYPE_NAMES`. A nonexistent
+ * `absenceTypeId` resolves to an undefined name → treated as ineligible → violation.
+ * Callers pass the *effective*
  * values (for PATCH, the body value when present, otherwise the existing row's value).
  *
  * @returns `true` when the combination must be rejected (respond 400), `false` when allowed.

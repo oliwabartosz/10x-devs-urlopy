@@ -25,6 +25,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        # DB integration tests. The suite self-skips (describe.skipIf) when
+        # DATABASE_URL_DIRECT is absent, so a missing secret degrades to "no coverage"
+        # rather than a red build — set the secrets below to make this a real gate.
+        run: npm run test:run
+        env:
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
       - name: Build
         run: npm run build
         env:

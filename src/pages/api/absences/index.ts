@@ -8,7 +8,7 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
@@ -22,7 +22,7 @@ const YearSchema = z.string().regex(/^\d{4}$/);
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ error: "Brak autoryzacji." }, 401);
   }
 
   const yearParam = context.url.searchParams.get("year");
@@ -34,14 +34,14 @@ export const GET: APIRoute = async (context) => {
   const toParsed = DateSchema.safeParse(toParam);
 
   if (yearParam !== null && (fromParam !== null || toParam !== null)) {
-    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD, not both" }, 400);
+    return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD, nie oba naraz." }, 400);
   }
 
   const useYearMode = yearParsed.success;
   const useDateRangeMode = !useYearMode && fromParsed.success && toParsed.success;
 
   if (!useYearMode && !useDateRangeMode) {
-    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
+    return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
   const db = createDb(DATABASE_URL);
@@ -55,10 +55,10 @@ export const GET: APIRoute = async (context) => {
       .then((r) => r[0]);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
-    return json({ error: "Employee record not found" }, 403);
+    return json({ error: "Nie znaleziono rekordu pracownika." }, 403);
   }
 
   let from: string;
@@ -71,17 +71,17 @@ export const GET: APIRoute = async (context) => {
   } else if (fromParsed.success && toParsed.success) {
     from = fromParsed.data;
     if (new Date(from + "T00:00:00Z") > new Date(toParsed.data + "T00:00:00Z")) {
-      return json({ error: "from must be ≤ to" }, 400);
+      return json({ error: "Parametr from musi być wcześniejszy lub równy to." }, 400);
     }
     const toDate = new Date(toParsed.data + "T00:00:00Z");
     toDate.setUTCDate(toDate.getUTCDate() + 1);
     to = toDate.toISOString().slice(0, 10);
     const spanMs = new Date(to + "T00:00:00Z").getTime() - new Date(from + "T00:00:00Z").getTime();
     if (spanMs > 90 * 24 * 60 * 60 * 1000) {
-      return json({ error: "Date range exceeds maximum of 90 days" }, 400);
+      return json({ error: "Zakres dat przekracza maksimum 90 dni." }, 400);
     }
   } else {
-    return json({ error: "Provide year=YYYY or from=YYYY-MM-DD&to=YYYY-MM-DD" }, 400);
+    return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
   const joinCondition =
@@ -115,7 +115,7 @@ export const GET: APIRoute = async (context) => {
     return json(data, 200);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
-    return json({ error: "Database error" }, 500);
+    return json({ error: "Błąd bazy danych." }, 500);
   }
 };
 
@@ -135,12 +135,15 @@ const AbsenceCreateSchema = z
       d.is_full_day
         ? d.start_time === null && d.end_time === null
         : d.start_time !== null && d.end_time !== null && d.end_time > d.start_time, // string compare valid: TimeSchema guarantees HH:MM format
-    { message: "Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia." },
+    {
+      message:
+        "Dla całego dnia godziny muszą pozostać puste; dla wpisu godzinowego podaj obie godziny, a zakończenie musi być późniejsze niż rozpoczęcie.",
+    },
   );
 
 export const POST: APIRoute = async (context) => {
   if (!context.locals.user) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ error: "Brak autoryzacji." }, 401);
   }
 
   const db = createDb(DATABASE_URL);
@@ -154,17 +157,17 @@ export const POST: APIRoute = async (context) => {
       .then((r) => r[0]);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
-    return json({ error: "Employee record not found" }, 403);
+    return json({ error: "Nie znaleziono rekordu pracownika." }, 403);
   }
 
   let body: unknown;
   try {
     body = await context.request.json();
   } catch {
-    return json({ error: "Invalid JSON body" }, 400);
+    return json({ error: "Nieprawidłowe dane żądania." }, 400);
   }
 
   const parsed = AbsenceCreateSchema.safeParse(body);
@@ -185,7 +188,7 @@ export const POST: APIRoute = async (context) => {
         .then((r) => r[0]);
     } catch (err) {
       Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
-      return json({ error: "Database error" }, 503);
+      return json({ error: "Błąd bazy danych." }, 503);
     }
     if (!targetRow) {
       return json({ error: "Pracownik nie został znaleziony." }, 404);
@@ -193,13 +196,14 @@ export const POST: APIRoute = async (context) => {
     targetEmployeeId = targetRow.id;
   }
 
-  // Domain rule: partial-day (time-range) entries are allowed only for onsite training.
+  // Domain rule: partial-day (time-range) entries are allowed only for the training types
+  // in PARTIAL_DAY_TYPE_NAMES; every other type is full-day only.
   let partialDayViolation: boolean;
   try {
     partialDayViolation = await isPartialDayViolation(db, absenceData.absence_type_id, absenceData.is_full_day);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
-    return json({ error: "Database error" }, 503);
+    return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
@@ -226,10 +230,15 @@ export const POST: APIRoute = async (context) => {
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
     const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
-    if (code === "23503") return json({ error: "Substitute employee not found." }, 422);
-    if (code === "23505") return json({ error: "You already have an absence entry for this day." }, 409);
-    if (code === "23514") return json({ error: "Invalid time/is_full_day combination" }, 400);
-    return json({ error: "Database error" }, 500);
+    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
+    if (code === "23503") {
+      // 23503 can come from either FK on absences; name the right one.
+      if (extractPgErrorConstraint(err) === "absences_absence_type_id_fkey")
+        return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
+      return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
+    }
+    if (code === "23505") return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+    if (code === "23514") return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    return json({ error: "Błąd bazy danych." }, 500);
   }
 };
