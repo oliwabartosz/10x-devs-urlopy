@@ -1,7 +1,7 @@
 ---
 id: admin-bootstrap
 title: "S-11: Bootstrap konta admin z plików env"
-status: implemented
+status: impl_reviewed
 created: 2026-06-22
 updated: 2026-08-06
 roadmap_id: S-11
