@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-07-22
+updated: 2026-08-06
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -50,11 +50,12 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
 | S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
 | S-10 | dev-vars-rename              | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie             | —             | —                                           | done     |
-| S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | proposed |
+| S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | done     |
 | S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
 | S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | done |
 | S-14 | hours-onsite-training-only   | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09       | FR-004         | done     |
 | S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | done     |
+| S-16 | main-page-redesign           | (tech/UX) zalogować się z nowej, jasnej strony logowania na `/` (branding NBP „Nieobecności") zamiast startowego szablonu; zalogowany użytkownik trafia od razu do `/dashboard`                                 | —          | —              | done     |
 
 ## Streams
 
@@ -247,7 +248,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Jak moderatorzy będą dodawać nowych użytkowników bez samorejestracji? S-04 implementuje dodawanie pracowników, ale zakłada, że użytkownik `auth.users` już istnieje (FK). Tworzenie konta auth + rekordu employee w jednej operacji (Supabase Admin API) musi być obsłużone — może wymagać rozszerzenia S-04 lub nowego slice.
   - Czy admin powinien być w tabeli `employees` (z flagą `is_system = true` lub `is_hidden = true`), czy w ogóle poza tą tabelą? Decyzja wpływa na RLS i zapytania grid.
 - **Risk:** Średnie — wyłączenie samorejestracji jest nieodwracalne dla użytkowników w produkcji; błąd w seedzie blokuje cały onboarding. Mechanizm tworzenia użytkowników przez moderatora (Supabase Admin API po stronie serwera) wymaga service role key — musi pozostać wyłącznie po stronie API, nigdy nie wyciekać do klienta. Jeśli admin jest w tabeli `employees`, każde zapytanie grid/details musi go filtrować — ryzyko pominięcia filtra w nowym kodzie.
-- **Status:** proposed
+- **Status:** done
 
 ### S-13: Nowa kategoria nieobecności — "urlop planowany"
 
@@ -291,6 +292,18 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 - **Risk:** Niskie–średnie — wzorce (tabela + endpoint + karta) istnieją; główne ryzyko to poprawność zliczania (dzielnik /8 musi zgadzać się z `AbsenceStats.tsx`) i wykluczenie `urlop planowany`.
 - **Status:** done
 
+### S-16: Przeprojektowanie strony głównej — jasna karta logowania na `/`
+
+- **Outcome:** (tech/UX) trasa główna `/` renderuje jasną, polskojęzyczną kartę logowania (branding NBP „Nieobecności", granatowy przycisk `#072143` / złoty hover `#c5ac75`) zamiast startowego szablonu „10x Astro Starter"; formularz posta e-mail/hasło do istniejącego `/api/auth/signin`, a zalogowany użytkownik wchodzący na `/` jest przekierowany do `/dashboard`. `/auth/signin` pozostaje niezmienioną, ciemną trasą awaryjną.
+- **Change ID:** main-page-redesign
+- **PRD refs:** — (pochodzi z makiety, nie z PRD)
+- **Prerequisites:** — (korzysta z istniejącego auth Supabase i middleware)
+- **Parallel with:** wszystkie slices — zmiana prezentacji `/`, nie blokuje i nie jest blokowana
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Niskie — jasny wariant formularza tylko dla `/` (bez zmiany współdzielonych, ciemnych komponentów `src/components/auth/*`), więc bez regresji `/auth/signin`; makietowe LDAP/AD i „WRIFboard" potraktowane jako referencja wizualna, nie wymagania.
+- **Status:** done
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                    | Sugerowany tytuł issue                                                | Gotowy na `/10x-plan` | Uwagi                                        |
@@ -308,6 +321,8 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 | S-13       | urlop-planowany-category     | [Urlopy] Nowa kategoria nieobecności "urlop planowany"                | yes                 | Gotowy — zależy tylko od F-01; addytywny seed `absence_types` |
 | S-14       | hours-onsite-training-only   | [Urlopy] Pole godzin tylko dla "szkolenie w miejscu pracy"            | yes                 | Zawęża S-09; zależy od S-09                                 |
 | S-15       | urlop-balance                | [Urlopy] Saldo urlopu — wymiar kadrowy i licznik pozostałych dni      | done                | Zaimplementowane + impl-review; wyklucza `urlop planowany` z S-13 |
+| S-11       | admin-bootstrap              | [Urlopy] Bootstrap konta admin z env; wyłączenie samorejestracji      | done                | Zaimplementowane + impl-review                              |
+| S-16       | main-page-redesign           | [Urlopy] Przeprojektowanie `/` — jasna karta logowania (branding NBP) | done                | Zaimplementowane + impl-review; poza PRD (z makiety)       |
 
 ## Open Roadmap Questions
 
@@ -325,6 +340,8 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Done
 
+- **S-16: trasa `/` renderuje jasną kartę logowania (branding NBP „Nieobecności", granatowy przycisk `#072143` / złoty hover `#c5ac75`), postującą e-mail/hasło do istniejącego `/api/auth/signin`; zalogowany użytkownik wchodzący na `/` jest przekierowany do `/dashboard`; `/auth/signin` pozostaje niezmienioną trasą awaryjną.** — Archived 2026-08-06 → `context/archive/2026-08-06-main-page-redesign/`. Nowy jasny komponent `LoginCardForm.tsx` (współdzielone ciemne komponenty `src/components/auth/*` nietknięte). Impl-review APPROVED (0 critical/0 warnings); F1 (martwy spinner `useFormStatus` przy formularzu z akcją-stringiem) naprawiony (f419d87). Report: `context/archive/2026-08-06-main-page-redesign/reviews/impl-review.md`. Lesson: —.
+- **S-11: pierwsze konto admina (rola moderator) tworzone automatycznie z `.env`/`.env.dev`; samorejestracja wyłączona (nowych użytkowników dodają wyłącznie moderatorzy); konto admin techniczne — niewidoczne w siatce/szczegółach/liście pracowników i niesuwalne przez innych moderatorów.** — Implemented + impl-reviewed 2026-08-06 → `context/changes/admin-bootstrap/`. Impl-review APPROVED; F1 (martwe linki `/auth/signup`) naprawiony (ac98b0b).
 - **S-13: użytkownik wybiera nowy typ nieobecności "urlop planowany" z listy kategorii w formularzu dodawania/edycji wpisu; typ jest widoczny w siatce miesięcznej i tabeli szczegółów z własnym, odróżnialnym kolorem — tak jak istniejące kategorie (`urlop`, `choroba`, itd.).** — Archived 2026-07-22 → `context/archive/2026-06-22-urlop-planowany-category/`. Lesson: —.
 - **S-14: w formularzu dodawania/edycji nieobecności możliwość wpisania zakresu godzin (nieobecność niepełnodniowa) jest dostępna wyłącznie po wybraniu kategorii "szkolenie w miejscu pracy"; pozostałe kategorie są traktowane jako całodniowe. Zawęża funkcję wprowadzoną w S-09.** — Archived 2026-07-22 → `context/archive/2026-06-22-hours-onsite-training-only/`. Lesson: —.
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
