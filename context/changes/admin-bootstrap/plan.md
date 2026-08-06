@@ -331,11 +331,11 @@ Negligible. The `is_system` filter is one extra boolean predicate on already-ind
 
 #### Automated
 
-- [x] 4.1 No dangling references (`grep -rn "SignUpForm\|/auth/signup" src` clean)
-- [x] 4.2 Build passes (`npm run build`)
-- [x] 4.3 Lint passes (`npm run lint`)
+- [x] 4.1 No dangling references (`grep -rn "SignUpForm\|/auth/signup" src` clean) — 598ed07
+- [x] 4.2 Build passes (`npm run build`) — 598ed07
+- [x] 4.3 Lint passes (`npm run lint`) — 598ed07
 
 #### Manual
 
-- [x] 4.4 `/auth/signup` 404s/redirects; no signup form renders
-- [x] 4.5 Signin page shows no signup link; existing users still sign in
+- [x] 4.4 `/auth/signup` 404s/redirects; no signup form renders — 598ed07
+- [x] 4.5 Signin page shows no signup link; existing users still sign in — 598ed07
