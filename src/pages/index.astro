@@ -3,6 +3,12 @@ import Layout from "@/layouts/Layout.astro";
 import LoginCardForm from "@/components/auth/LoginCardForm";
 import { CalendarCheck } from "lucide-react";
 
+// Authenticated users should never see the login card — the sign-in endpoint
+// redirects to `/` on success, so send them on to the app.
+if (Astro.locals.user) {
+  return Astro.redirect("/dashboard");
+}
+
 const error = Astro.url.searchParams.get("error");
 ---
 

@@ -259,29 +259,29 @@ None. `Welcome.astro` is left in the repo (unused on `/`) for optional later cle
 
 #### Automated
 
-- [x] 1.1 Build passes: `npm run build`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type-checking passes via lint's type-checked rules: `npm run lint`
-- [x] 1.4 No remaining `Welcome` import in `src/pages/index.astro`
+- [x] 1.1 Build passes: `npm run build` — 8d6f3f0
+- [x] 1.2 Linting passes: `npm run lint` — 8d6f3f0
+- [x] 1.3 Type-checking passes via lint's type-checked rules: `npm run lint` — 8d6f3f0
+- [x] 1.4 No remaining `Welcome` import in `src/pages/index.astro` — 8d6f3f0
 
 #### Manual
 
-- [x] 1.5 `/` renders the light card, not the cosmic starter
-- [x] 1.6 Wordmark "Nieobecności" + agreed Polish copy; no LDAP/WRIFboard text
-- [x] 1.7 Email user/ID field with reactive validation icon; password show/hide works
-- [x] 1.8 Layout matches `target-design.png` closely
-- [x] 1.9 `/auth/signin` visually unchanged
+- [x] 1.5 `/` renders the light card, not the cosmic starter — 8d6f3f0
+- [x] 1.6 Wordmark "Nieobecności" + agreed Polish copy; no LDAP/WRIFboard text — 8d6f3f0
+- [x] 1.7 Email user/ID field with reactive validation icon; password show/hide works — 8d6f3f0
+- [x] 1.8 Layout matches `target-design.png` closely — 8d6f3f0
+- [x] 1.9 `/auth/signin` visually unchanged — 8d6f3f0
 
 ### Phase 2: Redirect & guard wiring
 
 #### Automated
 
-- [ ] 2.1 Build passes: `npm run build`
-- [ ] 2.2 Linting passes: `npm run lint`
+- [x] 2.1 Build passes: `npm run build`
+- [x] 2.2 Linting passes: `npm run lint`
 
 #### Manual
 
 - [ ] 2.3 Valid login from `/` proceeds into the app (no loop back to card)
-- [ ] 2.4 Authenticated visit to `/` redirects to `/dashboard`
-- [ ] 2.5 Signed-out visit to `/` shows the login card
-- [ ] 2.6 `/auth/signin` still works as a fallback
+- [x] 2.4 Authenticated visit to `/` redirects to `/dashboard`
+- [x] 2.5 Signed-out visit to `/` shows the login card
+- [x] 2.6 `/auth/signin` still works as a fallback
