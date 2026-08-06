@@ -1,10 +1,10 @@
 ---
 change_id: main-page-redesign
 title: Redesign the main sign-in page to the WRIFboard mockup
-status: impl_reviewed
+status: archived
 created: 2026-08-06
 updated: 2026-08-06
-archived_at: null
+archived_at: 2026-08-06T14:26:33Z
 ---
 
 ## Notes
