@@ -276,12 +276,12 @@ None. `Welcome.astro` is left in the repo (unused on `/`) for optional later cle
 
 #### Automated
 
-- [x] 2.1 Build passes: `npm run build`
-- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.1 Build passes: `npm run build` — 7c34d01
+- [x] 2.2 Linting passes: `npm run lint` — 7c34d01
 
 #### Manual
 
-- [ ] 2.3 Valid login from `/` proceeds into the app (no loop back to card)
-- [x] 2.4 Authenticated visit to `/` redirects to `/dashboard`
-- [x] 2.5 Signed-out visit to `/` shows the login card
-- [x] 2.6 `/auth/signin` still works as a fallback
+- [x] 2.3 Valid login from `/` proceeds into the app (no loop back to card) — 7c34d01
+- [x] 2.4 Authenticated visit to `/` redirects to `/dashboard` — 7c34d01
+- [x] 2.5 Signed-out visit to `/` shows the login card — 7c34d01
+- [x] 2.6 `/auth/signin` still works as a fallback — 7c34d01
