@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useFormStatus } from "react-dom";
 import { User, Lock, ShieldCheck, CircleCheck, CircleX, Eye, EyeOff, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,9 +12,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const inputBase =
   "w-full rounded-xl border bg-slate-50 py-3 pl-11 pr-11 text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2";
 
-function LightSubmitButton() {
-  const { pending } = useFormStatus();
-
+function LightSubmitButton({ pending }: { pending: boolean }) {
   return (
     <Button
       type="submit"
@@ -41,6 +38,7 @@ export default function LoginCardForm({ serverError }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const emailValid = EMAIL_RE.test(email);
@@ -67,7 +65,11 @@ export default function LoginCardForm({ serverError }: Props) {
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     if (!validate()) {
       e.preventDefault();
+      return;
     }
+    // Validation passed — let the native POST proceed and show the pending state
+    // during navigation.
+    setSubmitting(true);
   }
 
   return (
@@ -168,7 +170,7 @@ export default function LoginCardForm({ serverError }: Props) {
         </p>
       )}
 
-      <LightSubmitButton />
+      <LightSubmitButton pending={submitting} />
     </form>
   );
 }
