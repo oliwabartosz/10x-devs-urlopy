@@ -1131,7 +1131,7 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 5.1 Lint, build and tests pass
+- [x] 5.1 Lint, build and tests pass — 300590c
 
 #### Manual
 
@@ -1150,9 +1150,9 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 6.1 Lint, build and tests pass
-- [ ] 6.2 `FULL_DAY_HOURS` is declared exactly once in `src/`
-- [ ] 6.3 No local `/ 8` divisor remains in `AbsenceStats.tsx` or `holiday-balance.ts`
+- [x] 6.1 Lint, build and tests pass
+- [x] 6.2 `FULL_DAY_HOURS` is declared exactly once in `src/`
+- [x] 6.3 No local `/ 8` divisor remains in `AbsenceStats.tsx` or `holiday-balance.ts`
 
 #### Manual
 

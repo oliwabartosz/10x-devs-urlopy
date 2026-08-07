@@ -3,16 +3,12 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { absence_types, absences } from "@/db/schema";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
-
-// Must equal FULL_DAY_HOURS in src/components/absence/AbsenceStats.tsx:12. A partial-day
-// urlop absence contributes `hours / FULL_DAY_HOURS` days. If that constant ever changes,
-// both must move together.
-const FULL_DAY_HOURS = 8;
+import { hoursToDays } from "@/lib/hours";
 
 /**
  * Count Used vacation days for an employee in a calendar year.
  *
- * Used = full-day `urlop` count + (partial-day `urlop` hours / 8) + used_adjustment_days.
+ * Used = full-day `urlop` count + hoursToDays(partial-day `urlop` hours) + used_adjustment_days.
  * The `urlop` type is resolved by name, which naturally excludes `urlop planowany` (S-13).
  * If no `urlop` type row exists, degrade to `used_adjustment_days` and Sentry-log — never throw.
  */
@@ -59,7 +55,7 @@ export async function computeUsedDays(
   const fullDays = Number(agg.fullDays);
   const partialHours = Number(agg.partialHours);
 
-  return fullDays + partialHours / FULL_DAY_HOURS + usedAdjustmentDays;
+  return fullDays + hoursToDays(partialHours) + usedAdjustmentDays;
 }
 
 /**
