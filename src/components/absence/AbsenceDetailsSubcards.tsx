@@ -4,7 +4,14 @@ import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import { AbsenceFormDialog } from "@/components/absence/AbsenceFormDialog";
 import { entryCountLabel } from "@/lib/plural";
 import { cn } from "@/lib/utils";
-import { toggleHidden, clearHidden, isFilterActive, visibleByType } from "@/lib/type-filter";
+import {
+  toggleHidden,
+  clearHidden,
+  hideAll,
+  filterToggleAction,
+  isFilterActive,
+  visibleByType,
+} from "@/lib/type-filter";
 
 interface AbsenceDetailsSubcardsProps {
   absences: Absence[];
@@ -212,6 +219,8 @@ export default function AbsenceDetailsSubcards({
   const groupProps = { employees, absenceTypes, onRowClick: openRow, canEdit };
 
   const hasHidden = isFilterActive(hiddenTypeIds);
+  // Two-state control: hide everything when nothing is hidden, restore everything otherwise.
+  const toggleAction = filterToggleAction(hiddenTypeIds);
 
   return (
     <div className="flex flex-col gap-5">
@@ -273,19 +282,16 @@ export default function AbsenceDetailsSubcards({
           })}
           <button
             type="button"
-            disabled={!hasHidden}
             onClick={() => {
-              setHiddenTypeIds(clearHidden());
+              setHiddenTypeIds(toggleAction === "hide-all" ? hideAll(absenceTypes.map((t) => t.id)) : clearHidden());
             }}
             className={cn(
-              "flex items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
-              hasHidden
-                ? "border-primary bg-primary hover:border-accent hover:bg-accent hover:text-accent-foreground cursor-pointer text-white"
-                : "cursor-default border-[#dcdcdc] bg-white text-[#9a9a9a]",
+              "hover:border-accent hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+              hasHidden ? "border-primary bg-primary text-white" : "border-line text-primary bg-white",
             )}
           >
-            <span>✕</span>
-            <span>Wyczyść filtry</span>
+            <span>{toggleAction === "hide-all" ? "✕" : "✓"}</span>
+            <span>{toggleAction === "hide-all" ? "Wyczyść filtry" : "Zaznacz wszystkie"}</span>
           </button>
         </div>
       </div>

@@ -82,11 +82,20 @@ function KpiTile({ label, value, note }: { label: string; value: string; note: s
   );
 }
 
-function TypeBreakdown({ absenceTypes, data }: { absenceTypes: AbsenceType[]; data: MatrixData }) {
+function TypeBreakdown({
+  absenceTypes,
+  data,
+  period,
+}: {
+  absenceTypes: AbsenceType[];
+  data: MatrixData;
+  period: string;
+}) {
   return (
     <div className="border-line overflow-hidden rounded-[14px] border bg-white">
-      <div className="border-b-line-strong border-b px-[18px] py-[15px]">
+      <div className="border-b-line-strong flex items-baseline justify-between gap-3 border-b px-[18px] py-[15px]">
         <h3 className="text-primary m-0 text-[15px] font-bold">Podział wg typu nieobecności</h3>
+        <span className="text-muted-foreground text-xs">{period}</span>
       </div>
       <div className="px-[18px] pt-2 pb-4">
         {absenceTypes.map((type, i) => {
@@ -317,7 +326,7 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
         />
       </div>
 
-      <TypeBreakdown absenceTypes={absenceTypes} data={monthlyData} />
+      <TypeBreakdown absenceTypes={absenceTypes} data={monthlyData} period={capitalizedMonth} />
 
       <StatsMatrixCard
         title={`Statystyki miesięczne – ${capitalizedMonth}`}

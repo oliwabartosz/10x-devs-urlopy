@@ -1067,12 +1067,12 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 1.4 Topbar is full-bleed navy with a gold moderator pill; no purple remains on `/dashboard`
-- [ ] 1.5 Action bar renders as a white band with the navy `Pracownicy` button, gold on hover
-- [ ] 1.6 Tab group is a single bordered pill; active segment navy; `?month=` preserved
-- [ ] 1.7 Month nav heading does not shift when stepping between months
-- [ ] 1.8 Content centred at 1480px max width; no overflow at 1280px
-- [ ] 1.9 Rendered navy matches `#072143` when sampled
+- [x] 1.4 Topbar is full-bleed navy with a gold moderator pill; no purple remains on `/dashboard` — c34a078
+- [x] 1.5 Action bar renders as a white band with the navy `Pracownicy` button, gold on hover — c34a078
+- [x] 1.6 Tab group is a single bordered pill; active segment navy; `?month=` preserved — c34a078
+- [x] 1.7 Month nav heading does not shift when stepping between months — c34a078
+- [x] 1.8 Content centred at 1480px max width; no overflow at 1280px — c34a078
+- [x] 1.9 Rendered navy matches `#072143` when sampled — c34a078
 
 ### Phase 2: Close the auth theme fork
 
@@ -1085,11 +1085,11 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 2.5 `/auth/signin` renders the light brand card, identical to `/`
-- [ ] 2.6 Failed sign-in lands on `/` with the error inside the card
-- [ ] 2.7 Visiting `/dashboard` signed out lands on `/`
-- [ ] 2.8 Submit button shows its pending state during the POST
-- [ ] 2.9 `/auth/confirm-email` renders light-brand
+- [x] 2.5 `/auth/signin` renders the light brand card, identical to `/` — f748ba5
+- [x] 2.6 Failed sign-in lands on `/` with the error inside the card — f748ba5
+- [x] 2.7 Visiting `/dashboard` signed out lands on `/` — f748ba5
+- [x] 2.8 Submit button shows its pending state during the POST — f748ba5
+- [x] 2.9 `/auth/confirm-email` renders light-brand — f748ba5
 
 ### Phase 3: Absence-type metadata
 
@@ -1103,10 +1103,10 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 3.6 Legend order is urlop → szkolenie poza → szkolenie w → choroba → wyjazd → stała → urlop planowany
-- [ ] 3.7 Existing absences render in new colours with no missing cells
-- [ ] 3.8 The offsite-training icon renders as one glyph
-- [ ] 3.9 Statistics matrix column order matches the legend
+- [x] 3.6 Legend order is urlop → szkolenie poza → szkolenie w → choroba → wyjazd → stała → urlop planowany — 83c633f
+- [x] 3.7 Existing absences render in new colours with no missing cells — 83c633f
+- [x] 3.8 The offsite-training icon renders as one glyph — 83c633f
+- [x] 3.9 Statistics matrix column order matches the legend — 83c633f
 
 ### Phase 4: Grid tab
 
@@ -1118,13 +1118,13 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 4.4 Employee names read horizontally; ten columns fit at 1480px without scroll
-- [ ] 4.5 `choroba` shows white on navy; every other type is legible
-- [ ] 4.6 💬 and 🔁 badges appear with correct substitute initials
-- [ ] 4.7 Partial-day cells show their time range; full-day cells do not
-- [ ] 4.8 Cell hover shows the full multi-line summary
-- [ ] 4.9 Weekend rows shaded, no hover state, not clickable
-- [ ] 4.10 Column reordering still works and the dragged column does not detach
+- [x] 4.4 Employee names read horizontally; ten columns fit at 1480px without scroll — 7d144a7
+- [x] 4.5 `choroba` shows white on navy; every other type is legible — 7d144a7
+- [x] 4.6 💬 and 🔁 badges appear with correct substitute initials — 7d144a7
+- [x] 4.7 Partial-day cells show their time range; full-day cells do not — 7d144a7
+- [x] 4.8 Cell hover shows the full multi-line summary — 7d144a7
+- [x] 4.9 Weekend rows shaded, no hover state, not clickable — 7d144a7
+- [x] 4.10 Column reordering still works and the dragged column does not detach — 7d144a7
 - [ ] 4.11 Deactivated employees keep grey header, `(nakt.)` suffix, non-clickable
 
 ### Phase 5: Details tab
@@ -1137,14 +1137,14 @@ verify, do not recreate.
 
 - [ ] 5.2 Toggling a type chip hides exactly that type across all groups
 - [ ] 5.3 `Wyczyść filtry` restores all types; active only while something is hidden
-- [ ] 5.4 Group headers show correct Polish plurals for 1, 2, 5 and 12
-- [ ] 5.5 Empty group shows `Brak nieobecności`
-- [ ] 5.6 All six columns sort both ways; glyph tracks the active column
+- [x] 5.4 Group headers show correct Polish plurals for 1, 2, 5 and 12 — 300590c
+- [x] 5.5 Empty group shows `Brak nieobecności` — 300590c
+- [x] 5.6 All six columns sort both ways; glyph tracks the active column — 300590c
 - [ ] 5.7 `Dodano` is present and sortable
-- [ ] 5.8 Clicking an editable row opens the pre-filled dialog; saving updates the row
-- [ ] 5.9 Non-editable rows give no dialog and no hover cue
-- [ ] 5.10 Comments render in quotes under the type pill; avatars show correct initials
-- [ ] 5.11 Range segments preserve `?subcard=`
+- [x] 5.8 Clicking an editable row opens the pre-filled dialog; saving updates the row — 300590c
+- [x] 5.9 Non-editable rows give no dialog and no hover cue — 300590c
+- [x] 5.10 Comments render in quotes under the type pill; avatars show correct initials — 300590c
+- [x] 5.11 Range segments preserve `?subcard=` — 300590c
 
 ### Phase 6: Statistics tab
 
@@ -1156,14 +1156,14 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 6.4 KPI tiles show correct grand total and `n / total`
-- [ ] 6.5 Per-type bars sum to 100% and are proportional
-- [ ] 6.6 A half-day training reads `0,5` — not `0`, not `4h`
-- [ ] 6.7 Balance card shows the same used-days figure as before this phase
-- [ ] 6.8 Stacked mini-bars proportional; busiest employee's bar is full width
-- [ ] 6.9 Yearly medals correct; ties share a rank; zeros get none
-- [ ] 6.10 Monthly and yearly column order matches the legend
-- [ ] 6.11 Stats tab feels responsive on a busy month
+- [x] 6.4 KPI tiles show correct grand total and `n / total` — 96d7753
+- [x] 6.5 Per-type bars sum to 100% and are proportional — 96d7753
+- [x] 6.6 A half-day training reads `0,5` — not `0`, not `4h` — 96d7753
+- [x] 6.7 Balance card shows the same used-days figure as before this phase — 96d7753
+- [x] 6.8 Stacked mini-bars proportional; busiest employee's bar is full width — 96d7753
+- [x] 6.9 Yearly medals correct; ties share a rank; zeros get none — 96d7753
+- [x] 6.10 Monthly and yearly column order matches the legend — 96d7753
+- [x] 6.11 Stats tab feels responsive on a busy month — 96d7753
 
 ### Phase 7: Balance card, quota modal and the moderator gate
 
@@ -1174,29 +1174,29 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 7.3 Balance card matches the prototype: 40px figure, three tiles, outline button
-- [ ] 7.4 Negative balance renders red with the over-quota chip
+- [x] 7.3 Balance card matches the prototype: 40px figure, three tiles, outline button — e2da254
+- [x] 7.4 Negative balance renders red with the over-quota chip — e2da254
 - [ ] 7.5 Steppers work; `Pozostanie` updates live and matches the saved result
 - [ ] 7.6 Moderator: `Korekta` and `Do dnia` present and saving correctly
-- [ ] 7.7 Moderator: saving with an unchanged Korekta does not zero it
-- [ ] 7.8 Non-moderator: `Edytuj` opens, `Do dnia` editable, `Korekta` not shown
+- [x] 7.7 Moderator: saving with an unchanged Korekta does not zero it — e2da254
+- [x] 7.8 Non-moderator: `Edytuj` opens, `Do dnia` editable, `Korekta` not shown — e2da254
 - [ ] 7.9 Non-moderator: saving leaves the stored Korekta and `Wykorzystane` unchanged
 - [ ] 7.10 Non-moderator POSTing a different `used_adjustment_days` gets 200 and the stored value is unchanged
-- [ ] 7.11 Deleting a balance still works for both roles
+- [x] 7.11 Deleting a balance still works for both roles — e2da254
 
 ### Phase 8: Absence modal and employee panel
 
 #### Automated
 
-- [x] 8.1 Lint, build and tests pass
+- [x] 8.1 Lint, build and tests pass — 709431d
 
 #### Manual
 
-- [ ] 8.2 Type picker shows seven types in order with correct colours and icons; selection outlined
-- [ ] 8.3 Training type reveals hours controls; other types hide them
+- [x] 8.2 Type picker shows seven types in order with correct colours and icons; selection outlined — 709431d
+- [x] 8.3 Training type reveals hours controls; other types hide them — 709431d
 - [ ] 8.4 Hours on a non-training type still rejected server-side
-- [ ] 8.5 Substitute avatars exclude the target employee and the system admin; none option clears
-- [ ] 8.6 Drawer shows Aktywni and Nieaktywni sections with correct counts
-- [ ] 8.7 Deactivate and restore work; list updates
-- [ ] 8.8 Add employee still requires email and password and creates a working login
-- [ ] 8.9 No dialog still renders in the stock shadcn look
+- [x] 8.5 Substitute avatars exclude the target employee and the system admin; none option clears — 709431d
+- [x] 8.6 Drawer shows Aktywni and Nieaktywni sections with correct counts — 709431d
+- [x] 8.7 Deactivate and restore work; list updates — 709431d
+- [x] 8.8 Add employee still requires email and password and creates a working login — 709431d
+- [x] 8.9 No dialog still renders in the stock shadcn look — 709431d

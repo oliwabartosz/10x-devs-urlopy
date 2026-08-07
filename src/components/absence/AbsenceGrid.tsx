@@ -72,7 +72,7 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
         )}
         <span className="truncate">
           {emp.first_name} {emp.last_name}
-          {isInactive ? " (nakt.)" : ""}
+          {isInactive ? " (nieakt.)" : ""}
         </span>
       </div>
     </th>
