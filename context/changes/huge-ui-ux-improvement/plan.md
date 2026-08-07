@@ -1150,9 +1150,9 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 6.1 Lint, build and tests pass
-- [x] 6.2 `FULL_DAY_HOURS` is declared exactly once in `src/`
-- [x] 6.3 No local `/ 8` divisor remains in `AbsenceStats.tsx` or `holiday-balance.ts`
+- [x] 6.1 Lint, build and tests pass — 96d7753
+- [x] 6.2 `FULL_DAY_HOURS` is declared exactly once in `src/` — 96d7753
+- [x] 6.3 No local `/ 8` divisor remains in `AbsenceStats.tsx` or `holiday-balance.ts` — 96d7753
 
 #### Manual
 
@@ -1169,8 +1169,8 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 7.1 Lint, build and tests pass
-- [ ] 7.2 The `index.ts:147` comment no longer claims both roles may write
+- [x] 7.1 Lint, build and tests pass
+- [x] 7.2 The `index.ts:147` comment no longer claims both roles may write
 
 #### Manual
 

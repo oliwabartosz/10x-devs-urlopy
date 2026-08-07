@@ -144,8 +144,12 @@ export const POST: APIRoute = async (context) => {
   const { employee_id, year, current_entitlement_days, carryover_days, used_adjustment_days, valid_until } =
     parsed.data;
 
-  // Both roles may edit any balance — no role gate on the write — but the target must exist.
-  // Moderators may target soft-deleted employees; regular employees only active ones.
+  // Both roles may edit any balance's entitlement, carryover and "Do dnia" — no role gate on
+  // those (S-15, context/archive/2026-06-22-urlop-balance/plan.md:34). The one exception is
+  // `used_adjustment_days` ("Korekta wykorzystania"), which S-17 narrowed to moderators: a
+  // non-moderator's submitted value is ignored and the stored one preserved (see the upsert
+  // below). The target must exist either way — moderators may target soft-deleted employees,
+  // regular employees only active ones.
   const targetCond =
     caller.role === "moderator"
       ? eq(employees.id, employee_id)
@@ -165,6 +169,12 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Pracownik nie został znaleziony." }, 404);
   }
 
+  // Korekta is moderator-only, enforced by omitting the column rather than by rejecting the
+  // request: hiding the input client-side is presentation, this is the rule. A non-moderator
+  // gets 200 and the stored adjustment survives untouched (on insert, the column default of 0).
+  // Returning 403 would break the dialog's full-replace save of the three open fields.
+  const canWriteAdjustment = caller.role === "moderator";
+
   let row: HolidayBalance;
   try {
     const inserted = await db
@@ -174,17 +184,17 @@ export const POST: APIRoute = async (context) => {
         year,
         current_entitlement_days,
         carryover_days,
-        used_adjustment_days,
         valid_until: valid_until ?? null,
+        ...(canWriteAdjustment ? { used_adjustment_days } : {}),
       })
       .onConflictDoUpdate({
         target: [holiday_balances.employee_id, holiday_balances.year],
         set: {
           current_entitlement_days,
           carryover_days,
-          used_adjustment_days,
           valid_until: valid_until ?? null,
           updated_at: new Date(),
+          ...(canWriteAdjustment ? { used_adjustment_days } : {}),
         },
       })
       .returning();

@@ -4,6 +4,18 @@
 //
 // Routes call `createDb(DATABASE_URL)` internally, so this maps to the same direct
 // connection string the DB helpers use (`getTestDb`).
-export const DATABASE_URL = process.env.DATABASE_URL_DIRECT ?? "";
+//
+// Route handlers build a fresh `postgres()` pool per invocation and never end it — correct
+// for the Workers runtime, where the isolate owns the lifetime, but in tests those pools
+// accumulate across every request in every file. Supabase's session pooler allows 15 clients,
+// so at the postgres-js default of 10 connections per pool a route-level suite exhausts it
+// partway through and later requests come back 503 "Database error"
+// ((EMAXCONNSESSION) max clients reached in session mode).
+//
+// postgres-js reads both options off the connection string, so bounding them here fixes it
+// for every route test without changing production code: one connection per pool, released
+// after a second of idle.
+const directUrl = process.env.DATABASE_URL_DIRECT ?? "";
+export const DATABASE_URL = directUrl ? `${directUrl}${directUrl.includes("?") ? "&" : "?"}max=1&idle_timeout=1` : "";
 export const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 export const SUPABASE_KEY = process.env.SUPABASE_KEY ?? "";
