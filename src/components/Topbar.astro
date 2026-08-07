@@ -6,24 +6,24 @@ const { user } = Astro.locals;
 const { role } = Astro.props;
 ---
 
-<div
-  class="mb-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700"
->
+<div class="bg-primary text-primary-foreground flex h-14 items-center justify-between px-8 text-sm">
   {
     user ? (
       <>
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">{user.email}</span>
+        <div class="flex items-center gap-3">
+          <span>{user.email}</span>
           {role === "moderator" && (
-            <span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">Moderator</span>
+            <span class="bg-accent text-accent-foreground rounded-full px-2.5 py-[3px] text-[11px] font-bold tracking-[0.06em] uppercase">
+              Moderator
+            </span>
           )}
         </div>
-        <div class="flex items-center gap-3">
-          <a href="/dashboard" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
+        <div class="flex items-center gap-6">
+          <a href="/dashboard" class="hover:text-accent transition-colors">
             Dashboard
           </a>
           <form method="POST" action="/api/auth/signout">
-            <button type="submit" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
+            <button type="submit" class="hover:text-accent cursor-pointer transition-colors">
               Sign out
             </button>
           </form>
@@ -31,9 +31,9 @@ const { role } = Astro.props;
       </>
     ) : (
       <>
-        <span class="text-gray-500">Not signed in</span>
-        <div class="flex gap-3">
-          <a href="/auth/signin" class="text-purple-600 transition-colors hover:text-purple-800 hover:underline">
+        <span>Not signed in</span>
+        <div class="flex gap-6">
+          <a href="/auth/signin" class="hover:text-accent transition-colors">
             Sign in
           </a>
         </div>

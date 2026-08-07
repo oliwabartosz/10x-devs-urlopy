@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin:0; background:#f4f4f4; font-family:Arial, Helvetica, sans-serif; color:#000; }
+  a { color:#072143; text-decoration:none; }
+  a:hover { color:#c5ac75; }
+  *, *::before, *::after { box-sizing:border-box; }
+</style>
+</helmet>
+<div style="min-height:100vh;background:#f4f4f4;font-family:Arial, Helvetica, sans-serif">
+
+  <div style="background:#072143;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:14px;color:#fff">oliwa.bartosz@outlook.com</span>
+      <span style="font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;background:#c5ac75;color:#072143;padding:3px 10px;border-radius:999px">Moderator</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:24px;font-size:14px">
+      <a href="#" style="color:#fff">Dashboard</a>
+      <a href="#" style="color:#fff">Sign out</a>
+    </div>
+  </div>
+
+  <div style="background:#fff;border-bottom:1px solid #c8c8c8;padding:0 32px;height:60px;display:flex;align-items:center;gap:12px">
+    <button onClick="{{ openPanel }}" style="display:flex;align-items:center;gap:9px;border:1px solid #072143;background:#072143;color:#fff;font-size:14px;font-weight:bold;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:Arial, Helvetica, sans-serif" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"></path><path d="M16 5.5a3 3 0 0 1 0 5.5"></path><path d="M18 19c0-2.4-1-4.1-2.6-5"></path></svg>
+      <span>Pracownicy</span>
+    </button>
+  </div>
+
+  <div style="max-width:1480px;margin:0 auto;padding:28px 32px 56px">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <button onClick="{{ prevMonth }}" style="width:36px;height:36px;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:16px;cursor:pointer;border-radius:10px" style-hover="background:#072143;color:#fff;border-color:#072143">‹</button>
+        <h1 style="margin:0;font-size:24px;font-weight:bold;color:#072143;min-width:220px;text-align:center">{{ monthLabel }}</h1>
+        <button onClick="{{ nextMonth }}" style="width:36px;height:36px;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:16px;cursor:pointer;border-radius:10px" style-hover="background:#072143;color:#fff;border-color:#072143">›</button>
+      </div>
+      <div style="display:flex;gap:0;border:1px solid #c8c8c8;background:#fff;border-radius:10px;overflow:hidden">
+        <button onClick="{{ goGrid }}" style="{{ tabGridStyle }}">Siatka</button>
+        <button onClick="{{ goDetails }}" style="{{ tabDetailsStyle }}">Szczegóły</button>
+        <button onClick="{{ goStats }}" style="{{ tabStatsStyle }}">Statystyki</button>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;padding:22px 24px;margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:32px;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:40px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;color:#6f6f6f;margin-bottom:8px">Urlop 2026 – pozostało</div>
+          <div style="display:flex;align-items:baseline;gap:12px">
+            <span style="{{ quotaBalanceStyle }}">{{ quotaBalanceText }}</span>
+            <span style="font-size:13px;color:#6f6f6f">{{ quotaUntil }}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:1px;background:#c8c8c8;border:1px solid #c8c8c8;border-radius:10px;overflow:hidden">
+          <div style="background:#fff;padding:10px 18px;min-width:104px">
+            <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6f6f6f;margin-bottom:4px">Bieżące</div>
+            <div style="font-size:20px;font-weight:bold;color:#072143">{{ quotaCurrent }}</div>
+          </div>
+          <div style="background:#fff;padding:10px 18px;min-width:104px">
+            <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6f6f6f;margin-bottom:4px">Zaległe</div>
+            <div style="font-size:20px;font-weight:bold;color:#072143">{{ quotaCarry }}</div>
+          </div>
+          <div style="background:#fff;padding:10px 18px;min-width:104px">
+            <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6f6f6f;margin-bottom:4px">Wykorzystane</div>
+            <div style="font-size:20px;font-weight:bold;color:#072143">{{ quotaUsed }}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px">
+        <button onClick="{{ openQuota }}" style="border:1px solid #072143;background:#fff;color:#072143;font-size:13px;font-weight:bold;padding:9px 20px;cursor:pointer;border-radius:8px" style-hover="background:#072143;color:#fff">Edytuj</button>
+        <sc-if value="{{ quotaOver }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:8px;background:#fdecef;border:1px solid #e50040;padding:7px 12px;border-radius:8px">
+            <span style="width:8px;height:8px;background:#e50040;display:block;border-radius:50%"></span>
+            <span style="font-size:12px;font-weight:bold;color:#e50040">{{ quotaOverText }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-bottom:1px solid #c8c8c8;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f;margin-right:4px">Typy nieobecności</span>
+          <sc-for list="{{ legendKey }}" as="chip" hint-placeholder-count="7">
+            <span style="{{ chip.style }}">
+              <span style="{{ chip.dot }}"></span>
+              <span style="font-size:13px;line-height:1">{{ chip.icon }}</span>
+              <span>{{ chip.label }}</span>
+            </span>
+          </sc-for>
+        </div>
+        <span style="font-size:12px;color:#6f6f6f">Kliknij komórkę, aby dodać. Przeciągnij, aby zaznaczyć zakres dni.</span>
+      </div>
+
+      <div style="overflow-x:auto">
+        <div style="min-width:900px">
+          <div style="display:flex;background:#e8e8e8;border-bottom:2px solid #c8c8c8">
+            <div style="width:132px;flex:none;padding:14px 12px;font-size:12px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#000;border-right:1px solid #c8c8c8">Dzień</div>
+            <sc-for list="{{ people }}" as="person" hint-placeholder-count="5">
+              <div style="flex:1 1 0;min-width:120px;padding:14px 10px;font-size:13px;font-weight:bold;color:#000;text-align:center;border-right:1px solid #c8c8c8">{{ person.name }}</div>
+            </sc-for>
+          </div>
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="30">
+            <div style="{{ row.style }}">
+              <div style="{{ row.dayStyle }}">
+                <span style="font-weight:bold;color:#000;min-width:22px;text-align:right">{{ row.day }}</span>
+                <span style="{{ row.dowStyle }}">{{ row.dow }}</span>
+              </div>
+              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                <div style="{{ cell.style }}" title="{{ cell.title }}" onMouseDown="{{ cell.down }}" onMouseEnter="{{ cell.enter }}" onClick="{{ cell.click }}" style-hover="background:#eef3f8">
+                  <div style="{{ cell.chip }}">
+                    <span style="font-size:12px;line-height:1">{{ cell.icon }}</span>
+                    <span>{{ cell.label }}</span>
+                    <span style="position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px">
+                      <sc-if value="{{ cell.hasPriority }}" hint-placeholder-val="{{ false }}">
+                        <span title="Priorytet" style="font-size:10px;line-height:1">🅿️</span>
+                      </sc-if>
+                      <sc-if value="{{ cell.hasComment }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:10px;line-height:1;opacity:.85">💬</span>
+                      </sc-if>
+                    </span>
+                    <sc-if value="{{ cell.hasSub }}" hint-placeholder-val="{{ false }}">
+                      <span style="{{ cell.subBadge }}">
+                        <span style="font-size:8px;line-height:1">🔁</span>
+                        <span>{{ cell.subInitials }}</span>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showStats }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+        <sc-for list="{{ stats.kpis }}" as="kpi" hint-placeholder-count="2">
+          <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;padding:18px 20px">
+            <div style="font-size:11px;font-weight:bold;letter-spacing:.07em;text-transform:uppercase;color:#6f6f6f;margin-bottom:10px">{{ kpi.label }}</div>
+            <div style="font-size:32px;font-weight:bold;color:#072143;line-height:1;margin-bottom:8px">{{ kpi.value }}</div>
+            <div style="font-size:12px;color:#9a9a9a">{{ kpi.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid #e8e8e8">
+          <h3 style="margin:0;font-size:15px;font-weight:bold;color:#072143;display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px;line-height:1">🌴</span>
+            <span>Podgląd wykorzystania urlopów</span>
+          </h3>
+          <span style="font-size:12px;color:#6f6f6f">wykorzystane dni z przysługującego wymiaru</span>
+        </div>
+        <div style="padding:8px 18px 16px">
+          <sc-for list="{{ stats.usage }}" as="u" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:240px 1fr 130px 70px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid #f6f6f6">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span style="{{ u.avatar }}">{{ u.initials }}</span>
+                <span style="font-size:13px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.person }}</span>
+              </div>
+              <div style="height:10px;background:#f2f2f2;border-radius:999px;overflow:hidden">
+                <div style="{{ u.fill }}"></div>
+              </div>
+              <div>
+                <div style="font-size:13px;font-weight:bold;color:#072143">{{ u.ratio }}</div>
+                <div style="font-size:11px;color:#9a9a9a">{{ u.left }}</div>
+              </div>
+              <div style="{{ u.pctStyle }}">{{ u.pct }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+        <div style="padding:15px 18px;border-bottom:1px solid #e8e8e8">
+          <h3 style="margin:0;font-size:15px;font-weight:bold;color:#072143">Podział wg typu nieobecności</h3>
+        </div>
+        <div style="padding:8px 18px 16px">
+          <sc-for list="{{ stats.breakdown }}" as="b" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:280px 1fr 90px 60px;gap:14px;align-items:center;padding:9px 0">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#000">
+                <span style="font-size:14px;line-height:1">{{ b.icon }}</span>
+                <span>{{ b.label }}</span>
+              </div>
+              <div style="height:10px;background:#f2f2f2;border-radius:999px;overflow:hidden">
+                <div style="{{ b.fill }}"></div>
+              </div>
+              <div style="font-size:13px;font-weight:bold;color:#072143">{{ b.value }}</div>
+              <div style="font-size:12px;color:#9a9a9a;text-align:right">{{ b.share }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+        <div style="padding:15px 18px;border-bottom:1px solid #e8e8e8">
+          <h3 style="margin:0;font-size:15px;font-weight:bold;color:#072143">{{ stats.title }}</h3>
+        </div>
+        <div style="overflow-x:auto">
+          <div style="min-width:1120px">
+            <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;gap:0;background:#f4f6f8;border-bottom:1px solid #e8e8e8">
+              <div style="padding:12px 16px;font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f">Pracownik</div>
+              <sc-for list="{{ stats.cols }}" as="col" hint-placeholder-count="7">
+                <div title="{{ col.label }}" style="padding:10px 8px;text-align:center">
+                  <span style="{{ col.dot }}"></span>
+                  <span style="font-size:15px;line-height:1">{{ col.icon }}</span>
+                </div>
+              </sc-for>
+              <div style="padding:12px 16px;font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f;text-align:right">Łącznie</div>
+            </div>
+            <sc-for list="{{ stats.rows }}" as="r" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;align-items:center;border-bottom:1px solid #f2f2f2;padding:10px 0" style-hover="background:#f7fafc">
+                <div style="padding:0 16px;display:flex;align-items:center;gap:10px;min-width:0">
+                  <span style="{{ r.avatar }}">{{ r.initials }}</span>
+                  <div style="min-width:0">
+                    <div style="font-size:13px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.person }}</div>
+                    <div style="{{ r.barTrack }}">
+                      <sc-for list="{{ r.bar }}" as="seg" hint-placeholder-count="2">
+                        <div title="{{ seg.title }}" style="{{ seg.style }}"></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                  <div style="{{ c.style }}">{{ c.text }}</div>
+                </sc-for>
+                <div style="padding:0 16px"><div style="{{ r.totalStyle }}">{{ r.totalText }}</div></div>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;align-items:center;background:#f4f6f8;padding:12px 0">
+              <div style="padding:0 16px;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#072143">Łącznie</div>
+              <sc-for list="{{ stats.totals }}" as="t" hint-placeholder-count="7">
+                <div style="{{ t.style }}">{{ t.text }}</div>
+              </sc-for>
+              <div style="padding:0 16px;text-align:right;font-size:13px;font-weight:bold;color:#072143">{{ stats.grandText }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid #e8e8e8">
+          <h3 style="margin:0;font-size:15px;font-weight:bold;color:#072143">{{ stats.titleYear }}</h3>
+          <span style="font-size:12px;color:#6f6f6f">narastająco od stycznia · 🥇🥈🥉 najwięcej dni w kolumnie</span>
+        </div>
+        <div style="overflow-x:auto">
+          <div style="min-width:1120px">
+            <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;gap:0;background:#f4f6f8;border-bottom:1px solid #e8e8e8">
+              <div style="padding:12px 16px;font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f">Pracownik</div>
+              <sc-for list="{{ stats.cols }}" as="col" hint-placeholder-count="7">
+                <div title="{{ col.label }}" style="padding:10px 8px;text-align:center">
+                  <span style="{{ col.dot }}"></span>
+                  <span style="font-size:15px;line-height:1">{{ col.icon }}</span>
+                </div>
+              </sc-for>
+              <div style="padding:12px 16px;font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f;text-align:right">Łącznie</div>
+            </div>
+            <sc-for list="{{ stats.rowsYear }}" as="r" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;align-items:center;border-bottom:1px solid #f2f2f2;padding:10px 0" style-hover="background:#f7fafc">
+                <div style="padding:0 16px;display:flex;align-items:center;gap:10px;min-width:0">
+                  <span style="{{ r.avatar }}">{{ r.initials }}</span>
+                  <div style="min-width:0">
+                    <div style="font-size:13px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.person }}</div>
+                    <div style="{{ r.barTrack }}">
+                      <sc-for list="{{ r.bar }}" as="seg" hint-placeholder-count="2">
+                        <div title="{{ seg.title }}" style="{{ seg.style }}"></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                  <div style="{{ c.style }}">{{ c.text }}</div>
+                </sc-for>
+                <div style="padding:0 16px"><div style="{{ r.totalStyle }}">{{ r.totalText }}</div></div>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:240px repeat(7,1fr) 150px;align-items:center;background:#f4f6f8;padding:12px 0">
+              <div style="padding:0 16px;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#072143">Łącznie</div>
+              <sc-for list="{{ stats.totalsYear }}" as="t" hint-placeholder-count="7">
+                <div style="{{ t.style }}">{{ t.text }}</div>
+              </sc-for>
+              <div style="padding:0 16px;text-align:right;font-size:13px;font-weight:bold;color:#072143">{{ stats.grandTextYear }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showDetails }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onClick="{{ rangeDay }}" style="{{ rangeDayStyle }}">Dzisiaj</button>
+          <button onClick="{{ rangeMonth }}" style="{{ rangeMonthStyle }}">Miesięcznie</button>
+          <button onClick="{{ rangeYear }}" style="{{ rangeYearStyle }}">Rocznie</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ legend }}" as="chip" hint-placeholder-count="7">
+            <button onClick="{{ chip.toggle }}" title="{{ chip.label }}" style="{{ chip.style }}">
+              <span style="{{ chip.dot }}"></span>
+              <span style="font-size:13px;line-height:1">{{ chip.icon }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ clearFilters }}" style="{{ clearStyle }}" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">
+              <span>✕</span>
+              <span>Wyczyść filtry</span>
+            </button>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-for list="{{ detailGroups }}" as="group" hint-placeholder-count="1">
+        <div style="background:#fff;border:1px solid #c8c8c8;border-radius:14px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid #e8e8e8">
+            <h3 style="margin:0;font-size:15px;font-weight:bold;color:#072143">{{ group.title }}</h3>
+            <span style="font-size:12px;color:#6f6f6f">{{ group.count }}</span>
+          </div>
+          <sc-if value="{{ group.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:34px 18px;text-align:center;color:#9a9a9a;font-size:13px">Brak nieobecności</div>
+          </sc-if>
+          <sc-if value="{{ group.hasRows }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:132px minmax(220px,1fr) 200px 180px 130px;gap:14px;align-items:center;padding:10px 18px;background:#f4f6f8;border-bottom:1px solid #e8e8e8">
+              <sc-for list="{{ sortHeaders }}" as="head" hint-placeholder-count="5">
+                <button onClick="{{ head.click }}" style="{{ head.style }}">
+                  <span>{{ head.label }}</span>
+                  <span style="{{ head.arrowStyle }}">{{ head.arrow }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-for list="{{ group.rows }}" as="item" hint-placeholder-count="6">
+            <div onClick="{{ item.open }}" style="display:grid;grid-template-columns:132px minmax(220px,1fr) 200px 180px 130px;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid #f2f2f2;cursor:pointer" style-hover="background:#f7fafc">
+              <div>
+                <div style="font-size:14px;font-weight:bold;color:#000">{{ item.date }}</div>
+                <div style="font-size:12px;color:#6f6f6f">{{ item.dow }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start">
+                <span style="{{ item.pill }}">
+                  <span style="font-size:13px;line-height:1">{{ item.icon }}</span>
+                  <span>{{ item.typeLabel }}</span>
+                </span>
+                <sc-if value="{{ item.hasComment }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;color:#6f6f6f">„{{ item.comment }}”</span>
+                </sc-if>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="{{ item.personAvatar }}">{{ item.personInitials }}</span>
+                <span style="font-size:13px;color:#000">{{ item.person }}</span>
+              </div>
+              <div style="font-size:13px;color:#6f6f6f">{{ item.subText }}</div>
+              <div style="text-align:right"><span style="{{ item.timeStyle }}">{{ item.time }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ panelOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePanel }}" style="position:fixed;inset:0;background:rgba(7,33,67,.4);z-index:70;display:flex;justify-content:flex-end">
+      <div onClick="{{ stop }}" style="width:100%;max-width:560px;height:100%;background:#fff;border-left:1px solid #c8c8c8;display:flex;flex-direction:column;box-shadow:-16px 0 40px rgba(7,33,67,.2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;border-bottom:1px solid #e8e8e8">
+          <h2 style="margin:0;font-size:19px;font-weight:bold;color:#072143">Zarządzaj pracownikami</h2>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onClick="{{ addStaff }}" style="border:1px solid #072143;background:#072143;color:#fff;font-size:13px;font-weight:bold;padding:9px 16px;border-radius:8px;cursor:pointer;font-family:Arial, Helvetica, sans-serif" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">+ Dodaj pracownika</button>
+            <button onClick="{{ closePanel }}" style="width:32px;height:32px;border:none;border-radius:50%;background:transparent;color:#6f6f6f;font-size:18px;cursor:pointer" style-hover="color:#072143;background:#f2f2f2">✕</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:20px 24px 32px">
+          <div style="font-size:11px;font-weight:bold;letter-spacing:.07em;text-transform:uppercase;color:#6f6f6f;margin-bottom:10px">{{ staff.activeTitle }}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:26px">
+            <sc-for list="{{ staff.active }}" as="p" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;border:1px solid #e2e2e2;border-radius:12px;padding:12px 14px" style-hover="border-color:#072143">
+                <span style="{{ p.avatar }}">{{ p.initials }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                    <span style="{{ p.roleStyle }}">{{ p.role }}</span>
+                  </div>
+                  <div style="font-size:12px;color:#9a9a9a;margin-top:3px">{{ p.quotaText }}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button onClick="{{ p.edit }}" style="border:1px solid #072143;background:#fff;color:#072143;font-size:12px;font-weight:bold;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:Arial, Helvetica, sans-serif" style-hover="background:#072143;color:#fff">Edytuj</button>
+                  <button onClick="{{ p.toggle }}" style="{{ p.toggleStyle }}">{{ p.toggleLabel }}</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ staff.hasInactive }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11px;font-weight:bold;letter-spacing:.07em;text-transform:uppercase;color:#6f6f6f;margin-bottom:10px">{{ staff.inactiveTitle }}</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ staff.inactive }}" as="p" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:12px;border:1px solid #eeeeee;border-radius:12px;padding:12px 14px;background:#fafafa">
+                  <span style="{{ p.avatar }}">{{ p.initials }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                      <span style="{{ p.roleStyle }}">{{ p.role }}</span>
+                    </div>
+                  </div>
+                  <button onClick="{{ p.toggle }}" style="{{ p.toggleStyle }}">{{ p.toggleLabel }}</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ staffModal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeStaff }}" style="position:fixed;inset:0;background:rgba(7,33,67,.45);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px">
+      <div onClick="{{ stop }}" style="background:#fff;border:1px solid #c8c8c8;border-radius:16px;width:100%;max-width:560px;padding:26px 28px 24px;position:relative;box-shadow:0 16px 40px rgba(7,33,67,.25);max-height:88vh;overflow-y:auto">
+        <button onClick="{{ closeStaff }}" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:transparent;color:#6f6f6f;font-size:18px;cursor:pointer" style-hover="color:#072143">✕</button>
+        <h2 style="margin:0 0 20px;font-size:20px;font-weight:bold;color:#072143">{{ staffTitle }}</h2>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px">
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Imię</label>
+            <input value="{{ sFirst }}" onChange="{{ setSFirst }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;color:#000" />
+          </div>
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Nazwisko</label>
+            <input value="{{ sLast }}" onChange="{{ setSLast }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;color:#000" />
+          </div>
+        </div>
+
+        <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Rola</label>
+        <select value="{{ sRole }}" onChange="{{ setSRole }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;background:#fff;color:#000;margin-bottom:22px">
+          <option value="Pracownik">Pracownik</option>
+          <option value="Moderator">Moderator</option>
+        </select>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-top:1px solid #e8e8e8;padding-top:18px;margin-bottom:14px">
+          <h3 style="margin:0;font-size:14px;font-weight:bold;color:#072143">Wymiar urlopu</h3>
+          <span style="font-size:12px;color:#6f6f6f">{{ sTotal }}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px">
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Bieżące (dni)</label>
+            <input type="number" value="{{ sCurrent }}" onChange="{{ setSCurrent }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:15px;font-weight:bold;text-align:center;font-family:Arial, Helvetica, sans-serif;color:#000" />
+          </div>
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Zaległe (dni)</label>
+            <input type="number" value="{{ sCarry }}" onChange="{{ setSCarry }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:15px;font-weight:bold;text-align:center;font-family:Arial, Helvetica, sans-serif;color:#000" />
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+          <label style="font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000">Korekta (dni)</label>
+          <span title="Korekta pozwala na dodawanie dodatkowych dni w razie potrzeby. Należy używać z rozsądkiem." style="width:17px;height:17px;border-radius:50%;background:#eef3f8;border:1px solid #c8d6e4;color:#072143;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;cursor:help" style-hover="background:#072143;color:#fff;border-color:#072143">i</span>
+        </div>
+        <input type="number" value="{{ sCorrection }}" onChange="{{ setSCorrection }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:15px;font-weight:bold;text-align:center;font-family:Arial, Helvetica, sans-serif;color:#000" />
+        <div style="font-size:12px;color:#6f6f6f;margin:8px 0 18px">Korekta pozwala na dodawanie dodatkowych dni w razie potrzeby. Należy używać z rozsądkiem.</div>
+
+        <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Do dnia</label>
+        <input type="date" value="{{ sUntil }}" onChange="{{ setSUntil }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;color:#000;background:#fff;margin-bottom:24px" />
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #e8e8e8;padding-top:18px">
+          <button onClick="{{ closeStaff }}" style="border:1px solid #c8c8c8;background:#fff;color:#000;font-size:14px;padding:11px 22px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="border-color:#072143;color:#072143">Anuluj</button>
+          <button onClick="{{ saveStaff }}" style="border:1px solid #072143;background:#072143;color:#fff;font-size:14px;font-weight:bold;padding:11px 26px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">Zapisz</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ quotaModal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeQuota }}" style="position:fixed;inset:0;background:rgba(7,33,67,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:24px">
+      <div onClick="{{ stop }}" style="background:#fff;border:1px solid #c8c8c8;border-radius:16px;width:100%;max-width:560px;padding:26px 28px 24px;position:relative;box-shadow:0 16px 40px rgba(7,33,67,.25)">
+        <button onClick="{{ closeQuota }}" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:transparent;color:#6f6f6f;font-size:18px;cursor:pointer" style-hover="color:#072143">✕</button>
+        <h2 style="margin:0 0 4px;font-size:20px;font-weight:bold;color:#072143">Edytuj wymiar urlopu – 2026</h2>
+        <div style="font-size:13px;color:#6f6f6f;margin-bottom:20px">Bartosz Oliwa</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:#f4f7fa;border:1px solid #dbe4ee;border-radius:12px;padding:14px 16px;margin-bottom:22px">
+          <div>
+            <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:#6f6f6f;margin-bottom:6px">Pozostanie</div>
+            <div style="{{ qPreviewStyle }}">{{ qPreviewLeft }}</div>
+          </div>
+          <div style="font-size:12px;color:#6f6f6f;text-align:right;max-width:230px">{{ qFormula }}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px">
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Bieżące (dni)</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onClick="{{ qCurrentDown }}" style="width:38px;height:42px;flex:none;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:18px;border-radius:8px;cursor:pointer" style-hover="border-color:#072143;background:#f4f7fa">−</button>
+              <input type="number" value="{{ qCurrentValue }}" onChange="{{ qCurrent }}" style="flex:1;min-width:0;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:15px;font-weight:bold;text-align:center;font-family:Arial, Helvetica, sans-serif;color:#000" />
+              <button onClick="{{ qCurrentUp }}" style="width:38px;height:42px;flex:none;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:18px;border-radius:8px;cursor:pointer" style-hover="border-color:#072143;background:#f4f7fa">+</button>
+            </div>
+          </div>
+          <div style="min-width:0">
+            <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Zaległe (dni)</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onClick="{{ qCarryDown }}" style="width:38px;height:42px;flex:none;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:18px;border-radius:8px;cursor:pointer" style-hover="border-color:#072143;background:#f4f7fa">−</button>
+              <input type="number" value="{{ qCarryValue }}" onChange="{{ qCarry }}" style="flex:1;min-width:0;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:15px;font-weight:bold;text-align:center;font-family:Arial, Helvetica, sans-serif;color:#000" />
+              <button onClick="{{ qCarryUp }}" style="width:38px;height:42px;flex:none;border:1px solid #c8c8c8;background:#fff;color:#072143;font-size:18px;border-radius:8px;cursor:pointer" style-hover="border-color:#072143;background:#f4f7fa">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid #e8e8e8;padding-top:18px;margin-top:6px">
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ closeQuota }}" style="border:1px solid #c8c8c8;background:#fff;color:#000;font-size:14px;padding:11px 22px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="border-color:#072143;color:#072143">Anuluj</button>
+            <button onClick="{{ saveQuota }}" style="border:1px solid #072143;background:#072143;color:#fff;font-size:14px;font-weight:bold;padding:11px 26px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">Zapisz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(7,33,67,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px">
+      <div onClick="{{ stop }}" style="background:#fff;border:1px solid #c8c8c8;border-radius:16px;width:100%;max-width:520px;padding:26px 28px 24px;position:relative;box-shadow:0 16px 40px rgba(7,33,67,.25)">
+        <button onClick="{{ closeModal }}" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:transparent;color:#6f6f6f;font-size:18px;cursor:pointer" style-hover="color:#072143">✕</button>
+        <h2 style="margin:0 0 4px;font-size:20px;font-weight:bold;color:#072143">{{ modalTitle }}</h2>
+        <div style="font-size:13px;color:#6f6f6f;margin-bottom:22px">{{ modalSubtitle }}</div>
+
+        <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Typ nieobecności</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+          <sc-for list="{{ typeOptions }}" as="opt" hint-placeholder-count="7">
+            <button onClick="{{ opt.pick }}" style="{{ opt.style }}" style-hover="border-color:#072143">
+              <span style="{{ opt.swatch }}">{{ opt.icon }}</span>
+              <span>{{ opt.label }}</span>
+              <span style="{{ opt.checkStyle }}">✓</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ showPriority }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ togglePriority }}" style="display:flex;align-items:center;gap:10px;border:1px solid #dcdcdc;border-radius:10px;padding:11px 13px;margin-bottom:16px;cursor:pointer" style-hover="border-color:#072143">
+            <span style="{{ priorityStyle }}">✓</span>
+            <span style="font-size:13px;font-weight:bold;color:#000">Priorytet 🅿️</span>
+            <span style="font-size:12px;color:#6f6f6f;margin-left:auto">urlop nadrzędny przy kolizji terminów</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showAllDay }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ toggleAllDay }}" style="display:flex;align-items:center;gap:10px;border:1px solid #dcdcdc;border-radius:10px;padding:11px 13px;margin-bottom:16px;cursor:pointer" style-hover="border-color:#072143">
+            <span style="{{ allDayStyle }}">✓</span>
+            <span style="font-size:13px;font-weight:bold;color:#000">Cały dzień</span>
+            <span style="font-size:12px;color:#6f6f6f;margin-left:auto">odznacz, aby podać godziny</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showHours }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:14px;margin-bottom:18px">
+            <div style="flex:1">
+              <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Od godziny</label>
+              <input type="time" value="{{ fromValue }}" onChange="{{ setFrom }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;color:#000;background:#fff" />
+            </div>
+            <div style="flex:1">
+              <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Do godziny</label>
+              <input type="time" value="{{ toValue }}" onChange="{{ setTo }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;color:#000;background:#fff" />
+            </div>
+          </div>
+        </sc-if>
+
+        <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Komentarz (opcjonalnie)</label>
+        <input placeholder="Notatka..." value="{{ commentValue }}" onChange="{{ setComment }}" style="width:100%;border:1px solid #c8c8c8;border-radius:8px;padding:11px 12px;font-size:14px;font-family:Arial, Helvetica, sans-serif;margin-bottom:18px" />
+
+        <label style="display:block;font-size:12px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:#000;margin-bottom:7px">Zastępstwo (opcjonalnie)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+          <sc-for list="{{ subOptions }}" as="sub" hint-placeholder-count="6">
+            <button onClick="{{ sub.pick }}" title="{{ sub.label }}" style="{{ sub.style }}" style-hover="border-color:#c5ac75">{{ sub.initials }}</button>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;color:#6f6f6f;margin-bottom:24px;min-height:16px">{{ subLabel }}</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e8e8e8;padding-top:18px">
+          <button onClick="{{ removeEntry }}" style="{{ deleteStyle }}">Usuń</button>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ closeModal }}" style="border:1px solid #c8c8c8;background:#fff;color:#000;font-size:14px;padding:11px 22px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="border-color:#072143;color:#072143">Anuluj</button>
+            <button onClick="{{ saveEntry }}" style="border:1px solid #072143;background:#072143;color:#fff;font-size:14px;font-weight:bold;padding:11px 26px;cursor:pointer;border-radius:8px;font-family:Arial, Helvetica, sans-serif" style-hover="background:#c5ac75;border-color:#c5ac75;color:#072143">Zapisz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTimeRanges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Siatka&quot;},&quot;weekendShading&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Siatka&quot;},&quot;rowHeight&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:34,&quot;min&quot;:26,&quot;max&quot;:48,&quot;step&quot;:2,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Siatka&quot;}}">
+const TYPES = [
+  { id: 'urlop', label: 'urlop', color: '#cceeff', fg: '#0b5a72', icon: '🌴' },
+  { id: 'szkolenie_poza', label: 'szkolenie/wyjście poza miejsce pracy', color: '#ffcc99', fg: '#8a4a00', icon: '🏃🏼‍♂️‍➡️' },
+  { id: 'szkolenie_w', label: 'szkolenie w miejscu pracy', color: '#ffe8a8', fg: '#7a5b00', icon: '🎓' },
+  { id: 'choroba', label: 'choroba', color: '#2f578c', fg: '#ffffff', icon: '🤒' },
+  { id: 'wyjazd', label: 'wyjazd zagraniczny', color: '#f2a3a3', fg: '#7d0d1c', icon: '🌍' },
+  { id: 'stala', label: 'stała nieobecność', color: '#ccffcc', fg: '#2c5c2c', icon: '🚫' },
+  { id: 'urlop_plan', label: 'urlop planowany', color: '#99ccff', fg: '#0b3f6b', icon: '📅' }
+];
+const TYPE_BY_ID = {};
+TYPES.forEach(t => { TYPE_BY_ID[t.id] = t; });
+const PEOPLE = ['Bartosz Oliwa', 'Dominik Rażny', 'Chłop Mazur', 'Jan Kowalski', 'Test User (nakt.)', 'Anna Nowak', 'Piotr Wiśniewski', 'Katarzyna Lewandowska', 'Marek Zieliński', 'Ewa Kamińska'];
+const PEOPLE_OBJ = PEOPLE.map(name => ({ name }));
+const DOW = ['pon.', 'wt.', 'śr.', 'czw.', 'pt.', 'sob.', 'niedz.'];
+const MONTHS = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+
+const DAY_STYLE = { width: '132px', flex: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', fontSize: '13px', borderRight: '1px solid #c8c8c8' };
+const DOW_STYLE = { color: '#6f6f6f', fontSize: '12px' };
+const DOW_STYLE_WK = { color: '#9a9a9a', fontSize: '12px' };
+const ROW_STYLE = { display: 'flex', borderBottom: '1px solid #e8e8e8', background: '#fff' };
+const ROW_STYLE_WK = { display: 'flex', borderBottom: '1px solid #e8e8e8', background: '#f4f4f4' };
+const EMPTY_DRAFT = { type: 'urlop', from: '', to: '', comment: '', sub: '', priority: false };
+const SELECT_BASE = {
+  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  background: '#fff', color: '#000', fontSize: '14px', padding: '11px 12px', cursor: 'pointer',
+  borderRadius: '8px', fontFamily: 'Arial, Helvetica, sans-serif', textAlign: 'left'
+};
+const SELECT_CLOSED = { ...SELECT_BASE, border: '1px solid #c8c8c8' };
+const SELECT_OPEN = { ...SELECT_BASE, border: '1px solid #072143' };
+const DEL_BASE = {
+  fontSize: '14px', fontWeight: 'bold', padding: '11px 22px', borderRadius: '8px',
+  fontFamily: 'Arial, Helvetica, sans-serif'
+};
+const CLEAR_BASE = { display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', fontWeight: 'bold', padding: '6px 12px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'Arial, Helvetica, sans-serif' };
+const CLEAR_IDLE = { ...CLEAR_BASE, border: '1px solid #dcdcdc', background: '#fff', color: '#9a9a9a' };
+const CLEAR_ACTIVE = { ...CLEAR_BASE, border: '1px solid #072143', background: '#072143', color: '#ffffff' };
+const TAB_ON = { padding: '9px 22px', fontSize: '14px', fontWeight: 'bold', background: '#072143', color: '#fff', cursor: 'pointer', border: 'none', fontFamily: 'Arial, Helvetica, sans-serif' };
+const TAB_OFF = { padding: '9px 22px', fontSize: '14px', background: '#fff', color: '#6f6f6f', cursor: 'pointer', border: 'none', borderLeft: '1px solid #c8c8c8', fontFamily: 'Arial, Helvetica, sans-serif' };
+const TAB_OFF_FIRST = { ...TAB_OFF, borderLeft: 'none' };
+const SEG_ON = { padding: '8px 16px', fontSize: '13px', fontWeight: 'bold', background: '#072143', color: '#fff', border: '1px solid #072143', borderRadius: '999px', cursor: 'pointer', fontFamily: 'Arial, Helvetica, sans-serif' };
+const SEG_OFF = { padding: '8px 16px', fontSize: '13px', background: '#fff', color: '#072143', border: '1px solid #c8c8c8', borderRadius: '999px', cursor: 'pointer', fontFamily: 'Arial, Helvetica, sans-serif' };
+const DEL_ON = { ...DEL_BASE, border: '1px solid #e50040', background: '#e50040', color: '#fff', cursor: 'pointer' };
+const DEL_OFF = { ...DEL_BASE, border: '1px solid #e8e8e8', background: '#fff', color: '#c8c8c8', cursor: 'default' };
+
+function seed() {
+  const e = {};
+  const put = (p, d, type, from, to) => { e[p + '-' + d] = { type, from: from || '', to: to || '', comment: '', sub: '' }; };
+  put(0, 1, 'wyjazd', '01:22', '03:22');
+  [2, 3, 4, 5].forEach(d => put(0, d, 'wyjazd'));
+  put(0, 8, 'szkolenie_poza', '09:00', '16:00');
+  put(0, 9, 'szkolenie_poza', '09:00', '13:00');
+  put(0, 10, 'szkolenie_poza');
+  put(0, 11, 'szkolenie_poza');
+  put(0, 12, 'szkolenie_w', '01:14', '06:14');
+  put(1, 1, 'szkolenie_w');
+  put(1, 17, 'szkolenie_w');
+  put(3, 22, 'urlop');
+  put(3, 23, 'urlop');
+  put(2, 15, 'choroba');
+  put(5, 3, 'urlop');
+  put(5, 4, 'urlop');
+  put(6, 9, 'szkolenie_poza', '09:00', '14:00');
+  put(7, 18, 'choroba');
+  put(7, 19, 'choroba');
+  put(8, 25, 'urlop_plan');
+  put(9, 11, 'szkolenie_w', '10:00', '15:00');
+  return e;
+}
+
+class Component extends DCLogic {
+  state = {
+    tab: 'siatka', range: 'dzisiaj', sortKey: 'date', sortDir: 1,
+    quota: { current: 5, carry: 12, correction: 14, usedActual: 5, until: '2026-12-31' },
+    quotaModal: false, quotaDraft: null,
+    panel: false, staffIndex: null, staffDraft: null, staffVersion: 0,
+    staff: [
+      { first: 'Dominik', last: 'RaźnY', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Chlop', last: 'Mazur', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Bartosz', last: 'Oliwa', role: 'Moderator', active: true, current: 5, carry: 12, correction: 14, until: '2026-12-31' },
+      { first: 'Jan', last: 'Kowalski', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Test', last: 'User', role: 'Pracownik', active: false, current: 20, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Test2', last: 'User2', role: 'Moderator', active: false, current: 20, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Anna', last: 'Nowak', role: 'Pracownik', active: true, current: 26, carry: 4, correction: 0, until: '2026-12-31' },
+      { first: 'Piotr', last: 'Wiśniewski', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Katarzyna', last: 'Lewandowska', role: 'Moderator', active: true, current: 26, carry: 6, correction: 0, until: '2026-12-31' },
+      { first: 'Marek', last: 'Zieliński', role: 'Pracownik', active: true, current: 20, carry: 0, correction: 0, until: '2026-12-31' },
+      { first: 'Ewa', last: 'Kamińska', role: 'Pracownik', active: true, current: 26, carry: 2, correction: 0, until: '2026-12-31' }
+    ],
+    month: 5, year: 2026,
+    entries: seed(),
+    version: 0,
+    hidden: [],
+    modal: null,
+    typeOpen: false,
+    drag: null,
+    draft: null
+  };
+
+  handlers = {};
+  cache = {};
+
+  componentDidMount() {
+    this.onUp = () => {
+      const d = this.state.drag;
+      if (!d) return;
+      const a = Math.min(d.from, d.to), b = Math.max(d.from, d.to);
+      this.setState({ drag: null });
+      if (b > a) this.openModal(d.person, a, b);
+    };
+    window.addEventListener('mouseup', this.onUp);
+  }
+  componentWillUnmount() { window.removeEventListener('mouseup', this.onUp); }
+
+  dowIndex(day) { return (new Date(this.state.year, this.state.month, day).getDay() + 6) % 7; }
+
+  openModal(person, dayFrom, dayTo) {
+    const ex = this.state.entries[person + '-' + dayFrom];
+    this.setState({
+      modal: { person, dayFrom, dayTo },
+      typeOpen: false,
+      draft: ex ? { ...ex } : { ...EMPTY_DRAFT }
+    });
+  }
+
+  cellHandlers(pi, d) {
+    const k = pi + '-' + d;
+    let h = this.handlers[k];
+    if (!h) {
+      h = this.handlers[k] = {
+        down: () => this.setState({ drag: { person: pi, from: d, to: d } }),
+        enter: () => {
+          const dr = this.state.drag;
+          if (!dr || dr.person !== pi || dr.to === d) return;
+          this.setState({ drag: { person: pi, from: dr.from, to: d } });
+        },
+        click: () => this.openModal(pi, d, d)
+      };
+    }
+    return h;
+  }
+
+  buildLegendKey() {
+    if (this.cache.legendKey) return this.cache.legendKey;
+    this.cache.legendKey = TYPES.map(t => ({
+      label: t.label,
+      icon: t.icon,
+      style: {
+        display: 'flex', alignItems: 'center', gap: '7px', border: '1px solid #e8e8e8',
+        background: '#fff', color: '#000', fontSize: '12px', padding: '6px 12px', borderRadius: '999px'
+      },
+      dot: { width: '10px', height: '10px', display: 'block', borderRadius: '50%', background: t.color }
+    }));
+    return this.cache.legendKey;
+  }
+
+  buildLegend() {
+    const hidden = this.state.hidden;
+    const sig = 'L' + hidden.join(',');
+    if (this.cache.legendSig === sig) return this.cache.legend;
+    const legend = TYPES.map(t => {
+      const off = hidden.indexOf(t.id) !== -1;
+      return {
+        label: t.label,
+        icon: t.icon,
+        toggle: () => this.setState(st => ({ hidden: st.hidden.indexOf(t.id) !== -1 ? st.hidden.filter(x => x !== t.id) : st.hidden.concat(t.id) })),
+        style: {
+          display: 'flex', alignItems: 'center', gap: '7px', border: '1px solid ' + (off ? '#e8e8e8' : '#c8c8c8'),
+          background: off ? '#fafafa' : '#fff', color: off ? '#9a9a9a' : '#000', fontSize: '12px',
+          padding: '6px 12px', cursor: 'pointer', borderRadius: '999px', fontFamily: 'Arial, Helvetica, sans-serif'
+        },
+        dot: { width: '10px', height: '10px', display: 'block', borderRadius: '50%', background: off ? '#c8c8c8' : t.color }
+      };
+    });
+    this.cache.legendSig = sig;
+    this.cache.legend = legend;
+    return legend;
+  }
+
+  buildRows() {
+    const s = this.state;
+    const showTimes = this.props.showTimeRanges ?? true;
+    const shade = this.props.weekendShading ?? true;
+    const h = this.props.rowHeight ?? 34;
+    const dr = s.drag;
+    const sig = [s.month, s.year, s.version, s.hidden.join(','), showTimes, shade, h, dr ? dr.person + ':' + dr.from + ':' + dr.to : ''].join('|');
+    if (this.cache.rowsSig === sig) return this.cache.rows;
+
+    const days = new Date(s.year, s.month + 1, 0).getDate();
+    const hidden = s.hidden;
+    const rows = [];
+    for (let d = 1; d <= days; d++) {
+      const di = this.dowIndex(d);
+      const weekend = di >= 5;
+      const bg = weekend && shade ? '#f4f4f4' : '#fff';
+      const cells = [];
+      for (let pi = 0; pi < PEOPLE.length; pi++) {
+        const e = s.entries[pi + '-' + d];
+        const t = e ? TYPE_BY_ID[e.type] : null;
+        const faded = false;
+        const inDrag = !!dr && dr.person === pi && d >= Math.min(dr.from, dr.to) && d <= Math.max(dr.from, dr.to);
+        const time = e && e.from && e.to ? e.from + '–' + e.to : '';
+        const hs = this.cellHandlers(pi, d);
+        cells.push({
+          icon: t ? t.icon : '',
+          label: t ? (showTimes && time ? time : '') : '+',
+          title: t ? [
+            'Pracownik: ' + PEOPLE[pi],
+            'Data: ' + d + ' ' + MONTHS[s.month] + ' ' + s.year + ' (' + DOW[di] + ')',
+            'Typ: ' + t.label,
+            'Godziny: ' + (time || 'cały dzień'),
+            'Komentarz: ' + (e.comment || '—'),
+            'Zastępstwo: ' + (e.sub || 'brak')
+          ].concat(t.id === 'urlop' || t.id === 'urlop_plan'
+            ? ['Priorytet: ' + (e.priority ? 'tak 🅿️' : 'nie')]
+            : []).join('\n') : '',
+          style: {
+            flex: '1 1 0', minWidth: '120px', height: h + 'px', padding: '3px',
+            borderRight: '1px solid #e8e8e8', background: inDrag ? '#d5ebf5' : bg,
+            boxShadow: inDrag ? 'inset 0 0 0 2px #072143' : 'none',
+            cursor: weekend ? 'default' : 'pointer', userSelect: 'none'
+          },
+          hasComment: !!(e && e.comment),
+          hasPriority: !!(e && e.priority),
+          hasSub: !!(e && e.sub),
+          subInitials: e && e.sub ? this.initialsOf(e.sub) : '',
+          subBadge: {
+            position: 'absolute', left: '4px', top: '50%', transform: 'translateY(-50%)',
+            display: 'flex', alignItems: 'center', gap: '2px',
+            background: 'rgba(255,255,255,.75)', color: '#072143', borderRadius: '999px',
+            padding: '1px 5px', fontSize: '9px', fontWeight: 'bold', lineHeight: 1.4
+          },
+          chip: t ? {
+            position: 'relative',
+            height: '100%', width: '100%', background: t.color, color: t.fg, opacity: faded ? 0.18 : 1, borderRadius: '7px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+            fontSize: '11px', fontWeight: 'bold', overflow: 'hidden', whiteSpace: 'nowrap'
+          } : {
+            height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '14px', color: weekend ? 'transparent' : '#dcdcdc'
+          },
+          down: weekend ? undefined : hs.down,
+          enter: weekend ? undefined : hs.enter,
+          click: weekend ? undefined : hs.click
+        });
+      }
+      rows.push({
+        day: String(d), dow: DOW[di],
+        style: weekend && shade ? ROW_STYLE_WK : ROW_STYLE,
+        dayStyle: DAY_STYLE,
+        dowStyle: weekend ? DOW_STYLE_WK : DOW_STYLE,
+        cells
+      });
+    }
+    this.cache.rowsSig = sig;
+    this.cache.rows = rows;
+    return rows;
+  }
+
+  sf(k, num) {
+    this._sf = this._sf || {};
+    const key = k + (num ? '1' : '0');
+    if (!this._sf[key]) this._sf[key] = (ev) => {
+      const v = num ? (Number(ev.target.value) || 0) : ev.target.value;
+      this.setState(st => ({ staffDraft: { ...st.staffDraft, [k]: v } }));
+    };
+    return this._sf[key];
+  }
+
+  buildStaff() {
+    const s = this.state;
+    const sig = 'F' + s.staffVersion;
+    if (this.cache.staffSig === sig) return this.cache.staff;
+    const AV = ['#2f578c', '#58873e', '#82368C', '#cc654e', '#0b5a72'];
+    const mk = (p, i) => {
+      const name = p.first + ' ' + p.last;
+      return {
+        name,
+        initials: this.initialsOf(name),
+        role: p.role,
+        avatar: {
+          width: '34px', height: '34px', flex: 'none', borderRadius: '50%',
+          background: p.active ? AV[i % AV.length] : '#dcdcdc', color: p.active ? '#fff' : '#9a9a9a',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold'
+        },
+        nameStyle: { fontSize: '14px', fontWeight: 'bold', color: p.active ? '#000' : '#9a9a9a' },
+        roleStyle: {
+          fontSize: '11px', fontWeight: 'bold', letterSpacing: '.05em', textTransform: 'uppercase',
+          padding: '3px 9px', borderRadius: '999px',
+          background: p.role === 'Moderator' ? '#072143' : '#eef3f8',
+          color: p.role === 'Moderator' ? '#fff' : '#3a5a80'
+        },
+        quotaText: 'Wymiar: ' + (p.current + p.carry) + ' dni · korekta ' + p.correction,
+        edit: () => this.setState({ staffIndex: i, staffDraft: { ...p } }),
+        toggle: () => this.setState(st => {
+          const staff = st.staff.slice();
+          staff[i] = { ...staff[i], active: !staff[i].active };
+          return { staff, staffVersion: st.staffVersion + 1 };
+        }),
+        toggleLabel: p.active ? 'Dezaktywuj' : 'Przywróć',
+        toggleStyle: {
+          border: '1px solid ' + (p.active ? '#f3c9d4' : '#c8c8c8'), background: '#fff',
+          color: p.active ? '#e50040' : '#072143', fontSize: '12px', fontWeight: 'bold',
+          padding: '7px 13px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'Arial, Helvetica, sans-serif'
+        }
+      };
+    };
+    const rows = s.staff.map((p, i) => ({ p, i }));
+    const staff = {
+      active: rows.filter(r => r.p.active).map(r => mk(r.p, r.i)),
+      inactive: rows.filter(r => !r.p.active).map(r => mk(r.p, r.i))
+    };
+    staff.activeTitle = 'Aktywni (' + staff.active.length + ')';
+    staff.inactiveTitle = 'Nieaktywni (' + staff.inactive.length + ')';
+    staff.hasInactive = staff.inactive.length > 0;
+    this.cache.staffSig = sig;
+    this.cache.staff = staff;
+    return staff;
+  }
+
+  qs(k, d) {
+    this._qs = this._qs || {};
+    const key = k + d;
+    if (!this._qs[key]) this._qs[key] = () => this.setState(st => ({ quotaDraft: { ...(st.quotaDraft || st.quota), [k]: Math.max(0, ((st.quotaDraft || st.quota)[k] || 0) + d) } }));
+    return this._qs[key];
+  }
+
+  initialsOf(name) {
+    return name.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+  }
+
+  buildDetails() {
+    const s = this.state;
+    const sig = ['D', s.month, s.year, s.version, s.range, s.hidden.join(','), s.sortKey, s.sortDir].join('|');
+    if (this.cache.detSig === sig) return this.cache.det;
+
+    const AV = ['#2f578c', '#58873e', '#82368C', '#cc654e', '#0b5a72'];
+    const all = [];
+    Object.keys(s.entries).forEach(k => {
+      const parts = k.split('-');
+      const pi = Number(parts[0]), day = Number(parts[1]);
+      const e = s.entries[k];
+      const t = TYPE_BY_ID[e.type];
+      if (!t || s.hidden.indexOf(t.id) !== -1) return;
+      all.push({ pi, day, e, t });
+    });
+    const dir = s.sortDir;
+    const key = (x) => {
+      if (s.sortKey === 'type') return x.t.label;
+      if (s.sortKey === 'person') return PEOPLE[x.pi];
+      if (s.sortKey === 'sub') return x.e.sub || 'zzz';
+      if (s.sortKey === 'time') return x.e.from || '99:99';
+      return null;
+    };
+    all.sort((a, b) => {
+      const ka = key(a), kb = key(b);
+      if (ka !== null) {
+        const c = String(ka).localeCompare(String(kb), 'pl');
+        if (c) return c * dir;
+        return a.day - b.day || a.pi - b.pi;
+      }
+      return (a.day - b.day || a.pi - b.pi) * dir;
+    });
+
+    const mk = (it) => {
+      const dd = String(it.day).padStart(2, '0');
+      const mm = String(s.month + 1).padStart(2, '0');
+      return {
+        date: dd + '.' + mm + '.' + s.year,
+        dow: DOW[this.dowIndex(it.day)],
+        typeLabel: it.t.label,
+        icon: it.t.icon,
+        pill: {
+          display: 'inline-flex', alignItems: 'center', gap: '7px', background: it.t.color, color: it.t.fg,
+          fontSize: '12px', fontWeight: 'bold', padding: '5px 11px', borderRadius: '999px', whiteSpace: 'nowrap'
+        },
+        person: PEOPLE[it.pi],
+        personInitials: this.initialsOf(PEOPLE[it.pi]),
+        personAvatar: {
+          width: '28px', height: '28px', flex: 'none', borderRadius: '50%', background: AV[it.pi % AV.length],
+          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold'
+        },
+        subText: it.e.sub ? 'Zastępstwo: ' + it.e.sub : '—',
+        time: it.e.from && it.e.to ? it.e.from + '–' + it.e.to : 'Cały dzień',
+        timeStyle: {
+          display: 'inline-block', fontSize: '12px', fontWeight: 'bold',
+          color: it.e.from ? '#072143' : '#6f6f6f',
+          background: it.e.from ? '#eef3f8' : 'transparent',
+          border: it.e.from ? '1px solid #d7e2ee' : '1px solid transparent',
+          padding: '4px 9px', borderRadius: '999px'
+        },
+        comment: it.e.comment || '',
+        hasComment: !!it.e.comment,
+        open: () => this.openModal(it.pi, it.day, it.day)
+      };
+    };
+
+    let groups;
+    if (s.range === 'dzisiaj') {
+      const inRange = (from, to) => all.filter(x => x.day >= from && x.day <= to).map(mk);
+      const today = 1;
+      groups = [
+        { title: 'Dzisiaj', rows: inRange(today, today) },
+        { title: 'Ten tydzień', rows: inRange(today, today + 6) },
+        { title: 'Następny tydzień', rows: inRange(today + 7, today + 13) }
+      ];
+    } else if (s.range === 'miesiac') {
+      groups = [{ title: MONTHS[s.month] + ' ' + s.year, rows: all.map(mk) }];
+    } else {
+      groups = [{ title: 'Rok ' + s.year, rows: all.map(mk) }];
+    }
+    groups.forEach(g => {
+      g.count = g.rows.length + (g.rows.length === 1 ? ' wpis' : g.rows.length >= 2 && g.rows.length <= 4 ? ' wpisy' : ' wpisów');
+      g.empty = g.rows.length === 0;
+      g.hasRows = g.rows.length > 0;
+    });
+
+    this.cache.detSig = sig;
+    this.cache.det = groups;
+    return groups;
+  }
+
+  buildStats() {
+    const s = this.state;
+    const sig = ['ST', s.month, s.year, s.version].join('|');
+    if (this.cache.statSig === sig) return this.cache.stat;
+    const AV = ['#2f578c', '#58873e', '#82368C', '#cc654e', '#0b5a72'];
+    const hrs = (e) => {
+      if (!e.from || !e.to) return 0;
+      const a = e.from.split(':'), b = e.to.split(':');
+      const v = (Number(b[0]) * 60 + Number(b[1])) - (Number(a[0]) * 60 + Number(a[1]));
+      return v > 0 ? v / 60 : 0;
+    };
+    const fmtH = (h) => h ? (Math.round(h * 10) / 10) + ' godz.' : '';
+    const fmtD = (d) => d + (d === 1 ? ' dzień' : ' dni');
+    const perPerson = PEOPLE.map(() => ({ days: {}, hours: {}, total: 0, totalH: 0 }));
+    const perType = {};
+    TYPES.forEach(t => { perType[t.id] = { days: 0, hours: 0 }; });
+    Object.keys(s.entries).forEach(k => {
+      const parts = k.split('-');
+      const pi = Number(parts[0]);
+      const e = s.entries[k];
+      const t = TYPE_BY_ID[e.type];
+      if (!t || !perPerson[pi]) return;
+      const h = hrs(e);
+      perPerson[pi].days[t.id] = (perPerson[pi].days[t.id] || 0) + 1;
+      perPerson[pi].hours[t.id] = (perPerson[pi].hours[t.id] || 0) + h;
+      perPerson[pi].total += 1;
+      perPerson[pi].totalH += h;
+      perType[t.id].days += 1;
+      perType[t.id].hours += h;
+    });
+
+    const grandDays = TYPES.reduce((a, t) => a + perType[t.id].days, 0);
+    const grandH = TYPES.reduce((a, t) => a + perType[t.id].hours, 0);
+    const maxTotal = Math.max(1, ...perPerson.map(p => p.total));
+
+    const rows = PEOPLE.map((name, i) => {
+      const p = perPerson[i];
+      return {
+        person: name,
+        initials: this.initialsOf(name),
+        avatar: {
+          width: '28px', height: '28px', flex: 'none', borderRadius: '50%', background: AV[i % AV.length],
+          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold'
+        },
+        cells: TYPES.map(t => {
+          const d = p.days[t.id] || 0;
+          const h = p.hours[t.id] || 0;
+          return {
+            text: d ? fmtD(d) : '–',
+            style: { fontSize: '13px', textAlign: 'center', color: d ? '#000' : '#c8c8c8', fontWeight: d ? 'bold' : 'normal' }
+          };
+        }),
+        bar: TYPES.filter(t => p.days[t.id]).map(t => ({
+          style: { flex: (p.days[t.id] || 0) + ' 0 0', background: t.color, height: '100%' },
+          title: t.label + ': ' + fmtD(p.days[t.id])
+        })),
+        barTrack: { display: 'flex', height: '8px', borderRadius: '999px', overflow: 'hidden', background: '#f0f0f0', width: Math.round(p.total / maxTotal * 100) + '%', minWidth: p.total ? '6px' : '0' },
+        totalText: p.total ? fmtD(p.total) : '–',
+        totalStyle: { fontSize: '13px', fontWeight: 'bold', textAlign: 'right', color: p.total ? '#072143' : '#c8c8c8' }
+      };
+    });
+
+    const HIST = [
+      { urlop: 5, choroba: 1, szkolenie_poza: 6, szkolenie_w: 2, stala: 2, urlop_plan: 1 },
+      { urlop: 2, szkolenie_poza: 2, szkolenie_w: 2 },
+      { urlop: 1 },
+      { wyjazd: 1 },
+      { szkolenie_w: 1 }
+    ];
+    const yearPerson = PEOPLE.map((n, i) => {
+      const days = { ...perPerson[i].days };
+      Object.keys(HIST[i] || {}).forEach(k => { days[k] = (days[k] || 0) + HIST[i][k]; });
+      const total = TYPES.reduce((a, t) => a + (days[t.id] || 0), 0);
+      return { days, total };
+    });
+    const yearType = {};
+    TYPES.forEach(t => { yearType[t.id] = yearPerson.reduce((a, p) => a + (p.days[t.id] || 0), 0); });
+    const yearGrand = TYPES.reduce((a, t) => a + yearType[t.id], 0);
+    const maxYear = Math.max(1, ...yearPerson.map(p => p.total));
+    const MEDALS = ['🥇', '🥈', '🥉'];
+    const rankByType = {};
+    TYPES.forEach(t => {
+      const order = yearPerson
+        .map((p, i) => ({ i, d: p.days[t.id] || 0 }))
+        .filter(x => x.d > 0)
+        .sort((a, b) => b.d - a.d);
+      const map = {};
+      let place = 0, prev = null;
+      order.forEach((x, idx) => {
+        if (x.d !== prev) { place = idx; prev = x.d; }
+        if (place < 3) map[x.i] = MEDALS[place];
+      });
+      rankByType[t.id] = map;
+    });
+    const totalOrder = yearPerson.map((p, i) => ({ i, d: p.total })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
+    const rankTotal = {};
+    { let place = 0, prev = null;
+      totalOrder.forEach((x, idx) => {
+        if (x.d !== prev) { place = idx; prev = x.d; }
+        if (place < 3) rankTotal[x.i] = MEDALS[place];
+      }); }
+    const rowsYear = PEOPLE.map((name, i) => {
+      const p = yearPerson[i];
+      return {
+        person: name,
+        initials: this.initialsOf(name),
+        avatar: {
+          width: '28px', height: '28px', flex: 'none', borderRadius: '50%', background: AV[i % AV.length],
+          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold'
+        },
+        cells: TYPES.map(t => {
+          const d = p.days[t.id] || 0;
+          const medal = rankByType[t.id][i];
+          return { text: d ? (medal ? medal + ' ' : '') + fmtD(d) : '–', style: { fontSize: '13px', textAlign: 'center', color: d ? '#000' : '#c8c8c8', fontWeight: d ? 'bold' : 'normal' } };
+        }),
+        bar: TYPES.filter(t => p.days[t.id]).map(t => ({
+          style: { flex: p.days[t.id] + ' 0 0', background: t.color, height: '100%' },
+          title: t.label + ': ' + fmtD(p.days[t.id])
+        })),
+        barTrack: { display: 'flex', height: '8px', borderRadius: '999px', overflow: 'hidden', background: '#f0f0f0', width: Math.round(p.total / maxYear * 100) + '%', minWidth: p.total ? '6px' : '0' },
+        totalText: p.total ? (rankTotal[i] ? rankTotal[i] + ' ' : '') + fmtD(p.total) : '–',
+        totalStyle: { fontSize: '13px', fontWeight: 'bold', textAlign: 'right', color: p.total ? '#072143' : '#c8c8c8' }
+      };
+    });
+    const ALLOW = PEOPLE.map((n, i) => i === 0 ? s.quota.current + s.quota.carry : 26);
+    const usage = PEOPLE.map((name, i) => {
+      const allowance = ALLOW[i];
+      const used = i === 0
+        ? s.quota.usedActual + s.quota.correction
+        : (perPerson[i].days['urlop'] || 0) + (perPerson[i].days['urlop_plan'] || 0);
+      const pct = allowance ? Math.round(used / allowance * 100) : 0;
+      const over = used > allowance;
+      return {
+        person: name,
+        initials: this.initialsOf(name),
+        avatar: {
+          width: '28px', height: '28px', flex: 'none', borderRadius: '50%', background: AV[i % AV.length],
+          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold'
+        },
+        ratio: used + ' / ' + allowance + ' dni',
+        left: over ? 'przekroczono o ' + (used - allowance) : 'pozostało ' + (allowance - used),
+        pct: pct + '%',
+        pctStyle: { fontSize: '13px', fontWeight: 'bold', textAlign: 'right', color: over ? '#e50040' : '#072143' },
+        fill: {
+          height: '100%', width: Math.min(100, pct) + '%', borderRadius: '999px',
+          background: over ? '#e50040' : pct >= 80 ? '#c5ac75' : '#2f578c'
+        }
+      };
+    });
+
+    const stat = {
+      usage,
+      title: 'Statystyki miesięczne – ' + MONTHS[s.month] + ' ' + s.year,
+      titleYear: 'Statystyki roczne – Rok ' + s.year,
+      rowsYear,
+      totalsYear: TYPES.map(t => ({
+        text: yearType[t.id] ? fmtD(yearType[t.id]) : '–',
+        style: { fontSize: '13px', fontWeight: 'bold', textAlign: 'center', color: yearType[t.id] ? '#072143' : '#c8c8c8' }
+      })),
+      grandTextYear: yearGrand ? fmtD(yearGrand) : '–',
+      cols: TYPES.map(t => ({
+        label: t.label, icon: t.icon,
+        dot: { width: '9px', height: '9px', borderRadius: '50%', background: t.color, display: 'block', margin: '0 auto 5px' }
+      })),
+      rows,
+      totals: TYPES.map(t => ({
+        text: perType[t.id].days ? fmtD(perType[t.id].days) : '–',
+        style: { fontSize: '13px', fontWeight: 'bold', textAlign: 'center', color: perType[t.id].days ? '#072143' : '#c8c8c8' }
+      })),
+      grandText: grandDays ? fmtD(grandDays) : '–',
+      kpis: [
+        { label: 'Dni nieobecności', value: String(grandDays), note: MONTHS[s.month] + ' ' + s.year },
+        { label: 'Pracownicy z nieobecnością', value: perPerson.filter(p => p.total).length + ' / ' + PEOPLE.length, note: 'w tym miesiącu' }
+      ],
+      breakdown: TYPES.map(t => ({
+        label: t.label, icon: t.icon,
+        value: perType[t.id].days ? fmtD(perType[t.id].days) : '–',
+        fill: { height: '100%', width: Math.round((perType[t.id].days / Math.max(1, grandDays)) * 100) + '%', background: t.color, borderRadius: '999px' },
+        share: grandDays ? Math.round((perType[t.id].days / grandDays) * 100) + '%' : '0%'
+      }))
+    };
+    this.cache.statSig = sig;
+    this.cache.stat = stat;
+    return stat;
+  }
+
+  buildSortHeaders() {
+    const s = this.state;
+    const sig = 'S' + s.sortKey + s.sortDir;
+    if (this.cache.sortSig === sig) return this.cache.sorts;
+    const defs = [
+      { id: 'date', label: 'Data', align: 'left' },
+      { id: 'type', label: 'Typ', align: 'left' },
+      { id: 'person', label: 'Pracownik', align: 'left' },
+      { id: 'sub', label: 'Zastępstwo', align: 'left' },
+      { id: 'time', label: 'Czas', align: 'right' }
+    ];
+    const sorts = defs.map(d => {
+      const on = s.sortKey === d.id;
+      return {
+        label: d.label,
+        arrow: on ? (s.sortDir === 1 ? '↑' : '↓') : '↕',
+        click: () => this.setState(st => (st.sortKey === d.id ? { sortDir: -st.sortDir } : { sortKey: d.id, sortDir: 1 })),
+        style: {
+          display: 'flex', alignItems: 'center', gap: '6px',
+          justifyContent: d.align === 'right' ? 'flex-end' : 'flex-start',
+          border: 'none', background: 'transparent', padding: 0, cursor: 'pointer',
+          fontSize: '11px', fontWeight: 'bold', letterSpacing: '.06em', textTransform: 'uppercase',
+          color: on ? '#072143' : '#6f6f6f', fontFamily: 'Arial, Helvetica, sans-serif'
+        },
+        arrowStyle: { fontSize: '11px', color: on ? '#c5ac75' : '#c8c8c8' }
+      };
+    });
+    this.cache.sortSig = sig;
+    this.cache.sorts = sorts;
+    return sorts;
+  }
+
+  buildSubOptions(activeSub) {
+    if (this.cache.subSig === activeSub) return this.cache.subs;
+    const AV = ['#2f578c', '#58873e', '#82368C', '#cc654e', '#0b5a72'];
+    const circle = (bg, fg, on) => ({
+      width: '38px', height: '38px', flex: 'none', borderRadius: '50%', background: bg, color: fg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold',
+      letterSpacing: '.02em', cursor: 'pointer', fontFamily: 'Arial, Helvetica, sans-serif',
+      border: on ? '2px solid #072143' : '2px solid transparent',
+      boxShadow: on ? '0 0 0 2px #fff inset' : 'none', padding: 0
+    });
+    const subs = [{
+      label: 'Brak zastępstwa',
+      initials: '—',
+      pick: () => this.setState(st => ({ draft: { ...(st.draft || EMPTY_DRAFT), sub: '' } })),
+      style: circle('#eeeeee', '#6f6f6f', !activeSub)
+    }].concat(PEOPLE.map((name, i) => {
+      const initials = name.replace(/[^\p{L}\s]/gu, '').trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+      return {
+        label: name,
+        initials,
+        pick: () => this.setState(st => ({ draft: { ...(st.draft || EMPTY_DRAFT), sub: name } })),
+        style: circle(AV[i % AV.length], '#fff', activeSub === name)
+      };
+    }));
+    this.cache.subSig = activeSub;
+    this.cache.subs = subs;
+    return subs;
+  }
+
+  buildTypeOptions(activeId) {
+    if (this.cache.optSig === activeId) return this.cache.opts;
+    const opts = TYPES.map(t => {
+      const on = t.id === activeId;
+      return {
+        label: t.label,
+        icon: t.icon,
+        pick: () => this.setState(st => {
+          const d = st.draft || EMPTY_DRAFT;
+          const timed = t.id === 'szkolenie_poza' || t.id === 'szkolenie_w';
+          return { draft: { ...d, type: t.id, from: timed ? d.from : '', to: timed ? d.to : '' } };
+        }),
+        swatch: {
+          width: '28px', height: '28px', flex: 'none', borderRadius: '9px', background: t.color,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1
+        },
+        checkStyle: { marginLeft: 'auto', color: on ? '#072143' : 'transparent', fontSize: '13px', fontWeight: 'bold' },
+        style: {
+          width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+          border: on ? '2px solid #072143' : '1px solid #dcdcdc',
+          padding: on ? '9px 11px' : '10px 12px',
+          background: on ? '#f4f7fa' : '#fff', color: '#000', fontSize: '13px',
+          fontWeight: on ? 'bold' : 'normal', borderRadius: '10px', cursor: 'pointer',
+          fontFamily: 'Arial, Helvetica, sans-serif', textAlign: 'left', lineHeight: 1.25
+        }
+      };
+    });
+    this.cache.optSig = activeId;
+    this.cache.opts = opts;
+    return opts;
+  }
+
+  bound() {
+    if (this.b) return this.b;
+    const setDraft = (k) => (ev) => {
+      const v = ev.target.value;
+      this.setState(st => ({ draft: { ...(st.draft || EMPTY_DRAFT), [k]: v } }));
+    };
+    this.b = {
+      prevMonth: () => this.setState(st => ({ month: st.month === 0 ? 11 : st.month - 1, year: st.month === 0 ? st.year - 1 : st.year })),
+      nextMonth: () => this.setState(st => ({ month: st.month === 11 ? 0 : st.month + 1, year: st.month === 11 ? st.year + 1 : st.year })),
+      closeModal: () => this.setState({ modal: null, typeOpen: false }),
+      stop: (ev) => ev.stopPropagation(),
+      toggleTypeList: () => this.setState(st => ({ typeOpen: !st.typeOpen })),
+      setFrom: setDraft('from'), setTo: setDraft('to'), setComment: setDraft('comment'), setSub: setDraft('sub'),
+      togglePriority: () => this.setState(st => {
+        const d = st.draft || EMPTY_DRAFT;
+        return { draft: { ...d, priority: !d.priority } };
+      }),
+      toggleAllDay: () => this.setState(st => {
+        const d = st.draft || EMPTY_DRAFT;
+        const all = !(d.from && d.to);
+        return { draft: all ? { ...d, from: '09:00', to: '16:00' } : { ...d, from: '', to: '' } };
+      }),
+      clearFilters: () => this.setState({ hidden: TYPES.map(t => t.id) }),
+      openPanel: () => this.setState({ panel: true }),
+      closePanel: () => this.setState({ panel: false, staffIndex: null }),
+      closeStaff: () => this.setState({ staffIndex: null }),
+      saveStaff: () => this.setState(st => {
+        const staff = st.staff.slice();
+        staff[st.staffIndex] = { ...st.staffDraft };
+        return { staff, staffIndex: null, staffVersion: st.staffVersion + 1 };
+      }),
+      addStaff: () => this.setState(st => ({
+        staffIndex: st.staff.length,
+        staff: st.staff.concat({ first: '', last: '', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: st.year + '-12-31' }),
+        staffDraft: { first: '', last: '', role: 'Pracownik', active: true, current: 26, carry: 0, correction: 0, until: st.year + '-12-31' },
+        staffVersion: st.staffVersion + 1
+      })),
+      sField: (k, num) => (ev) => {
+        const v = num ? (Number(ev.target.value) || 0) : ev.target.value;
+        this.setState(st => ({ staffDraft: { ...st.staffDraft, [k]: v } }));
+      },
+      openQuota: () => this.setState(st => ({ quotaModal: true, quotaDraft: { ...st.quota } })),
+      closeQuota: () => this.setState({ quotaModal: false }),
+      saveQuota: () => this.setState(st => ({ quota: { ...st.quotaDraft }, quotaModal: false })),
+      resetQuota: () => this.setState(st => ({ quotaDraft: { ...st.quotaDraft, current: 0, carry: 0, correction: 0 } })),
+      qCurrent: (ev) => { const v = Number(ev.target.value) || 0; this.setState(st => ({ quotaDraft: { ...st.quotaDraft, current: v } })); },
+      qCarry: (ev) => { const v = Number(ev.target.value) || 0; this.setState(st => ({ quotaDraft: { ...st.quotaDraft, carry: v } })); },
+      qCorrection: (ev) => { const v = Number(ev.target.value) || 0; this.setState(st => ({ quotaDraft: { ...st.quotaDraft, correction: v } })); },
+      qUntil: (ev) => { const v = ev.target.value; this.setState(st => ({ quotaDraft: { ...st.quotaDraft, until: v } })); },
+      qStep: (k, d) => () => this.setState(st => ({ quotaDraft: { ...st.quotaDraft, [k]: Math.max(0, (st.quotaDraft[k] || 0) + d) } })),
+      goGrid: () => this.setState({ tab: 'siatka' }),
+      goDetails: () => this.setState({ tab: 'szczegoly' }),
+      goStats: () => this.setState({ tab: 'statystyki' }),
+      rangeDay: () => this.setState({ range: 'dzisiaj' }),
+      rangeMonth: () => this.setState({ range: 'miesiac' }),
+      rangeYear: () => this.setState({ range: 'rok' }),
+      removeEntry: () => {
+        const m = this.state.modal;
+        if (!m) return;
+        this.setState(st => {
+          const e = { ...st.entries };
+          for (let d = m.dayFrom; d <= m.dayTo; d++) delete e[m.person + '-' + d];
+          return { entries: e, version: st.version + 1, modal: null, typeOpen: false };
+        });
+      },
+      saveEntry: () => {
+        const m = this.state.modal;
+        if (!m) return;
+        this.setState(st => {
+          const e = { ...st.entries };
+          for (let d = m.dayFrom; d <= m.dayTo; d++) {
+            if (this.dowIndex(d) >= 5) continue;
+            e[m.person + '-' + d] = { ...(st.draft || EMPTY_DRAFT) };
+          }
+          return { entries: e, version: st.version + 1, modal: null, typeOpen: false };
+        });
+      }
+    };
+    return this.b;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const b = this.bound();
+    const m = s.modal;
+    const draft = s.draft || EMPTY_DRAFT;
+    const selected = TYPE_BY_ID[draft.type] || TYPES[0];
+    const existing = m ? s.entries[m.person + '-' + m.dayFrom] : null;
+    const qd = s.quotaDraft || s.quota;
+    const sd = s.staffDraft || { first: '', last: '', role: 'Pracownik', current: 0, carry: 0, correction: 0, until: '' };
+    const dayLabel = m ? (m.dayTo > m.dayFrom
+      ? m.dayFrom + '–' + m.dayTo + ' ' + MONTHS[s.month] + ' ' + s.year
+      : DOW[this.dowIndex(m.dayFrom)] + ' ' + m.dayFrom + ' ' + MONTHS[s.month] + ' ' + s.year) : '';
+
+    return {
+      monthLabel: MONTHS[s.month] + ' ' + s.year,
+      quotaCurrent: String(s.quota.current),
+      quotaCarry: String(s.quota.carry),
+      quotaUsed: String(s.quota.usedActual + s.quota.correction),
+      quotaUntil: 'Do dnia: ' + s.quota.until,
+      quotaBalanceText: (s.quota.current + s.quota.carry - s.quota.usedActual - s.quota.correction) + ' dni',
+      quotaBalanceStyle: {
+        fontSize: '40px', fontWeight: 'bold', lineHeight: 1,
+        color: (s.quota.current + s.quota.carry - s.quota.usedActual - s.quota.correction) < 0 ? '#e50040' : '#072143'
+      },
+      quotaOver: (s.quota.current + s.quota.carry - s.quota.usedActual - s.quota.correction) < 0,
+      quotaOverText: 'Przekroczono wymiar urlopu o ' + Math.abs(s.quota.current + s.quota.carry - s.quota.usedActual - s.quota.correction) + ' dni.',
+      openPanel: b.openPanel, closePanel: b.closePanel, addStaff: b.addStaff,
+      panelOpen: !!s.panel,
+      staff: this.buildStaff(),
+      staffModal: s.staffIndex !== null,
+      staffTitle: sd.first || sd.last ? 'Edytuj pracownika' : 'Dodaj pracownika',
+      sFirst: sd.first, sLast: sd.last, sRole: sd.role,
+      sCurrent: sd.current, sCarry: sd.carry, sCorrection: sd.correction, sUntil: sd.until,
+      setSFirst: this.sf('first'), setSLast: this.sf('last'), setSRole: this.sf('role'),
+      setSCurrent: this.sf('current', true), setSCarry: this.sf('carry', true),
+      setSCorrection: this.sf('correction', true), setSUntil: this.sf('until'),
+      sTotal: (sd.current || 0) + (sd.carry || 0) + ' dni wymiaru',
+      closeStaff: b.closeStaff, saveStaff: b.saveStaff,
+      openQuota: b.openQuota,
+      quotaModal: !!s.quotaModal,
+      closeQuota: b.closeQuota, saveQuota: b.saveQuota, resetQuota: b.resetQuota,
+      qCurrent: b.qCurrent, qCarry: b.qCarry, qCorrection: b.qCorrection, qUntil: b.qUntil,
+      qCurrentValue: qd.current, qCarryValue: qd.carry, qCorrectionValue: qd.correction, qUntilValue: qd.until,
+      qCurrentUp: this.qs('current', 1), qCurrentDown: this.qs('current', -1),
+      qCarryUp: this.qs('carry', 1), qCarryDown: this.qs('carry', -1),
+      qCorrectionUp: this.qs('correction', 1), qCorrectionDown: this.qs('correction', -1),
+      qPreviewLeft: (qd.current + qd.carry - s.quota.usedActual - qd.correction) + ' dni',
+      qPreviewStyle: {
+        fontSize: '26px', fontWeight: 'bold', lineHeight: 1,
+        color: (qd.current + qd.carry - s.quota.usedActual - qd.correction) < 0 ? '#e50040' : '#072143'
+      },
+      qFormula: 'Bieżące ' + qd.current + ' + Zaległe ' + qd.carry + ' − Wykorzystane ' + (s.quota.usedActual + qd.correction),
+      showGrid: s.tab === 'siatka',
+      showDetails: s.tab === 'szczegoly',
+      showStats: s.tab === 'statystyki',
+      tabGridStyle: s.tab === 'siatka' ? TAB_ON : TAB_OFF_FIRST,
+      tabDetailsStyle: s.tab === 'szczegoly' ? TAB_ON : TAB_OFF,
+      tabStatsStyle: s.tab === 'statystyki' ? TAB_ON : TAB_OFF,
+      goGrid: b.goGrid, goDetails: b.goDetails, goStats: b.goStats,
+      rangeDayStyle: s.range === 'dzisiaj' ? SEG_ON : SEG_OFF,
+      rangeMonthStyle: s.range === 'miesiac' ? SEG_ON : SEG_OFF,
+      rangeYearStyle: s.range === 'rok' ? SEG_ON : SEG_OFF,
+      rangeDay: b.rangeDay, rangeMonth: b.rangeMonth, rangeYear: b.rangeYear,
+      detailGroups: this.buildDetails(),
+      sortHeaders: this.buildSortHeaders(),
+      stats: this.buildStats(),
+      hasFilters: s.hidden.length < TYPES.length,
+      clearStyle: CLEAR_ACTIVE,
+      filterCount: s.hidden.length + ' ' + (s.hidden.length === 1 ? 'typ ukryty' : 'typy ukryte'),
+      clearFilters: b.clearFilters,
+      people: PEOPLE_OBJ,
+      legend: this.buildLegend(),
+      legendKey: this.buildLegendKey(),
+      rows: this.buildRows(),
+      prevMonth: b.prevMonth, nextMonth: b.nextMonth,
+      modal: !!m,
+      modalTitle: existing ? 'Edytuj nieobecność' : 'Dodaj nieobecność',
+      modalSubtitle: m ? PEOPLE[m.person] + ' · ' + dayLabel : '',
+      closeModal: b.closeModal, stop: b.stop,
+      typeOpen: !!s.typeOpen,
+      toggleTypeList: b.toggleTypeList,
+      selectedLabel: selected.label,
+      selectedColor: selected.color,
+      selectedIcon: selected.icon,
+      selectStyle: s.typeOpen ? SELECT_OPEN : SELECT_CLOSED,
+      typeOptions: this.buildTypeOptions(draft.type),
+      subOptions: this.buildSubOptions(draft.sub),
+      subLabel: draft.sub ? 'Wybrano: ' + draft.sub : 'Brak zastępstwa',
+      fromValue: draft.from, toValue: draft.to, commentValue: draft.comment, subValue: draft.sub,
+      setFrom: b.setFrom, setTo: b.setTo, setComment: b.setComment, setSub: b.setSub,
+      showPriority: draft.type === 'urlop' || draft.type === 'urlop_plan',
+      priorityChecked: !!draft.priority,
+      priorityStyle: draft.priority
+        ? { width: '20px', height: '20px', flex: 'none', borderRadius: '6px', background: '#072143', border: '1px solid #072143', color: '#fff', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
+        : { width: '20px', height: '20px', flex: 'none', borderRadius: '6px', background: '#fff', border: '1px solid #c8c8c8', color: 'transparent', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+      togglePriority: b.togglePriority,
+      showAllDay: draft.type === 'szkolenie_poza' || draft.type === 'szkolenie_w',
+      allDayChecked: !(draft.from && draft.to),
+      allDayStyle: !(draft.from && draft.to)
+        ? { width: '20px', height: '20px', flex: 'none', borderRadius: '6px', background: '#072143', border: '1px solid #072143', color: '#fff', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
+        : { width: '20px', height: '20px', flex: 'none', borderRadius: '6px', background: '#fff', border: '1px solid #c8c8c8', color: 'transparent', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+      toggleAllDay: b.toggleAllDay,
+      showHours: (draft.type === 'szkolenie_poza' || draft.type === 'szkolenie_w') && !!(draft.from && draft.to),
+      deleteStyle: existing ? DEL_ON : DEL_OFF,
+      removeEntry: b.removeEntry, saveEntry: b.saveEntry
+    };
+  }
+}
+</script>
+</body>
+</html>

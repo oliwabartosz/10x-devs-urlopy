@@ -180,17 +180,22 @@ const nextMonthUrl =
 const gridTabUrl = `?month=${monthStr}&tab=grid`;
 const detailsTabUrl = `?month=${monthStr}&tab=details&subcard=today`;
 const statsTabUrl = `?month=${monthStr}&tab=stats`;
+
+// Segmented pill control: the active segment is a navy fill, inactive segments are
+// separated by a left hairline (the first segment has none).
+const tabBase = "px-[22px] py-[9px] text-sm transition-colors";
+const tabOn = `${tabBase} bg-primary text-primary-foreground font-bold`;
+const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
 ---
 
 <Layout title="Urlopy — Ewidencja nieobecności">
-  <div class="min-h-screen bg-gray-50">
-    <div class="px-4 pt-4">
-      <Topbar role={currentEmployee?.role} />
+  <div class="bg-surface min-h-screen">
+    <Topbar role={currentEmployee?.role} />
+
+    <div class="border-line flex h-15 items-center gap-3 border-b bg-white px-8">
       {
         currentEmployee?.role === "moderator" && (
-          <div class="mt-2">
-            <EmployeeManagementSheet client:load employees={allEmployees} currentEmployee={currentEmployee} />
-          </div>
+          <EmployeeManagementSheet client:load employees={allEmployees} currentEmployee={currentEmployee} />
         )
       }
     </div>
@@ -201,8 +206,22 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
           Błąd serwera. Spróbuj ponownie lub skontaktuj się z administratorem.
         </div>
       ) : currentEmployee ? (
-        <div class="px-4 pt-4">
-          <MonthNav prevMonthUrl={prevMonthUrl} nextMonthUrl={nextMonthUrl} year={year} month={month} />
+        <div class="mx-auto max-w-[1480px] px-8 pt-7 pb-14">
+          <div class="mb-5 flex items-center justify-between gap-4">
+            <MonthNav prevMonthUrl={prevMonthUrl} nextMonthUrl={nextMonthUrl} year={year} month={month} />
+
+            <nav class="border-line flex overflow-hidden rounded-[10px] border bg-white">
+              <a href={gridTabUrl} class:list={currentTab === "grid" ? tabOn : tabOff}>
+                Siatka
+              </a>
+              <a href={detailsTabUrl} class:list={["border-line border-l", currentTab === "details" ? tabOn : tabOff]}>
+                Szczegóły
+              </a>
+              <a href={statsTabUrl} class:list={["border-line border-l", currentTab === "stats" ? tabOn : tabOff]}>
+                Statystyki
+              </a>
+            </nav>
+          </div>
 
           {holidayBalance && (
             <HolidayBalanceCard
@@ -213,28 +232,7 @@ const statsTabUrl = `?month=${monthStr}&tab=stats`;
             />
           )}
 
-          <nav class="mt-3 flex gap-1 border-b">
-            <a
-              href={gridTabUrl}
-              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "grid" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              Siatka
-            </a>
-            <a
-              href={detailsTabUrl}
-              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "details" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              Szczegóły
-            </a>
-            <a
-              href={statsTabUrl}
-              class:list={`px-4 py-2 text-sm font-medium ${currentTab === "stats" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              Statystyki
-            </a>
-          </nav>
-
-          <div class="mt-4">
+          <div class="mt-6">
             {currentTab === "grid" && (
               <AbsenceGrid
                 client:load

@@ -12,14 +12,14 @@ const monthLabel = new Intl.DateTimeFormat("pl-PL", {
   month: "long",
   year: "numeric",
 }).format(new Date(year, month - 1));
+
+// Fixed-width heading keeps the arrows from shifting between long and short month names.
+const navButton =
+  "border-line text-primary hover:bg-primary hover:border-primary hover:text-primary-foreground flex size-9 items-center justify-center rounded-[10px] border bg-white text-base transition-colors";
 ---
 
 <div class="flex items-center gap-4">
-  <a href={prevMonthUrl} class="rounded border px-3 py-1 text-sm hover:bg-gray-100" aria-label="Poprzedni miesiąc">
-    ‹
-  </a>
-  <span class="text-base font-semibold capitalize">{monthLabel}</span>
-  <a href={nextMonthUrl} class="rounded border px-3 py-1 text-sm hover:bg-gray-100" aria-label="Następny miesiąc">
-    ›
-  </a>
+  <a href={prevMonthUrl} class:list={navButton} aria-label="Poprzedni miesiąc">‹</a>
+  <h1 class="text-primary min-w-[220px] text-center text-2xl font-bold capitalize">{monthLabel}</h1>
+  <a href={nextMonthUrl} class:list={navButton} aria-label="Następny miesiąc">›</a>
 </div>

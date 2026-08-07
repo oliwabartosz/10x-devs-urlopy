@@ -80,6 +80,10 @@ const astroConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  // TEMPORARY: design prototype exported from claude.ai/design. support.js is a
+  // generated runtime bundle, not application code. Drop this entry when
+  // new-design/ is deleted (see new-design/README.md).
+  { ignores: ["new-design/**"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],
