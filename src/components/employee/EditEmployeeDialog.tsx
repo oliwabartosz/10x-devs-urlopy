@@ -48,7 +48,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee }: EditEmploye
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edytuj pracownika</DialogTitle>
+          <DialogTitle className="text-primary text-xl">Edytuj pracownika</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
@@ -89,7 +89,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee }: EditEmploye
               </SelectContent>
             </Select>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
         </div>
 
         <DialogFooter>

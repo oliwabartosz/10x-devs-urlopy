@@ -48,7 +48,7 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dodaj pracownika</DialogTitle>
+          <DialogTitle className="text-primary text-xl">Dodaj pracownika</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
@@ -110,7 +110,7 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
               placeholder="min. 8 znaków"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
         </div>
 
         <DialogFooter>

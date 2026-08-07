@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { typeAllowsPartialDay } from "@/lib/absence-types";
+import { initialsOf } from "@/lib/initials";
+import { avatarColor } from "@/lib/avatar";
+import { cn } from "@/lib/utils";
 import type { Absence, AbsenceType, Employee } from "@/types";
 
 interface AbsenceFormDialogProps {
@@ -121,10 +123,12 @@ export function AbsenceFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}</DialogTitle>
-          <p className="text-muted-foreground text-sm capitalize">{dateHeading}</p>
+          <DialogTitle className="text-primary text-xl">
+            {existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
+          </DialogTitle>
+          <p className="text-muted-foreground text-[13px] capitalize">{dateHeading}</p>
           {targetEmployee.id !== currentEmployee.id && (
-            <p className="text-sm font-medium text-blue-600">
+            <p className="text-primary text-[13px] font-bold">
               {targetEmployee.first_name} {targetEmployee.last_name}
             </p>
           )}
@@ -132,33 +136,48 @@ export function AbsenceFormDialog({
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="absence-type">Typ nieobecności</Label>
-            <Select
-              value={absenceTypeId?.toString() ?? ""}
-              onValueChange={(val) => {
-                const nextTypeId = val ? parseInt(val, 10) : null;
-                setAbsenceTypeId(nextTypeId);
-                // Only the training types (PARTIAL_DAY_TYPE_NAMES) may be partial-day; any
-                // other type reverts to full-day and drops whatever range was entered.
-                const nextType = absenceTypes.find((t) => t.id === nextTypeId);
-                if (!typeAllowsPartialDay(nextType?.name)) {
-                  setIsFullDay(true);
-                  setStartTime("");
-                  setEndTime("");
-                }
-              }}
-            >
-              <SelectTrigger id="absence-type" className="w-full">
-                <SelectValue placeholder="Wybierz typ..." />
-              </SelectTrigger>
-              <SelectContent>
-                {absenceTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id.toString()}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label id="absence-type-label">Typ nieobecności</Label>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="absence-type-label">
+              {absenceTypes.map((type) => {
+                const selected = type.id === absenceTypeId;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                      setAbsenceTypeId(type.id);
+                      // Only the training types (PARTIAL_DAY_TYPE_NAMES) may be partial-day; any
+                      // other type reverts to full-day and drops whatever range was entered.
+                      if (!typeAllowsPartialDay(type.name)) {
+                        setIsFullDay(true);
+                        setStartTime("");
+                        setEndTime("");
+                      }
+                    }}
+                    className={cn(
+                      "hover:border-primary flex w-full items-center gap-2.5 rounded-[10px] text-left text-[13px] leading-tight text-black transition-colors",
+                      selected
+                        ? "border-primary bg-[#f4f7fa] px-[11px] py-[9px] font-bold ring-1 ring-[#072143]"
+                        : "border-[#dcdcdc] px-3 py-2.5",
+                      "border",
+                    )}
+                  >
+                    <span
+                      className="flex size-7 shrink-0 items-center justify-center rounded-[9px] text-sm leading-none"
+                      style={{ backgroundColor: type.color, color: type.text_color }}
+                    >
+                      {type.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">{type.name}</span>
+                    <span className={cn("text-[13px] font-bold", selected ? "text-primary" : "text-transparent")}>
+                      ✓
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {canBePartialDay && (
@@ -227,25 +246,59 @@ export function AbsenceFormDialog({
 
           {otherEmployees.length > 0 && (
             <div className="grid gap-1.5">
-              <Label htmlFor="substitute">Zastępstwo (opcjonalnie)</Label>
-              <Select
-                value={substituteEmployeeId ?? "none"}
-                onValueChange={(val) => {
-                  setSubstituteEmployeeId(val === "none" ? null : val);
-                }}
-              >
-                <SelectTrigger id="substitute" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Brak zastępstwa</SelectItem>
-                  {otherEmployees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label id="substitute-label">Zastępstwo (opcjonalnie)</Label>
+              {/* otherEmployees excludes the *target* employee, not the editor
+                  (context/changes/moderator-absence-management/plan.md:32), and the
+                  employees prop is already visibleEmployeesFilter()-scoped, so the
+                  is_system admin never appears here. */}
+              <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-labelledby="substitute-label">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={substituteEmployeeId === null}
+                  title="Brak zastępstwa"
+                  onClick={() => {
+                    setSubstituteEmployeeId(null);
+                  }}
+                  className={cn(
+                    "text-muted-foreground hover:border-accent flex size-[38px] shrink-0 items-center justify-center rounded-full border-2 bg-[#eeeeee] text-[13px] font-bold",
+                    substituteEmployeeId === null ? "border-primary" : "border-transparent",
+                  )}
+                >
+                  —
+                </button>
+                {otherEmployees.map((emp) => {
+                  const selected = substituteEmployeeId === emp.id;
+                  const fullName = `${emp.first_name} ${emp.last_name}`;
+                  return (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      title={fullName}
+                      onClick={() => {
+                        setSubstituteEmployeeId(emp.id);
+                      }}
+                      className={cn(
+                        "hover:border-accent flex size-[38px] shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-bold text-white",
+                        selected ? "border-primary" : "border-transparent",
+                      )}
+                      style={{ backgroundColor: avatarColor(employees.indexOf(emp)) }}
+                    >
+                      {initialsOf(fullName)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-muted-foreground min-h-4 text-xs">
+                {substituteEmployeeId === null
+                  ? "Brak zastępstwa"
+                  : (() => {
+                      const sub = otherEmployees.find((e) => e.id === substituteEmployeeId);
+                      return sub ? `${sub.first_name} ${sub.last_name}` : "";
+                    })()}
+              </p>
             </div>
           )}
         </div>

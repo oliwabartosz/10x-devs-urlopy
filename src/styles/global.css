@@ -24,7 +24,7 @@
   --accent-foreground: oklch(0.2501 0.0716 256.56); /* #072143 navy on gold */
   --destructive: oklch(0.5838 0.2341 18.83); /* #e50040 */
   --border: oklch(0.8328 0 0); /* #c8c8c8 */
-  --input: oklch(0.922 0 0);
+  --input: oklch(0.8328 0 0); /* #c8c8c8 — same hairline the prototype uses on fields */
   --ring: oklch(0.8707 0.0467 222.64); /* #b4dceb focus blue */
   /* Prototype greys with no shadcn semantic slot. */
   --surface: oklch(0.9672 0 0); /* #f4f4f4 — page ground, weekend rows */

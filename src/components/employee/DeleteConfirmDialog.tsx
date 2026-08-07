@@ -38,17 +38,17 @@ export function DeleteConfirmDialog({ open, onOpenChange, employee }: DeleteConf
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dezaktywuj pracownika</DialogTitle>
+          <DialogTitle className="text-primary text-xl">Dezaktywuj pracownika</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-black">
           Czy na pewno chcesz dezaktywować{" "}
           <span className="font-medium">
             {employee.first_name} {employee.last_name}
           </span>
           ? Historyczne wpisy nieobecności zostaną zachowane.
         </p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
 
         <DialogFooter>
           <Button

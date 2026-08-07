@@ -1169,8 +1169,8 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 7.1 Lint, build and tests pass
-- [x] 7.2 The `index.ts:147` comment no longer claims both roles may write
+- [x] 7.1 Lint, build and tests pass — e2da254
+- [x] 7.2 The `index.ts:147` comment no longer claims both roles may write — e2da254
 
 #### Manual
 
@@ -1188,7 +1188,7 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 8.1 Lint, build and tests pass
+- [x] 8.1 Lint, build and tests pass
 
 #### Manual
 
