@@ -22,6 +22,13 @@
       "when": 1783946978864,
       "tag": "20260713124938_premium_brother_voodoo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786105720354,
+      "tag": "20260807122840_faulty_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

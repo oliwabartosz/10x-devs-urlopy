@@ -33,6 +33,12 @@ export const absence_types = pgTable("absence_types", {
   name: text("name").notNull(),
   // DB-level CHECK: color ~ '^#[0-9a-fA-F]{6}$' — not represented in Drizzle; re-add manually after any db:generate diff
   color: text("color").notNull(),
+  // Presentation metadata. Types stay data, never a name-keyed code map: adding an
+  // eighth type is a seed row, not a code change.
+  icon: text("icon").notNull().default(""),
+  // Explicit foreground so contrast is a catalogue decision, not a luminance guess.
+  text_color: text("text_color").notNull().default("#000000"),
+  display_order: integer("display_order").notNull().default(0),
 });
 
 export const absences = pgTable(

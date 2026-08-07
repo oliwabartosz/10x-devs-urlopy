@@ -129,7 +129,10 @@ if (currentEmployee) {
         .from(absencesTable)
         .innerJoin(employeesTable, absencesJoin)
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),
-      db.select().from(absence_types).orderBy(asc(absence_types.id)),
+      // display_order is the catalogue's intended order; id is a stable tiebreak so a
+      // type seeded without an order never floats. Star select carries icon/text_color
+      // through to every consumer.
+      db.select().from(absence_types).orderBy(asc(absence_types.display_order), asc(absence_types.id)),
       // Server-fed holiday balance row for the current employee/year so the card renders without a
       // flash; batched with the grid queries. The Used aggregate (buildBalanceView) runs after,
       // since it depends on this row's stored adjustment.

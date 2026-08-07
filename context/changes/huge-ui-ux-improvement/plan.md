@@ -1078,10 +1078,10 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 2.1 Lint passes with no unused/unresolved imports: `npm run lint`
-- [x] 2.2 Build passes: `npm run build`
-- [x] 2.3 No source file imports a deleted auth component
-- [x] 2.4 No `bg-cosmic` references remain in `src/`
+- [x] 2.1 Lint passes with no unused/unresolved imports: `npm run lint` — f748ba5
+- [x] 2.2 Build passes: `npm run build` — f748ba5
+- [x] 2.3 No source file imports a deleted auth component — f748ba5
+- [x] 2.4 No `bg-cosmic` references remain in `src/` — f748ba5
 
 #### Manual
 
@@ -1095,11 +1095,11 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 3.1 Generated diff has exactly three `ADD COLUMN` on `absence_types` and no `DROP`
-- [ ] 3.2 Migration applies cleanly: `npm run db:migrate`
-- [ ] 3.3 The `absence_types.color` CHECK constraint exists after migration
-- [ ] 3.4 All seven rows have non-empty `icon`, valid `text_color`, distinct `display_order` 1..7
-- [ ] 3.5 Build and lint pass
+- [x] 3.1 Generated diff has exactly three `ADD COLUMN` on `absence_types` and no `DROP`
+- [x] 3.2 Migration applies cleanly: `npm run db:migrate`
+- [x] 3.3 The `absence_types.color` CHECK constraint exists after migration
+- [x] 3.4 All seven rows have non-empty `icon`, valid `text_color`, distinct `display_order` 1..7
+- [x] 3.5 Build and lint pass
 
 #### Manual
 
