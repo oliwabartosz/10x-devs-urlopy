@@ -1061,9 +1061,9 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Build passes: `npm run build`
-- [x] 1.3 Unit tests pass: `npm run test:run`
+- [x] 1.1 Lint passes: `npm run lint` — c34a078
+- [x] 1.2 Build passes: `npm run build` — c34a078
+- [x] 1.3 Unit tests pass: `npm run test:run` — c34a078
 
 #### Manual
 
@@ -1078,10 +1078,10 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 2.1 Lint passes with no unused/unresolved imports: `npm run lint`
-- [ ] 2.2 Build passes: `npm run build`
-- [ ] 2.3 No source file imports a deleted auth component
-- [ ] 2.4 No `bg-cosmic` references remain in `src/`
+- [x] 2.1 Lint passes with no unused/unresolved imports: `npm run lint`
+- [x] 2.2 Build passes: `npm run build`
+- [x] 2.3 No source file imports a deleted auth component
+- [x] 2.4 No `bg-cosmic` references remain in `src/`
 
 #### Manual
 

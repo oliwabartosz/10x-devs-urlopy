@@ -1,19 +1,36 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import SignInForm from "@/components/auth/SignInForm";
+import LoginCardForm from "@/components/auth/LoginCardForm";
+import { CalendarCheck } from "lucide-react";
 
+// Kept as a route so bookmarks keep working; `/` is the canonical login surface and
+// this page deliberately renders the same shell and form.
 const error = Astro.url.searchParams.get("error");
 ---
 
-<Layout title="Sign in">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
-      <h1
-        class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent"
-      >
-        Sign in
-      </h1>
-      <SignInForm serverError={error} client:load />
+<Layout title="Nieobecności — Logowanie">
+  <div class="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div class="w-full max-w-md">
+      <div class="mb-10 text-center">
+        <div
+          class="mb-4 inline-flex size-20 items-center justify-center rounded-2xl bg-[#072143] shadow-lg shadow-slate-200"
+        >
+          <CalendarCheck className="size-10 text-white" />
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900">Nieobecności</h1>
+        <p class="mt-2 text-slate-500">Zaloguj się, aby uzyskać dostęp do panelu</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200">
+        <div class="p-8">
+          <LoginCardForm serverError={error} client:load />
+        </div>
+        <div class="border-t border-slate-100 bg-slate-50 px-8 py-4">
+          <p class="text-center text-xs text-slate-500">Logowanie za pomocą konta służbowego.</p>
+        </div>
+      </div>
+
+      <p class="mt-8 text-center text-xs text-slate-400">© 2026 Nieobecności. Wszystkie prawa zastrzeżone.</p>
     </div>
   </div>
 </Layout>
