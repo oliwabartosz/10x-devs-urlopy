@@ -1095,11 +1095,11 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 3.1 Generated diff has exactly three `ADD COLUMN` on `absence_types` and no `DROP`
-- [x] 3.2 Migration applies cleanly: `npm run db:migrate`
-- [x] 3.3 The `absence_types.color` CHECK constraint exists after migration
-- [x] 3.4 All seven rows have non-empty `icon`, valid `text_color`, distinct `display_order` 1..7
-- [x] 3.5 Build and lint pass
+- [x] 3.1 Generated diff has exactly three `ADD COLUMN` on `absence_types` and no `DROP` — 83c633f
+- [x] 3.2 Migration applies cleanly: `npm run db:migrate` — 83c633f
+- [x] 3.3 The `absence_types.color` CHECK constraint exists after migration — 83c633f
+- [x] 3.4 All seven rows have non-empty `icon`, valid `text_color`, distinct `display_order` 1..7 — 83c633f
+- [x] 3.5 Build and lint pass — 83c633f
 
 #### Manual
 
@@ -1112,9 +1112,9 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 4.1 Lint and build pass
-- [ ] 4.2 Unit tests pass: `npm run test:run`
-- [ ] 4.3 `textColorForBg` no longer exists in `src/`
+- [x] 4.1 Lint and build pass
+- [x] 4.2 Unit tests pass: `npm run test:run`
+- [x] 4.3 `textColorForBg` no longer exists in `src/`
 
 #### Manual
 

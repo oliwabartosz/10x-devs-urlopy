@@ -14,6 +14,7 @@ import {
 import { SortableContext, useSortable, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
+import { initialsOf } from "@/lib/initials";
 
 interface AbsenceGridProps {
   employees: Employee[];
@@ -24,18 +25,13 @@ interface AbsenceGridProps {
   month: number;
 }
 
-function textColorForBg(hexColor: string): string {
-  const hex = hexColor.replace("#", "");
-  if (hex.length !== 6) return "text-white";
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 128 ? "text-gray-800" : "text-white";
-}
-
 function formatTime(t: string | null | undefined): string {
   return t?.slice(0, 5) ?? "";
+}
+
+function timeRangeOf(absence: Absence): string {
+  if (absence.is_full_day || !absence.start_time || !absence.end_time) return "";
+  return `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
 }
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -59,23 +55,26 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
   const isInactive = !!emp.deleted_at;
 
   return (
+    // No CSS transform on the <th> and listeners on the handle only — a table layout
+    // detaches a transformed header cell (see context/changes/employee-grid-order/plan.md).
     <th
       ref={setNodeRef}
-      className={`max-w-[50px] min-w-[40px] border-r border-b ${isInactive ? "bg-gray-100" : "bg-gray-50"}`}
+      className={`border-line min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold ${
+        isInactive ? "bg-[#dcdcdc] text-[#6f6f6f]" : "bg-line-strong text-black"
+      }`}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
-      {isModerator && (
-        <div className="flex cursor-grab justify-center pt-1" {...attributes} {...listeners}>
-          <GripVertical className="h-3 w-3 text-gray-400" />
-        </div>
-      )}
-      <span
-        className="block px-1 py-2 text-xs font-medium whitespace-nowrap"
-        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-      >
-        {emp.first_name} {emp.last_name}
-        {isInactive ? " (nakt.)" : ""}
-      </span>
+      <div className="flex items-center justify-center gap-1">
+        {isModerator && (
+          <span className="shrink-0 cursor-grab text-[#9a9a9a]" {...attributes} {...listeners}>
+            <GripVertical className="size-3.5" />
+          </span>
+        )}
+        <span className="truncate">
+          {emp.first_name} {emp.last_name}
+          {isInactive ? " (nakt.)" : ""}
+        </span>
+      </div>
     </th>
   );
 }
@@ -120,7 +119,31 @@ export default function AbsenceGrid({
     absenceTypeMap.set(type.id, type);
   }
 
+  // Substitute names come off the already-filtered employees prop, never a fresh query,
+  // so the is_system admin stays invisible (context/changes/admin-bootstrap/plan.md).
+  const employeeNameMap = new Map<string, string>();
+  for (const emp of employees) {
+    employeeNameMap.set(emp.id, `${emp.first_name} ${emp.last_name}`);
+  }
+
   const weekdayFmt = new Intl.DateTimeFormat("pl-PL", { weekday: "short" });
+  const dateFmt = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+
+  function buildTooltip(emp: Employee, date: Date, type: AbsenceType, absence: Absence): string {
+    const substituteName = absence.substitute_employee_id
+      ? employeeNameMap.get(absence.substitute_employee_id)
+      : undefined;
+    const range = timeRangeOf(absence);
+    const lines = [
+      `Pracownik: ${emp.first_name} ${emp.last_name}`,
+      `Data: ${dateFmt.format(date)} (${weekdayFmt.format(date)})`,
+      `Typ: ${type.name}`,
+      `Godziny: ${range || "cały dzień"}`,
+    ];
+    if (absence.comment) lines.push(`Komentarz: ${absence.comment}`);
+    if (substituteName) lines.push(`Zastępstwo: ${substituteName}`);
+    return lines.join("\n");
+  }
 
   const self = orderedEmployees.find((e) => e.id === currentEmployee.id);
   const draggableActive = orderedEmployees.filter((e) => !e.deleted_at && e.id !== currentEmployee.id);
@@ -197,20 +220,38 @@ export default function AbsenceGrid({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="p-4">
-        <div className="overflow-x-auto rounded border">
-          <table className="border-collapse text-sm">
+      <div className="border-line overflow-hidden rounded-[14px] border bg-white">
+        {absenceTypes.length > 0 && (
+          <div className="border-line flex flex-wrap items-center justify-between gap-4 border-b px-[18px] py-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground mr-1 text-[11px] font-bold tracking-[0.06em] uppercase">
+                Typy nieobecności
+              </span>
+              {absenceTypes.map((type) => (
+                <span
+                  key={type.id}
+                  className="border-line-strong flex items-center gap-[7px] rounded-full border bg-white px-3 py-1.5 text-xs text-black"
+                >
+                  <span className="block size-2.5 rounded-full" style={{ backgroundColor: type.color }} />
+                  {type.icon && <span className="text-[13px] leading-none">{type.icon}</span>}
+                  <span>{type.name}</span>
+                </span>
+              ))}
+            </div>
+            <span className="text-muted-foreground text-xs">Kliknij komórkę, aby dodać.</span>
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="sticky left-0 z-20 min-w-[80px] border-r border-b bg-white px-2 py-1 text-left text-xs font-normal text-gray-500">
+                <th className="border-line bg-line-strong w-[132px] min-w-[132px] border-r border-b-2 px-3 py-3.5 text-left text-xs font-bold tracking-[0.06em] text-black uppercase">
                   Dzień
                 </th>
                 {self && (
-                  <th className="max-w-[50px] min-w-[40px] border-r border-b bg-blue-50">
-                    <span
-                      className="block px-1 py-2 text-xs font-medium whitespace-nowrap"
-                      style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                    >
+                  <th className="border-line bg-line-strong min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold text-black">
+                    <span className="block truncate">
                       {self.first_name} {self.last_name}
                     </span>
                   </th>
@@ -233,12 +274,14 @@ export default function AbsenceGrid({
                 const dateStr = `${date.getFullYear().toString()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
                 return (
-                  <tr key={dateStr} className={isWeekend ? "bg-gray-100" : undefined}>
-                    <td
-                      className={`sticky left-0 z-10 border-r border-b px-2 py-1 text-xs whitespace-nowrap ${isWeekend ? "bg-gray-100" : "bg-white"}`}
-                    >
-                      <span className="font-medium text-gray-700">{date.getDate()}</span>
-                      <span className="ml-1 text-gray-400">{weekdayFmt.format(date)}</span>
+                  <tr key={dateStr} className={isWeekend ? "bg-surface" : "bg-white"}>
+                    <td className="border-r-line border-b-line-strong w-[132px] border-r border-b px-3 py-0 text-[13px]">
+                      <div className="flex items-center gap-2">
+                        <span className="min-w-[22px] text-right font-bold text-black">{date.getDate()}</span>
+                        <span className={`text-xs ${isWeekend ? "text-[#9a9a9a]" : "text-muted-foreground"}`}>
+                          {weekdayFmt.format(date)}
+                        </span>
+                      </div>
                     </td>
                     {orderedEmployees.map((emp) => {
                       const isOwn = emp.id === currentEmployee.id;
@@ -246,11 +289,20 @@ export default function AbsenceGrid({
                       const absence = absenceMap.get(`${emp.id}_${dateStr}`);
                       const absenceType = absence ? absenceTypeMap.get(absence.absence_type_id) : undefined;
                       const clickable = (isOwn || isModerator) && !isWeekend && !isInactive;
+                      const range = absence ? timeRangeOf(absence) : "";
+                      const substituteInitials =
+                        absence?.substitute_employee_id != null
+                          ? initialsOf(employeeNameMap.get(absence.substitute_employee_id) ?? "")
+                          : "";
 
                       return (
                         <td
                           key={emp.id}
-                          className={`border-r border-b p-0.5 ${clickable ? "cursor-pointer" : "cursor-default"}`}
+                          // Hover only where a click does something — weekends are excluded by
+                          // `clickable`, so they never gain an affordance they cannot honour.
+                          className={`border-line-strong h-[34px] border-r border-b p-[3px] ${
+                            clickable ? "cursor-pointer hover:bg-[#eef3f8]" : "cursor-default"
+                          }`}
                           onClick={
                             clickable
                               ? () => {
@@ -261,21 +313,34 @@ export default function AbsenceGrid({
                         >
                           {absenceType && absence ? (
                             <div
-                              className="flex h-5 w-full items-center justify-center overflow-hidden rounded-sm"
-                              style={{ backgroundColor: absenceType.color }}
-                              title={absenceType.name}
+                              className="relative flex h-full w-full items-center justify-center gap-[5px] overflow-hidden rounded-[7px] px-1.5 text-[11px] font-bold whitespace-nowrap"
+                              style={{ backgroundColor: absenceType.color, color: absenceType.text_color }}
+                              title={buildTooltip(emp, date, absenceType, absence)}
                             >
-                              {!absence.is_full_day && absence.start_time && absence.end_time && (
-                                <span
-                                  className={`truncate px-0.5 text-[10px] leading-none font-medium ${textColorForBg(absenceType.color)}`}
-                                >
-                                  {formatTime(absence.start_time)}–{formatTime(absence.end_time)}
+                              {absenceType.icon && (
+                                <span className="shrink-0 text-[12px] leading-none">{absenceType.icon}</span>
+                              )}
+                              <span className="truncate">
+                                {absenceType.name}
+                                {range && ` ${range}`}
+                              </span>
+                              {substituteInitials && (
+                                <span className="text-primary absolute top-1/2 left-1 flex -translate-y-1/2 items-center gap-[2px] rounded-full bg-white/75 px-[5px] py-px text-[9px] leading-[1.4] font-bold">
+                                  <span className="text-[8px] leading-none">🔁</span>
+                                  <span>{substituteInitials}</span>
+                                </span>
+                              )}
+                              {absence.comment && (
+                                <span className="absolute top-1/2 right-1 -translate-y-1/2 text-[10px] leading-none opacity-85">
+                                  💬
                                 </span>
                               )}
                             </div>
                           ) : (
                             clickable && (
-                              <div className="flex h-5 w-full items-center justify-center text-xs text-gray-300">+</div>
+                              <div className="flex h-[28px] w-full items-center justify-center text-sm text-[#dcdcdc]">
+                                +
+                              </div>
                             )
                           )}
                         </td>
@@ -288,20 +353,9 @@ export default function AbsenceGrid({
           </table>
         </div>
 
-        {absenceTypes.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {absenceTypes.map((type) => (
-              <span key={type.id} className="flex items-center gap-1 text-xs text-gray-600">
-                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: type.color }} />
-                {type.name}
-              </span>
-            ))}
-          </div>
-        )}
-
         <DragOverlay>
           {overlayEmployee ? (
-            <div className="rounded border bg-white px-2 py-1 text-xs font-medium shadow-lg">
+            <div className="border-line rounded-lg border bg-white px-2.5 py-1.5 text-[13px] font-bold shadow-lg">
               {overlayEmployee.first_name} {overlayEmployee.last_name}
             </div>
           ) : null}
