@@ -1112,9 +1112,9 @@ verify, do not recreate.
 
 #### Automated
 
-- [x] 4.1 Lint and build pass
-- [x] 4.2 Unit tests pass: `npm run test:run`
-- [x] 4.3 `textColorForBg` no longer exists in `src/`
+- [x] 4.1 Lint and build pass — 7d144a7
+- [x] 4.2 Unit tests pass: `npm run test:run` — 7d144a7
+- [x] 4.3 `textColorForBg` no longer exists in `src/` — 7d144a7
 
 #### Manual
 
@@ -1131,7 +1131,7 @@ verify, do not recreate.
 
 #### Automated
 
-- [ ] 5.1 Lint, build and tests pass
+- [x] 5.1 Lint, build and tests pass
 
 #### Manual
 

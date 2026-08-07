@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { Absence, Employee, AbsenceType } from "@/types";
 import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
+import { AbsenceFormDialog } from "@/components/absence/AbsenceFormDialog";
+import { entryCountLabel } from "@/lib/plural";
+import { cn } from "@/lib/utils";
+import { toggleHidden, clearHidden, isFilterActive, visibleByType } from "@/lib/type-filter";
 
 interface AbsenceDetailsSubcardsProps {
   absences: Absence[];
   employees: Employee[];
   absenceTypes: AbsenceType[];
+  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
   year: number;
   month: number;
   initialSubcard: "today" | "monthly" | "yearly";
@@ -42,17 +47,64 @@ function getWeekRange() {
 
 const weekRange = getWeekRange();
 
+function parseIsoDate(value: string): Date {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+interface GroupCardProps {
+  title: string;
+  rows: Absence[];
+  employees: Employee[];
+  absenceTypes: AbsenceType[];
+  emptyLabel?: string;
+  onRowClick: (absence: Absence, employee: Employee) => void;
+  canEdit: (absence: Absence, employee: Employee | undefined) => boolean;
+}
+
+// Module scope on purpose: declared inside the parent's render, every re-render would
+// produce a new component type and reset each table's sort state.
+function GroupCard({ title, rows, employees, absenceTypes, emptyLabel, onRowClick, canEdit }: GroupCardProps) {
+  return (
+    <div className="border-line overflow-hidden rounded-[14px] border bg-white">
+      <div className="border-b-line-strong flex items-center justify-between gap-3 border-b px-[18px] py-[15px]">
+        <h3 className="text-primary m-0 text-[15px] font-bold">{title}</h3>
+        <span className="text-muted-foreground text-xs">{entryCountLabel(rows.length)}</span>
+      </div>
+      <AbsenceDetailsTable
+        absences={rows}
+        employees={employees}
+        absenceTypes={absenceTypes}
+        emptyLabel={emptyLabel}
+        onRowClick={onRowClick}
+        canEdit={canEdit}
+      />
+    </div>
+  );
+}
+
 export default function AbsenceDetailsSubcards({
   absences,
   employees,
   absenceTypes,
+  currentEmployee,
   year,
   month,
   initialSubcard,
 }: AbsenceDetailsSubcardsProps) {
+  const isModerator = currentEmployee.role === "moderator";
+
   const [activeSubcard, setActiveSubcard] = useState<"today" | "monthly" | "yearly">(initialSubcard);
   const todayFetched = useRef(false);
   const yearlyFetched = useRef(false);
+
+  // Set of *hidden* type ids. Clearing empties it, restoring everything — the prototype's
+  // clearFilters (`10xUrlopy.dc.html:1321`) does the opposite and hides every type.
+  const [hiddenTypeIds, setHiddenTypeIds] = useState<ReadonlySet<number>>(() => new Set());
+
+  const [dialogState, setDialogState] = useState<{ day: Date; absence: Absence; targetEmployee: Employee } | null>(
+    null,
+  );
 
   const [weekAbsences, setWeekAbsences] = useState<Absence[] | null>(null);
   const [weekLoading, setWeekLoading] = useState(false);
@@ -67,6 +119,10 @@ export default function AbsenceDetailsSubcards({
     const params = new URLSearchParams(window.location.search);
     params.set("subcard", sub);
     history.pushState(null, "", "?" + params.toString());
+  }
+
+  function toggleType(id: number) {
+    setHiddenTypeIds((prev) => toggleHidden(prev, id));
   }
 
   useEffect(() => {
@@ -119,12 +175,14 @@ export default function AbsenceDetailsSubcards({
     };
   }, [activeSubcard, year]);
 
-  const todayAbsences = (weekAbsences ?? []).filter((a) => a.date === weekRange.todayStr);
-  const thisWeekAbsences = (weekAbsences ?? []).filter(
-    (a) => a.date >= weekRange.thisWeekStart && a.date <= weekRange.thisWeekEnd,
+  const visible = (list: Absence[]) => visibleByType(list, hiddenTypeIds);
+
+  const todayAbsences = visible((weekAbsences ?? []).filter((a) => a.date === weekRange.todayStr));
+  const thisWeekAbsences = visible(
+    (weekAbsences ?? []).filter((a) => a.date >= weekRange.thisWeekStart && a.date <= weekRange.thisWeekEnd),
   );
-  const nextWeekAbsences = (weekAbsences ?? []).filter(
-    (a) => a.date >= weekRange.nextWeekStart && a.date <= weekRange.nextWeekEnd,
+  const nextWeekAbsences = visible(
+    (weekAbsences ?? []).filter((a) => a.date >= weekRange.nextWeekStart && a.date <= weekRange.nextWeekEnd),
   );
 
   const monthTitle = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" }).format(
@@ -132,105 +190,151 @@ export default function AbsenceDetailsSubcards({
   );
   const capitalizedMonth = monthTitle.charAt(0).toUpperCase() + monthTitle.slice(1);
 
-  const btnClass = (sub: "today" | "monthly" | "yearly") =>
-    activeSubcard === sub
-      ? "px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600"
-      : "px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900";
+  // Same permission rule as the grid cell: own absence, or moderator; never on a
+  // deactivated employee's row.
+  function canEdit(_absence: Absence, employee: Employee | undefined): boolean {
+    if (!employee || employee.deleted_at) return false;
+    return employee.id === currentEmployee.id || isModerator;
+  }
+
+  function openRow(absence: Absence, employee: Employee) {
+    setDialogState({ day: parseIsoDate(absence.date), absence, targetEmployee: employee });
+  }
+
+  const segButton = (sub: "today" | "monthly" | "yearly") =>
+    cn(
+      "rounded-full border px-4 py-2 text-[13px] transition-colors",
+      activeSubcard === sub
+        ? "border-primary bg-primary text-primary-foreground font-bold"
+        : "border-line text-primary bg-white hover:border-primary",
+    );
+
+  const groupProps = { employees, absenceTypes, onRowClick: openRow, canEdit };
+
+  const hasHidden = isFilterActive(hiddenTypeIds);
 
   return (
-    <div>
-      <div className="mb-4 flex gap-1 border-b">
-        <button
-          type="button"
-          className={btnClass("today")}
-          onClick={() => {
-            handleSetSubcard("today");
-          }}
-        >
-          Dzisiaj
-        </button>
-        <button
-          type="button"
-          className={btnClass("monthly")}
-          onClick={() => {
-            handleSetSubcard("monthly");
-          }}
-        >
-          Miesięcznie
-        </button>
-        <button
-          type="button"
-          className={btnClass("yearly")}
-          onClick={() => {
-            handleSetSubcard("yearly");
-          }}
-        >
-          Rocznie
-        </button>
+    <div className="flex flex-col gap-5">
+      <div className="border-line flex flex-wrap items-center justify-between gap-4 rounded-[14px] border bg-white px-[18px] py-3.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={segButton("today")}
+            onClick={() => {
+              handleSetSubcard("today");
+            }}
+          >
+            Dzisiaj
+          </button>
+          <button
+            type="button"
+            className={segButton("monthly")}
+            onClick={() => {
+              handleSetSubcard("monthly");
+            }}
+          >
+            Miesięcznie
+          </button>
+          <button
+            type="button"
+            className={segButton("yearly")}
+            onClick={() => {
+              handleSetSubcard("yearly");
+            }}
+          >
+            Rocznie
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {absenceTypes.map((type) => {
+            const off = hiddenTypeIds.has(type.id);
+            return (
+              <button
+                key={type.id}
+                type="button"
+                title={type.name}
+                aria-pressed={!off}
+                onClick={() => {
+                  toggleType(type.id);
+                }}
+                className={cn(
+                  "flex items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs transition-colors",
+                  off ? "border-line-strong bg-[#fafafa] text-[#9a9a9a]" : "border-line bg-white text-black",
+                )}
+              >
+                <span
+                  className="block size-2.5 rounded-full"
+                  style={{ backgroundColor: off ? "#c8c8c8" : type.color }}
+                />
+                <span className="text-[13px] leading-none">{type.icon}</span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            disabled={!hasHidden}
+            onClick={() => {
+              setHiddenTypeIds(clearHidden());
+            }}
+            className={cn(
+              "flex items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+              hasHidden
+                ? "border-primary bg-primary hover:border-accent hover:bg-accent hover:text-accent-foreground cursor-pointer text-white"
+                : "cursor-default border-[#dcdcdc] bg-white text-[#9a9a9a]",
+            )}
+          >
+            <span>✕</span>
+            <span>Wyczyść filtry</span>
+          </button>
+        </div>
       </div>
 
-      {activeSubcard === "today" && (
-        <div className="space-y-6">
-          {weekLoading || (weekAbsences === null && !weekError) ? (
-            <p className="text-gray-500">Ładowanie…</p>
-          ) : weekError ? (
-            <p className="text-red-600">{weekError}</p>
-          ) : (
-            <>
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-gray-700">Dzisiaj</h3>
-                <AbsenceDetailsTable
-                  absences={todayAbsences}
-                  employees={employees}
-                  absenceTypes={absenceTypes}
-                  className="[&_table]:table-fixed"
-                />
-              </section>
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-gray-700">Ten tydzień</h3>
-                <AbsenceDetailsTable
-                  absences={thisWeekAbsences}
-                  employees={employees}
-                  absenceTypes={absenceTypes}
-                  className="[&_table]:table-fixed"
-                />
-              </section>
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-gray-700">Następny tydzień</h3>
-                <AbsenceDetailsTable
-                  absences={nextWeekAbsences}
-                  employees={employees}
-                  absenceTypes={absenceTypes}
-                  className="[&_table]:table-fixed"
-                />
-              </section>
-            </>
-          )}
-        </div>
-      )}
+      {activeSubcard === "today" &&
+        (weekLoading || (weekAbsences === null && !weekError) ? (
+          <p className="text-muted-foreground">Ładowanie…</p>
+        ) : weekError ? (
+          <p className="text-destructive">{weekError}</p>
+        ) : (
+          <>
+            <GroupCard {...groupProps} title="Dzisiaj" rows={todayAbsences} />
+            <GroupCard {...groupProps} title="Ten tydzień" rows={thisWeekAbsences} />
+            <GroupCard {...groupProps} title="Następny tydzień" rows={nextWeekAbsences} />
+          </>
+        ))}
 
       {activeSubcard === "monthly" && (
-        <div>
-          <h3 className="mb-2 text-sm font-semibold text-gray-700">{capitalizedMonth}</h3>
-          <AbsenceDetailsTable
-            absences={absences}
-            employees={employees}
-            absenceTypes={absenceTypes}
-            emptyLabel="Brak nieobecności w tym miesiącu"
-          />
-        </div>
+        <GroupCard
+          {...groupProps}
+          title={capitalizedMonth}
+          rows={visible(absences)}
+          emptyLabel="Brak nieobecności w tym miesiącu"
+        />
       )}
 
-      {activeSubcard === "yearly" && (
-        <div>
-          {yearlyLoading || (yearlyAbsences === null && !yearlyError) ? (
-            <p className="text-gray-500">Ładowanie…</p>
-          ) : yearlyError ? (
-            <p className="text-red-600">{yearlyError}</p>
-          ) : (
-            <AbsenceDetailsTable absences={yearlyAbsences ?? []} employees={employees} absenceTypes={absenceTypes} />
-          )}
-        </div>
+      {activeSubcard === "yearly" &&
+        (yearlyLoading || (yearlyAbsences === null && !yearlyError) ? (
+          <p className="text-muted-foreground">Ładowanie…</p>
+        ) : yearlyError ? (
+          <p className="text-destructive">{yearlyError}</p>
+        ) : (
+          <GroupCard {...groupProps} title={`Rok ${year}`} rows={visible(yearlyAbsences ?? [])} />
+        ))}
+
+      {dialogState && (
+        <AbsenceFormDialog
+          key={dialogState.absence.id}
+          open
+          onOpenChange={(open) => {
+            if (!open) setDialogState(null);
+          }}
+          day={dialogState.day}
+          existingAbsence={dialogState.absence}
+          absenceTypes={absenceTypes}
+          employees={employees}
+          currentEmployee={currentEmployee}
+          targetEmployee={dialogState.targetEmployee}
+        />
       )}
     </div>
   );
