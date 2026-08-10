@@ -225,7 +225,7 @@ function StatsMatrixCard({ title, subtitle, employees, absenceTypes, data, showM
                   return (
                     <div
                       key={type.id}
-                      className={cn("text-center text-[13px]", days > 0 ? "font-bold text-black" : "text-[#c8c8c8]")}
+                      className={cn("text-center text-[13px]", days > 0 ? "font-bold text-black" : "text-line")}
                     >
                       {medal ? `${medal} ` : ""}
                       {cellText(days)}
@@ -233,9 +233,7 @@ function StatsMatrixCard({ title, subtitle, employees, absenceTypes, data, showM
                   );
                 })}
 
-                <div
-                  className={cn("px-4 text-right text-[13px] font-bold", total > 0 ? "text-primary" : "text-[#c8c8c8]")}
-                >
+                <div className={cn("px-4 text-right text-[13px] font-bold", total > 0 ? "text-primary" : "text-line")}>
                   {totalMedal ? `${totalMedal} ` : ""}
                   {cellText(total)}
                 </div>
@@ -248,20 +246,12 @@ function StatsMatrixCard({ title, subtitle, employees, absenceTypes, data, showM
             {absenceTypes.map((type, i) => (
               <div
                 key={type.id}
-                className={cn(
-                  "text-center text-[13px] font-bold",
-                  data.perType[i] > 0 ? "text-primary" : "text-[#c8c8c8]",
-                )}
+                className={cn("text-center text-[13px] font-bold", data.perType[i] > 0 ? "text-primary" : "text-line")}
               >
                 {cellText(data.perType[i])}
               </div>
             ))}
-            <div
-              className={cn(
-                "px-4 text-right text-[13px] font-bold",
-                data.grand > 0 ? "text-primary" : "text-[#c8c8c8]",
-              )}
-            >
+            <div className={cn("px-4 text-right text-[13px] font-bold", data.grand > 0 ? "text-primary" : "text-line")}>
               {cellText(data.grand)}
             </div>
           </div>
@@ -275,13 +265,17 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
   const [yearlyAbsences, setYearlyAbsences] = useState<Absence[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Every yearly figure below — medals, totals, the stacked bars — aggregates over this
+  // list. A server-side cap would skew all of them at once, so it has to be visible.
+  const [truncated, setTruncated] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/absences?year=${year}`, { signal: controller.signal })
       .then((r) => {
-        if (r.ok) return r.json() as Promise<Absence[]>;
-        throw new Error(String(r.status));
+        if (!r.ok) throw new Error(String(r.status));
+        setTruncated(r.headers.get("X-Result-Truncated") === "1");
+        return r.json() as Promise<Absence[]>;
       })
       .then((data) => {
         setYearlyAbsences(data);
@@ -316,6 +310,11 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
 
   return (
     <div className="flex flex-col gap-5">
+      {truncated && (
+        <p className="border-destructive text-destructive rounded-[14px] border bg-white px-[18px] py-3.5 text-sm">
+          Lista roczna została przycięta przez serwer — statystyki roczne są niepełne.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <KpiTile label="Dni nieobecności" value={cellText(monthlyData.grand)} note={capitalizedMonth} />
         <KpiTile

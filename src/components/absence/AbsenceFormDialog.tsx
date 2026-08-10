@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { typeAllowsPartialDay } from "@/lib/absence-types";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
+import { useRovingRadioGroup } from "@/components/hooks/useRovingRadioGroup";
 import { cn } from "@/lib/utils";
 import type { Absence, AbsenceType, Employee } from "@/types";
 
@@ -64,6 +65,36 @@ export function AbsenceFormDialog({
   const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
 
   const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
+
+  // Shared by the click and the keyboard path so arrow-key selection cannot bypass the
+  // partial-day reset below. Only the training types (PARTIAL_DAY_TYPE_NAMES) may be
+  // partial-day; any other type reverts to full-day and drops the entered range.
+  const selectType = (index: number) => {
+    const type = absenceTypes[index];
+    setAbsenceTypeId(type.id);
+    if (!typeAllowsPartialDay(type.name)) {
+      setIsFullDay(true);
+      setStartTime("");
+      setEndTime("");
+    }
+  };
+
+  const typeGroup = useRovingRadioGroup(
+    absenceTypes.length,
+    absenceTypes.findIndex((t) => t.id === absenceTypeId),
+    selectType,
+  );
+
+  // Index 0 is the "brak zastępstwa" option, so employee i sits at i + 1.
+  const selectSubstitute = (index: number) => {
+    setSubstituteEmployeeId(index === 0 ? null : otherEmployees[index - 1].id);
+  };
+
+  const substituteGroup = useRovingRadioGroup(
+    otherEmployees.length + 1,
+    substituteEmployeeId === null ? 0 : otherEmployees.findIndex((e) => e.id === substituteEmployeeId) + 1,
+    selectSubstitute,
+  );
 
   const handleSave = async () => {
     setIsSubmitting(true);
@@ -137,8 +168,13 @@ export function AbsenceFormDialog({
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label id="absence-type-label">Typ nieobecności</Label>
-            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="absence-type-label">
-              {absenceTypes.map((type) => {
+            <div
+              className="grid grid-cols-2 gap-2"
+              role="radiogroup"
+              aria-labelledby="absence-type-label"
+              onKeyDown={typeGroup.onKeyDown}
+            >
+              {absenceTypes.map((type, index) => {
                 const selected = type.id === absenceTypeId;
                 return (
                   <button
@@ -146,20 +182,14 @@ export function AbsenceFormDialog({
                     type="button"
                     role="radio"
                     aria-checked={selected}
+                    tabIndex={typeGroup.tabIndexFor(index)}
                     onClick={() => {
-                      setAbsenceTypeId(type.id);
-                      // Only the training types (PARTIAL_DAY_TYPE_NAMES) may be partial-day; any
-                      // other type reverts to full-day and drops whatever range was entered.
-                      if (!typeAllowsPartialDay(type.name)) {
-                        setIsFullDay(true);
-                        setStartTime("");
-                        setEndTime("");
-                      }
+                      selectType(index);
                     }}
                     className={cn(
                       "hover:border-primary flex w-full items-center gap-2.5 rounded-[10px] text-left text-[13px] leading-tight text-black transition-colors",
                       selected
-                        ? "border-primary bg-[#f4f7fa] px-[11px] py-[9px] font-bold ring-1 ring-[#072143]"
+                        ? "border-primary ring-primary bg-[#f4f7fa] px-[11px] py-[9px] font-bold ring-1"
                         : "border-[#dcdcdc] px-3 py-2.5",
                       "border",
                     )}
@@ -251,14 +281,21 @@ export function AbsenceFormDialog({
                   (context/changes/moderator-absence-management/plan.md:32), and the
                   employees prop is already visibleEmployeesFilter()-scoped, so the
                   is_system admin never appears here. */}
-              <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-labelledby="substitute-label">
+              <div
+                className="flex flex-wrap items-center gap-2"
+                role="radiogroup"
+                aria-labelledby="substitute-label"
+                onKeyDown={substituteGroup.onKeyDown}
+              >
                 <button
                   type="button"
                   role="radio"
                   aria-checked={substituteEmployeeId === null}
+                  aria-label="Brak zastępstwa"
                   title="Brak zastępstwa"
+                  tabIndex={substituteGroup.tabIndexFor(0)}
                   onClick={() => {
-                    setSubstituteEmployeeId(null);
+                    selectSubstitute(0);
                   }}
                   className={cn(
                     "text-muted-foreground hover:border-accent flex size-[38px] shrink-0 items-center justify-center rounded-full border-2 bg-[#eeeeee] text-[13px] font-bold",
@@ -267,7 +304,7 @@ export function AbsenceFormDialog({
                 >
                   —
                 </button>
-                {otherEmployees.map((emp) => {
+                {otherEmployees.map((emp, index) => {
                   const selected = substituteEmployeeId === emp.id;
                   const fullName = `${emp.first_name} ${emp.last_name}`;
                   return (
@@ -276,9 +313,13 @@ export function AbsenceFormDialog({
                       type="button"
                       role="radio"
                       aria-checked={selected}
+                      // The visible label is two initials, which names the control "AN" to a
+                      // screen reader. Carry the full name explicitly.
+                      aria-label={fullName}
                       title={fullName}
+                      tabIndex={substituteGroup.tabIndexFor(index + 1)}
                       onClick={() => {
-                        setSubstituteEmployeeId(emp.id);
+                        selectSubstitute(index + 1);
                       }}
                       className={cn(
                         "hover:border-accent flex size-[38px] shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-bold text-white",

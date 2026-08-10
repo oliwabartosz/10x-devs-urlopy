@@ -120,6 +120,9 @@ export default function AbsenceDetailsSubcards({
   const [yearlyAbsences, setYearlyAbsences] = useState<Absence[] | null>(null);
   const [yearlyLoading, setYearlyLoading] = useState(false);
   const [yearlyError, setYearlyError] = useState<string | null>(null);
+  // The API caps a list response; the group counts below aggregate over the whole year, so
+  // a partial list has to say so rather than quietly reporting a smaller number.
+  const [yearlyTruncated, setYearlyTruncated] = useState(false);
 
   function handleSetSubcard(sub: "today" | "monthly" | "yearly") {
     setActiveSubcard(sub);
@@ -134,7 +137,6 @@ export default function AbsenceDetailsSubcards({
 
   useEffect(() => {
     if (activeSubcard !== "today" || todayFetched.current) return;
-    todayFetched.current = true;
     const controller = new AbortController();
     setWeekLoading(true);
     fetch(`/api/absences?from=${weekRange.from}&to=${weekRange.to}`, { signal: controller.signal })
@@ -143,6 +145,10 @@ export default function AbsenceDetailsSubcards({
         throw new Error(String(r.status));
       })
       .then((data) => {
+        // Mark fetched only once the data has landed. Setting it before the request
+        // resolves strands the panel on "Ładowanie…" forever when the cleanup below
+        // aborts a switch-away and the guard then blocks the refetch on switch-back.
+        todayFetched.current = true;
         setWeekAbsences(data);
       })
       .catch((err: unknown) => {
@@ -159,15 +165,17 @@ export default function AbsenceDetailsSubcards({
 
   useEffect(() => {
     if (activeSubcard !== "yearly" || yearlyFetched.current) return;
-    yearlyFetched.current = true;
     const controller = new AbortController();
     setYearlyLoading(true);
     fetch(`/api/absences?year=${year}`, { signal: controller.signal })
       .then((r) => {
-        if (r.ok) return r.json() as Promise<Absence[]>;
-        throw new Error(String(r.status));
+        if (!r.ok) throw new Error(String(r.status));
+        setYearlyTruncated(r.headers.get("X-Result-Truncated") === "1");
+        return r.json() as Promise<Absence[]>;
       })
       .then((data) => {
+        // See the today effect: the flag lands with the data, not before it.
+        yearlyFetched.current = true;
         setYearlyAbsences(data);
       })
       .catch((err: unknown) => {
@@ -274,7 +282,7 @@ export default function AbsenceDetailsSubcards({
               >
                 <span
                   className="block size-2.5 rounded-full"
-                  style={{ backgroundColor: off ? "#c8c8c8" : type.color }}
+                  style={{ backgroundColor: off ? "var(--line)" : type.color }}
                 />
                 <span className="text-[13px] leading-none">{type.icon}</span>
               </button>
@@ -324,7 +332,14 @@ export default function AbsenceDetailsSubcards({
         ) : yearlyError ? (
           <p className="text-destructive">{yearlyError}</p>
         ) : (
-          <GroupCard {...groupProps} title={`Rok ${year}`} rows={visible(yearlyAbsences ?? [])} />
+          <>
+            {yearlyTruncated && (
+              <p className="border-destructive text-destructive rounded-[14px] border bg-white px-[18px] py-3.5 text-sm">
+                Lista została przycięta przez serwer — poniższe zestawienie jest niepełne.
+              </p>
+            )}
+            <GroupCard {...groupProps} title={`Rok ${year}`} rows={visible(yearlyAbsences ?? [])} />
+          </>
         ))}
 
       {dialogState && (

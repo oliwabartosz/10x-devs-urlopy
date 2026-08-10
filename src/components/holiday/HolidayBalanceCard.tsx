@@ -57,7 +57,7 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
         </div>
 
         {!isEmpty && (
-          <div className="border-line flex gap-px overflow-hidden rounded-[10px] border bg-[#c8c8c8]">
+          <div className="border-line bg-line flex gap-px overflow-hidden rounded-[10px] border">
             <Tile label="Bieżące" value={formatDays(balance.current_entitlement_days)} />
             <Tile label="Zaległe" value={formatDays(balance.carryover_days)} />
             <Tile label="Wykorzystane" value={formatDays(balance.used_days)} />
@@ -86,7 +86,13 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
         )}
       </div>
 
+      {/*
+        Keyed on the open state so each Edytuj remounts the dialog and its fields re-derive
+        from `balance`. Without the key the form state survives a Cancel, and reopening
+        shows the abandoned edits — visible now that the steppers change a value per click.
+      */}
       <HolidayBalanceDialog
+        key={dialogOpen ? "open" : "closed"}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         balance={balance}

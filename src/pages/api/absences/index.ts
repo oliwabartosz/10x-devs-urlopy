@@ -12,11 +12,16 @@ import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 
-const json = (data: unknown, status: number) =>
+const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
   });
+
+// Hard cap on a list response. Consumers that aggregate over the whole list (statistics,
+// the Details yearly view) must know when they were handed a partial one, so GET reports
+// truncation through the `X-Result-Truncated` header rather than silently returning short.
+const LIST_LIMIT = 5000;
 
 const YearSchema = z.string().regex(/^\d{4}$/);
 
@@ -111,8 +116,15 @@ export const GET: APIRoute = async (context) => {
       .innerJoin(employees, joinCondition)
       .where(and(gte(absences.date, from), lt(absences.date, to)))
       .orderBy(asc(absences.date))
-      .limit(5000);
-    return json(data, 200);
+      // Probe one past the cap so "exactly LIST_LIMIT rows" is distinguishable from
+      // "there were more". Statistics and the Details yearly view render AGGREGATES over
+      // this list, so a silent truncation would make their totals wrong with no visible
+      // cue — the extra row is what lets them say so instead.
+      .limit(LIST_LIMIT + 1);
+    const truncated = data.length > LIST_LIMIT;
+    return json(truncated ? data.slice(0, LIST_LIMIT) : data, 200, {
+      "X-Result-Truncated": truncated ? "1" : "0",
+    });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
     return json({ error: "Błąd bazy danych." }, 500);

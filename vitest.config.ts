@@ -13,6 +13,13 @@ export default defineConfig({
     include: ["src/tests/**/*.test.ts"],
     passWithNoTests: true,
     env,
+    // The route-level suites talk to remote Supabase, where a single round trip measures
+    // 3-5s. Vitest's 5s default turns that latency into intermittent failures, and a
+    // timed-out test skips its afterEach cleanup, so the NEXT run cascades into 23505
+    // duplicate-key errors that look like real defects. Bound these suites by correctness,
+    // not by network latency.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     coverage: {
       provider: "v8",
     },

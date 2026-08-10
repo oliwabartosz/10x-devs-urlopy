@@ -15,6 +15,7 @@ import { SortableContext, useSortable, horizontalListSortingStrategy, arrayMove 
 import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { initialsOf } from "@/lib/initials";
+import { cn } from "@/lib/utils";
 
 interface AbsenceGridProps {
   employees: Employee[];
@@ -59,9 +60,10 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
     // detaches a transformed header cell (see context/changes/employee-grid-order/plan.md).
     <th
       ref={setNodeRef}
-      className={`border-line min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold ${
-        isInactive ? "bg-[#dcdcdc] text-[#6f6f6f]" : "bg-line-strong text-black"
-      }`}
+      className={cn(
+        "border-line min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold",
+        isInactive ? "text-muted-foreground bg-[#dcdcdc]" : "bg-line-strong text-black",
+      )}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
       <div className="flex items-center justify-center gap-1">
@@ -278,7 +280,7 @@ export default function AbsenceGrid({
                     <td className="border-r-line border-b-line-strong w-[132px] border-r border-b px-3 py-0 text-[13px]">
                       <div className="flex items-center gap-2">
                         <span className="min-w-[22px] text-right font-bold text-black">{date.getDate()}</span>
-                        <span className={`text-xs ${isWeekend ? "text-[#9a9a9a]" : "text-muted-foreground"}`}>
+                        <span className={cn("text-xs", isWeekend ? "text-[#9a9a9a]" : "text-muted-foreground")}>
                           {weekdayFmt.format(date)}
                         </span>
                       </div>
@@ -300,9 +302,10 @@ export default function AbsenceGrid({
                           key={emp.id}
                           // Hover only where a click does something — weekends are excluded by
                           // `clickable`, so they never gain an affordance they cannot honour.
-                          className={`border-line-strong h-[34px] border-r border-b p-[3px] ${
-                            clickable ? "cursor-pointer hover:bg-[#eef3f8]" : "cursor-default"
-                          }`}
+                          className={cn(
+                            "border-line-strong h-[34px] border-r border-b p-[3px]",
+                            clickable ? "cursor-pointer hover:bg-[#eef3f8]" : "cursor-default",
+                          )}
                           onClick={
                             clickable
                               ? () => {

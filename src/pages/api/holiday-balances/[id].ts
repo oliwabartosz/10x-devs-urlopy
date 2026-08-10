@@ -27,8 +27,13 @@ export const DELETE: APIRoute = async (context) => {
 
   const db = createDb(DATABASE_URL);
 
-  // Caller must resolve to a non-deleted employees row. No role/owner gate on the delete —
-  // consistent with the "both roles can edit any balance" rule (POST has no role gate either).
+  // Caller must resolve to a non-deleted employees row. No role/owner gate on the delete:
+  // S-15 ruled that any valid caller may delete any balance
+  // (context/archive/2026-06-22-urlop-balance/plan.md:211) and that still stands.
+  //
+  // Do not read this as "POST is ungated" — S-17 narrowed POST with a field-level gate, so
+  // `used_adjustment_days` is moderator-only there (see index.ts). The narrowing was to that
+  // one field, which is why it does not reach this route.
   let caller: { id: string } | undefined;
   try {
     caller = await db

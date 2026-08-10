@@ -41,6 +41,16 @@ function formatDate(isoDate: string): string {
   return `${d}.${m}.${y}`;
 }
 
+// `created_at` is a timestamptz. `toISOString()` shifts it to UTC before the date is
+// sliced off, so anything created between local midnight and the UTC offset renders as
+// the previous day (01:30 in Warsaw reads as yesterday). Build from local components so
+// `Dodano` agrees with every other date in this table, which are all local.
+function localIsoDate(timestamp: Date | string): string {
+  const d = new Date(timestamp);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function parseIsoDate(isoDate: string): Date {
   const [y, m, d] = isoDate.split("-").map(Number);
   return new Date(y, m - 1, d);
@@ -235,7 +245,7 @@ export default function AbsenceDetailsTable({
               </div>
 
               <div className="text-muted-foreground text-right text-[13px]">
-                {formatDate(new Date(absence.created_at).toISOString().slice(0, 10))}
+                {formatDate(localIsoDate(absence.created_at))}
               </div>
             </div>
           );

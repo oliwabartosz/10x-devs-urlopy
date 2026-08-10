@@ -108,7 +108,10 @@ const HolidayBalanceUpsertSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   current_entitlement_days: z.number().int().min(0),
   carryover_days: z.number().int().min(0),
-  used_adjustment_days: z.number().int().min(0).optional().default(0),
+  // No `.default(0)`: an omitted adjustment means "leave unchanged", not "reset to zero".
+  // With a default, a moderator request that simply omitted the field would silently wipe
+  // the stored value — the same clobber the non-moderator path is explicitly built to avoid.
+  used_adjustment_days: z.number().int().min(0).optional(),
   valid_until: DateSchema.nullable().optional(),
 });
 
@@ -173,7 +176,9 @@ export const POST: APIRoute = async (context) => {
   // request: hiding the input client-side is presentation, this is the rule. A non-moderator
   // gets 200 and the stored adjustment survives untouched (on insert, the column default of 0).
   // Returning 403 would break the dialog's full-replace save of the three open fields.
-  const canWriteAdjustment = caller.role === "moderator";
+  // Two independent reasons to omit the column: the caller is not a moderator, or the
+  // request simply did not carry a value. Both mean "leave the stored adjustment alone".
+  const canWriteAdjustment = caller.role === "moderator" && used_adjustment_days !== undefined;
 
   let row: HolidayBalance;
   try {

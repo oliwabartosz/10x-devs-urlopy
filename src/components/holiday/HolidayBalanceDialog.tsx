@@ -61,6 +61,11 @@ export function HolidayBalanceDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const busy = isSubmitting || isDeleting;
 
+  // Note: the four initialisers above run once per mount. The caller remounts this dialog
+  // on open (see the `key` in HolidayBalanceCard) so that Edytuj → Cancel → Edytuj shows
+  // the stored values rather than the abandoned edits — resetting them in an effect here
+  // would be a cascading-render anti-pattern the lint config rejects.
+
   // "Korekta wykorzystania" is moderator-only (S-17, narrowing S-15's ungated write to this
   // one field). The input is hidden, not the value: the pre-filled state is still sent, and
   // the server preserves the stored adjustment for a non-moderator caller.
