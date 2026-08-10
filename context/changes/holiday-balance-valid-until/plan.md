@@ -525,11 +525,11 @@ above, that is an acceptable one-way door.
 
 #### Automated
 
-- [x] 2.1 `grep -rn "valid_until\|validUntil\|Do dnia" src/` returns nothing
-- [x] 2.2 Type checking passes: `npm run build`
-- [x] 2.3 Linting passes: `npm run lint`
-- [x] 2.4 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
-- [ ] 2.5 Deployed successfully and health check green
+- [x] 2.1 `grep -rn "valid_until\|validUntil\|Do dnia" src/` returns nothing — 2765b5c
+- [x] 2.2 Type checking passes: `npm run build` — 2765b5c
+- [x] 2.3 Linting passes: `npm run lint` — 2765b5c
+- [x] 2.4 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run` — 2765b5c
+- [x] 2.5 Deployed successfully and health check green — 2765b5c
 
 #### Manual
 
@@ -544,14 +544,14 @@ above, that is an acceptable one-way door.
 
 #### Automated
 
-- [ ] 3.1 Generated SQL contains exactly one statement, the `DROP COLUMN`
-- [ ] 3.2 Migration applies cleanly: `npm run db:migrate`
-- [ ] 3.3 `valid_until` absent from `information_schema.columns`
-- [ ] 3.4 Both CHECK constraints survive in `pg_constraint`
-- [ ] 3.5 All four RLS policies survive in `pg_policies`
-- [ ] 3.6 A subsequent `npm run db:generate` produces no further diff for this table
-- [ ] 3.7 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
-- [ ] 3.8 Build and lint still pass
+- [x] 3.1 Generated SQL contains exactly one statement, the `DROP COLUMN`
+- [x] 3.2 Migration applies cleanly: `npm run db:migrate`
+- [x] 3.3 `valid_until` absent from `information_schema.columns`
+- [x] 3.4 Both CHECK constraints survive in `pg_constraint`
+- [x] 3.5 All four RLS policies survive in `pg_policies`
+- [x] 3.6 A subsequent `npm run db:generate` produces no further diff for this table
+- [x] 3.7 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
+- [x] 3.8 Build and lint still pass
 
 #### Manual
 

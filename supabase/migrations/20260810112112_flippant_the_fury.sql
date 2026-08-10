@@ -1,0 +1,1 @@
+ALTER TABLE "holiday_balances" DROP COLUMN "valid_until";
