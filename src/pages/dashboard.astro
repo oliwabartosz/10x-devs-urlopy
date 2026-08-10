@@ -29,6 +29,13 @@ const validMonthParam = monthParam != null && /^\d{4}-(?:0[1-9]|1[0-2])$/.test(m
 const year = validMonthParam ? parseInt(validMonthParam.split("-")[0], 10) : now.getFullYear();
 const month = validMonthParam ? parseInt(validMonthParam.split("-")[1], 10) : now.getMonth() + 1;
 
+// The balance card is pinned to the current calendar year, deliberately independent of the
+// browsed `year` above. Browsing the grid back into a past year would otherwise repaint the card
+// with that year's figures in styling identical to a live card — no badge, no muting, no
+// staleness signal. Years are wholly independent records (Zaległe is typed by hand each year),
+// so a past year's card is stale data, not history. Do not collapse these two back together.
+const balanceYear = now.getFullYear();
+
 const tabParam = Astro.url.searchParams.get("tab");
 const currentTab = tabParam === "details" || tabParam === "stats" ? tabParam : "grid";
 
@@ -135,15 +142,18 @@ if (currentEmployee) {
       db.select().from(absence_types).orderBy(asc(absence_types.display_order), asc(absence_types.id)),
       // Server-fed holiday balance row for the current employee/year so the card renders without a
       // flash; batched with the grid queries. The Used aggregate (buildBalanceView) runs after,
-      // since it depends on this row's stored adjustment.
+      // since it depends on this row's stored adjustment. Keyed on `balanceYear`, not the browsed
+      // `year` — see the declaration.
       db
         .select()
         .from(holidayBalancesTable)
-        .where(and(eq(holidayBalancesTable.employee_id, currentEmployee.id), eq(holidayBalancesTable.year, year)))
+        .where(
+          and(eq(holidayBalancesTable.employee_id, currentEmployee.id), eq(holidayBalancesTable.year, balanceYear)),
+        )
         .then((r) => r.at(0) ?? null),
     ]);
 
-    holidayBalance = await buildBalanceView(db, currentEmployee.id, year, balanceRow);
+    holidayBalance = await buildBalanceView(db, currentEmployee.id, balanceYear, balanceRow);
 
     allEmployees = employeesResult;
     gridEmployees =
@@ -231,7 +241,7 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
               client:load
               initialBalance={holidayBalance}
               employeeId={currentEmployee.id}
-              year={year}
+              year={balanceYear}
               currentRole={currentEmployee.role}
             />
           )}
