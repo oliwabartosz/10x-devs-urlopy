@@ -8,4 +8,8 @@ export const DateSchema = z
     return !isNaN(d.getTime()) && d.toISOString().startsWith(v);
   }, "Invalid calendar date");
 
-export const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format HH:MM");
+// Narrowed to real clock values. A plain `\d{2}:\d{2}` accepted "24:00" and "99:99", which
+// reached Postgres as a 22007 and surfaced as a 500 instead of a 400. Now that the absence
+// routes do arithmetic on this value (`@/lib/absence-hours`), a permissive schema is worse
+// than a bad status code: "99:99" would clamp to a plausible-looking wrong time and be stored.
+export const TimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time format HH:MM");
