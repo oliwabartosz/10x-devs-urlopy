@@ -1125,7 +1125,7 @@ verify, do not recreate.
 - [x] 4.8 Cell hover shows the full multi-line summary — 7d144a7
 - [x] 4.9 Weekend rows shaded, no hover state, not clickable — 7d144a7
 - [x] 4.10 Column reordering still works and the dragged column does not detach — 7d144a7
-- [ ] 4.11 Deactivated employees keep grey header, `(nakt.)` suffix, non-clickable
+- [x] 4.11 Deactivated employees keep grey header, `(nakt.)` suffix, non-clickable — 8b25781
 
 ### Phase 5: Details tab
 
@@ -1135,12 +1135,12 @@ verify, do not recreate.
 
 #### Manual
 
-- [ ] 5.2 Toggling a type chip hides exactly that type across all groups
-- [ ] 5.3 `Wyczyść filtry` restores all types; active only while something is hidden
+- [x] 5.2 Toggling a type chip hides exactly that type across all groups — 8b25781
+- [x] 5.3 `Wyczyść filtry` restores all types; active only while something is hidden — 8b25781
 - [x] 5.4 Group headers show correct Polish plurals for 1, 2, 5 and 12 — 300590c
 - [x] 5.5 Empty group shows `Brak nieobecności` — 300590c
 - [x] 5.6 All six columns sort both ways; glyph tracks the active column — 300590c
-- [ ] 5.7 `Dodano` is present and sortable
+- [x] 5.7 `Dodano` is present and sortable — 300590c
 - [x] 5.8 Clicking an editable row opens the pre-filled dialog; saving updates the row — 300590c
 - [x] 5.9 Non-editable rows give no dialog and no hover cue — 300590c
 - [x] 5.10 Comments render in quotes under the type pill; avatars show correct initials — 300590c
@@ -1176,12 +1176,12 @@ verify, do not recreate.
 
 - [x] 7.3 Balance card matches the prototype: 40px figure, three tiles, outline button — e2da254
 - [x] 7.4 Negative balance renders red with the over-quota chip — e2da254
-- [ ] 7.5 Steppers work; `Pozostanie` updates live and matches the saved result
-- [ ] 7.6 Moderator: `Korekta` and `Do dnia` present and saving correctly
+- [x] 7.5 Steppers work; `Pozostanie` updates live and matches the saved result — e2da254
+- [x] 7.6 Moderator: `Korekta` and `Do dnia` present and saving correctly — e2da254
 - [x] 7.7 Moderator: saving with an unchanged Korekta does not zero it — e2da254
 - [x] 7.8 Non-moderator: `Edytuj` opens, `Do dnia` editable, `Korekta` not shown — e2da254
-- [ ] 7.9 Non-moderator: saving leaves the stored Korekta and `Wykorzystane` unchanged
-- [ ] 7.10 Non-moderator POSTing a different `used_adjustment_days` gets 200 and the stored value is unchanged
+- [x] 7.9 Non-moderator: saving leaves the stored Korekta and `Wykorzystane` unchanged — e2da254
+- [x] 7.10 Non-moderator POSTing a different `used_adjustment_days` gets 200 and the stored value is unchanged — e2da254
 - [x] 7.11 Deleting a balance still works for both roles — e2da254
 
 ### Phase 8: Absence modal and employee panel
@@ -1194,7 +1194,7 @@ verify, do not recreate.
 
 - [x] 8.2 Type picker shows seven types in order with correct colours and icons; selection outlined — 709431d
 - [x] 8.3 Training type reveals hours controls; other types hide them — 709431d
-- [ ] 8.4 Hours on a non-training type still rejected server-side
+- [x] 8.4 Hours on a non-training type still rejected server-side — 709431d
 - [x] 8.5 Substitute avatars exclude the target employee and the system admin; none option clears — 709431d
 - [x] 8.6 Drawer shows Aktywni and Nieaktywni sections with correct counts — 709431d
 - [x] 8.7 Deactivate and restore work; list updates — 709431d
