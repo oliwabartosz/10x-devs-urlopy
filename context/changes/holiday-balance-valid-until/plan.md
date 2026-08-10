@@ -559,4 +559,4 @@ above, that is an acceptable one-way door.
 - [x] 3.10 `Edytuj` → save → reload round-trips all remaining fields — a57f047
 - [x] 3.11 Insert path works for an employee with no existing row — a57f047
 - [x] 3.12 `Usuń` still works — a57f047
-- [ ] 3.13 No new Sentry events on the dashboard or `/api/holiday-balances`
+- [x] 3.13 No new Sentry events on the dashboard or `/api/holiday-balances` — a57f047 (Sentry: no issues first- or last-seen in 24h, pipeline proven live by two pre-existing auth issues; corroborated by Workers observability — 89 events, all `info`, 0 errors)
