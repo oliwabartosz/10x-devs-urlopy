@@ -2,9 +2,9 @@
 change_id: holiday-balance-valid-until
 title: Remove "Do dnia" and pin the balance card to the current year
 created: 2026-08-07
-status: implemented
+status: archived
 updated: 2026-08-10
-archived_at: null
+archived_at: 2026-08-10T12:34:20Z
 ---
 
 ## Notes
