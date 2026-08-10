@@ -516,10 +516,10 @@ above, that is an acceptable one-way door.
 
 #### Manual
 
-- [ ] 1.4 Card reads `Urlop <current year> – pozostało` on load
-- [ ] 1.5 Navigating back across a year boundary leaves the card unchanged
-- [ ] 1.6 Grid, MonthNav, Szczegóły and Statystyki still follow the browsed month/year
-- [ ] 1.7 `Edytuj` → save writes to the current year's row
+- [x] 1.4 Card reads `Urlop <current year> – pozostało` on load — 34553f3
+- [x] 1.5 Navigating back across a year boundary leaves the card unchanged — 34553f3
+- [x] 1.6 Grid, MonthNav, Szczegóły and Statystyki still follow the browsed month/year — 34553f3
+- [x] 1.7 `Edytuj` → save writes to the current year's row — 34553f3
 
 ### Phase 2: Remove `Do dnia` from the code
 
@@ -533,30 +533,30 @@ above, that is an acceptable one-way door.
 
 #### Manual
 
-- [ ] 2.6 Card shows no date line, for rows with and without a stored `valid_until`
-- [ ] 2.7 Dialog shows 2 fields for an employee, 3 for a moderator, no date input
-- [ ] 2.8 Saving persists entitlement/carryover; non-moderator save preserves stored `Korekta`
-- [ ] 2.9 `Pozostanie` live preview still tracks the steppers
-- [ ] 2.10 `Usuń` still removes the row
-- [ ] 2.11 Verified against the production deployment, not `wrangler dev`
+- [x] 2.6 Card shows no date line, for rows with and without a stored `valid_until` — 2765b5c
+- [x] 2.7 Dialog shows 2 fields for an employee, 3 for a moderator, no date input — 2765b5c
+- [x] 2.8 Saving persists entitlement/carryover; non-moderator save preserves stored `Korekta` — 2765b5c (first clause manual; second clause not UI-walkable — covered by `korekta-gate.test.ts`, see change.md)
+- [x] 2.9 `Pozostanie` live preview still tracks the steppers — 2765b5c
+- [x] 2.10 `Usuń` still removes the row — 2765b5c
+- [x] 2.11 Verified against the production deployment, not `wrangler dev` — 2765b5c
 
 ### Phase 3: Drop the column
 
 #### Automated
 
-- [x] 3.1 Generated SQL contains exactly one statement, the `DROP COLUMN`
-- [x] 3.2 Migration applies cleanly: `npm run db:migrate`
-- [x] 3.3 `valid_until` absent from `information_schema.columns`
-- [x] 3.4 Both CHECK constraints survive in `pg_constraint`
-- [x] 3.5 All four RLS policies survive in `pg_policies`
-- [x] 3.6 A subsequent `npm run db:generate` produces no further diff for this table
-- [x] 3.7 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
-- [x] 3.8 Build and lint still pass
+- [x] 3.1 Generated SQL contains exactly one statement, the `DROP COLUMN` — a57f047
+- [x] 3.2 Migration applies cleanly: `npm run db:migrate` — a57f047
+- [x] 3.3 `valid_until` absent from `information_schema.columns` — a57f047
+- [x] 3.4 Both CHECK constraints survive in `pg_constraint` — a57f047
+- [x] 3.5 All four RLS policies survive in `pg_policies` — a57f047
+- [x] 3.6 A subsequent `npm run db:generate` produces no further diff for this table — a57f047
+- [x] 3.7 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run` — a57f047
+- [x] 3.8 Build and lint still pass — a57f047
 
 #### Manual
 
-- [ ] 3.9 Dashboard loads in production, card renders correctly
-- [ ] 3.10 `Edytuj` → save → reload round-trips all remaining fields
-- [ ] 3.11 Insert path works for an employee with no existing row
-- [ ] 3.12 `Usuń` still works
+- [x] 3.9 Dashboard loads in production, card renders correctly — a57f047
+- [x] 3.10 `Edytuj` → save → reload round-trips all remaining fields — a57f047
+- [x] 3.11 Insert path works for an employee with no existing row — a57f047
+- [x] 3.12 `Usuń` still works — a57f047
 - [ ] 3.13 No new Sentry events on the dashboard or `/api/holiday-balances`

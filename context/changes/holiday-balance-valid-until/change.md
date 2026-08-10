@@ -2,7 +2,7 @@
 change_id: holiday-balance-valid-until
 title: Remove "Do dnia" and pin the balance card to the current year
 created: 2026-08-07
-status: implementing
+status: implemented
 updated: 2026-08-10
 archived_at: null
 ---
@@ -129,3 +129,21 @@ the deferred batch-balance endpoint, not to this question.
 Note for the implementer: this file's `title:` still describes the reversed framing and is
 retitled in phase 2 (plan, Phase 2 §10). The change id stays as-is — `frame.md` and `plan.md`
 both reference the folder path.
+
+## Manual pass 2026-08-10 — leftovers re-raised
+
+Walking the manual rows, the user re-raised the **moderator cross-employee balance editing**
+gap at row 2.7: a moderator should be able to change a balance from the `Pracownicy` panel,
+not only their own. This is the known S-17 row-7.9 blocker (`HolidayBalanceCard` hard-wired to
+`currentEmployee.id`, `dashboard.astro:230-235`), explicitly out of scope here and coupled to
+the deferred batch-balance endpoint. Confirmed still wanted — it should lead the next change in
+this area.
+
+The same blocker is why row 2.8's second clause (a non-moderator's save preserving a
+moderator-set `Korekta`) is **not walkable in the UI**: no account can set another employee's
+`Korekta` today. That behaviour is covered instead at route level by
+`src/tests/api/holiday-balances/korekta-gate.test.ts` (6 cases, green in both 2.4 and 3.7).
+
+Row 3.13 (no new Sentry events) could not be verified: Sentry is wired in code
+(`@sentry/cloudflare`, `captureException` on every route) but the account side is not set up —
+the build's sourcemap upload returns 403. Left pending rather than assumed.
