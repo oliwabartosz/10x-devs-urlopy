@@ -13,9 +13,9 @@ import type { HolidayBalanceView } from "@/types";
 // `used_adjustment_days` is moderator-only, enforced by omitting the column from the write
 // rather than by rejecting the request: a non-moderator must get 200 with the stored value
 // preserved. Returning 403, or accepting the submitted value, are both wrong — the dialog
-// does a full replace of all four fields, so the request always carries an adjustment.
+// does a full replace of all three fields, so the request always carries an adjustment.
 //
-// The other three fields stay open to both roles (S-15,
+// The other two fields stay open to both roles (S-15,
 // context/archive/2026-06-22-urlop-balance/plan.md:34) — that is asserted here too, so a
 // future over-correction to a route-level gate fails.
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta moderator gate (route level)", () => {
@@ -49,7 +49,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
     current_entitlement_days: 26,
     carryover_days: 4,
     used_adjustment_days: 7,
-    valid_until: "2031-09-30",
     ...overrides,
   });
 
@@ -96,7 +95,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
     expect(row.used_adjustment_days).toBe(3); // preserved, not 7 and not zeroed
   });
 
-  it("non-moderator still writes entitlement, carryover and valid_until — the gate is one field, not the route", async () => {
+  it("non-moderator still writes entitlement and carryover — the gate is one field, not the route", async () => {
     await db.insert(holiday_balances).values({
       employee_id: employeeId,
       year: YEAR,
@@ -111,7 +110,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
     const row = await storedRow();
     expect(row.current_entitlement_days).toBe(26);
     expect(row.carryover_days).toBe(4);
-    expect(row.valid_until).toBe("2031-09-30");
   });
 
   it("non-moderator creating a new row gets 200 with adjustment 0", async () => {

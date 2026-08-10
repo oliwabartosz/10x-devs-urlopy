@@ -280,7 +280,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
 
 ### S-15: Saldo urlopu — wymiar z systemu kadrowego i licznik pozostałych dni
 
-- **Outcome:** pracownik wpisuje swój wymiar urlopu z zewnętrznego systemu kadrowego (Bieżący + Zaległy) oraz datę-wskazówkę "Do dnia:"; aplikacja zlicza wykorzystane wpisy typu `urlop` i pokazuje na karcie dashboardu, ile dni urlopu zostało (Pozostało = Bieżący + Zaległy − Wykorzystane), per rok kalendarzowy. Kartę widzą i edytują zarówno pracownicy, jak i moderatorzy.
+- **Outcome:** pracownik wpisuje swój wymiar urlopu z zewnętrznego systemu kadrowego (Bieżący + Zaległy); aplikacja zlicza wykorzystane wpisy typu `urlop` i pokazuje na karcie dashboardu, ile dni urlopu zostało (Pozostało = Bieżący + Zaległy − Wykorzystane), per rok kalendarzowy. Kartę widzą i edytują zarówno pracownicy, jak i moderatorzy.
 - **Change ID:** urlop-balance
 - **PRD refs:** FR-005, FR-006
 - **Prerequisites:** F-01 (tabele `employees`/`absences`/`absence_types`)
@@ -290,6 +290,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Niedoszacowanie "Wykorzystane" przy adopcji w trakcie roku (urlop sprzed wdrożenia aplikacji) — łagodzone opcjonalnym polem `used_adjustment_days`; szczegóły w planie.
   - Interakcja z S-13: nowa kategoria "urlop planowany" NIE może być liczona jako wykorzystany `urlop` (dopasowanie po dokładnej nazwie + test regresji).
 - **Risk:** Niskie–średnie — wzorce (tabela + endpoint + karta) istnieją; główne ryzyko to poprawność zliczania (dzielnik /8 musi zgadzać się z `AbsenceStats.tsx`) i wykluczenie `urlop planowany`.
+- **Amendment (2026-08-10, change `holiday-balance-valid-until`):** data-wskazówka „Do dnia:" (`holiday_balances.valid_until`) została usunięta z produktu — nic jej nie czytało, jej znaczenie nigdy nie zostało ustalone, a karta jest teraz przypięta do bieżącego roku kalendarzowego. Oryginalny Outcome zobowiązywał pracownika do jej wpisywania; ten fragment został wykreślony powyżej.
 - **Status:** done
 
 ### S-16: Przeprojektowanie strony głównej — jasna karta logowania na `/`

@@ -110,7 +110,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used comp
         current_entitlement_days: 26,
         carryover_days: 4,
         used_adjustment_days: 0,
-        valid_until: "2030-12-31",
       })
       .returning();
 
@@ -118,7 +117,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used comp
     expect(view.balance_id).toBe(stored.id);
     expect(view.used_days).toBe(3);
     expect(view.left_days).toBe(27); // 26 + 4 − 3
-    expect(view.valid_until).toBe("2030-12-31");
   });
 
   it("buildBalanceView: surfaces a negative Left (never clamps)", async () => {
@@ -143,7 +141,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used comp
     expect(view.current_entitlement_days).toBe(0);
     expect(view.carryover_days).toBe(0);
     expect(view.used_adjustment_days).toBe(0);
-    expect(view.valid_until).toBeNull();
     expect(view.used_days).toBe(1);
     expect(view.left_days).toBe(-1); // 0 − 1
   });

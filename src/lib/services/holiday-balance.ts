@@ -83,7 +83,6 @@ export async function buildBalanceView(
     current_entitlement_days: currentEntitlement,
     carryover_days: carryover,
     used_adjustment_days: usedAdjustmentDays,
-    valid_until: row?.valid_until ?? null,
     used_days: usedDays,
     left_days: leftDays,
   };

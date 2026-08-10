@@ -510,9 +510,9 @@ above, that is an acceptable one-way door.
 
 #### Automated
 
-- [x] 1.1 Type checking passes: `npm run build`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Existing tests still pass: `npm run test:run`
+- [x] 1.1 Type checking passes: `npm run build` — 34553f3
+- [x] 1.2 Linting passes: `npm run lint` — 34553f3
+- [x] 1.3 Existing tests still pass: `npm run test:run` — 34553f3
 
 #### Manual
 
@@ -525,10 +525,10 @@ above, that is an acceptable one-way door.
 
 #### Automated
 
-- [ ] 2.1 `grep -rn "valid_until\|validUntil\|Do dnia" src/` returns nothing
-- [ ] 2.2 Type checking passes: `npm run build`
-- [ ] 2.3 Linting passes: `npm run lint`
-- [ ] 2.4 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
+- [x] 2.1 `grep -rn "valid_until\|validUntil\|Do dnia" src/` returns nothing
+- [x] 2.2 Type checking passes: `npm run build`
+- [x] 2.3 Linting passes: `npm run lint`
+- [x] 2.4 Full test suite passes with `DATABASE_URL_DIRECT` set: `npm run test:run`
 - [ ] 2.5 Deployed successfully and health check green
 
 #### Manual

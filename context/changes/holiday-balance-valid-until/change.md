@@ -1,6 +1,6 @@
 ---
 change_id: holiday-balance-valid-until
-title: Derive "Do dnia" from the balance year and gate it to moderators
+title: Remove "Do dnia" and pin the balance card to the current year
 created: 2026-08-07
 status: implementing
 updated: 2026-08-10

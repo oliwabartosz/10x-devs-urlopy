@@ -52,16 +52,15 @@ export function HolidayBalanceDialog({
   currentRole,
 }: HolidayBalanceDialogProps) {
   // Pre-fill every field from the current view and send them all on save (full replace) so
-  // editing never clobbers the stored adjustment / "Do dnia" date — see Phase 2 review F1.
+  // editing never clobbers the stored adjustment — see Phase 2 review F1.
   const [currentEntitlement, setCurrentEntitlement] = useState(String(balance.current_entitlement_days));
   const [carryover, setCarryover] = useState(String(balance.carryover_days));
   const [usedAdjustment, setUsedAdjustment] = useState(String(balance.used_adjustment_days));
-  const [validUntil, setValidUntil] = useState(balance.valid_until ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const busy = isSubmitting || isDeleting;
 
-  // Note: the four initialisers above run once per mount. The caller remounts this dialog
+  // Note: the three initialisers above run once per mount. The caller remounts this dialog
   // on open (see the `key` in HolidayBalanceCard) so that Edytuj → Cancel → Edytuj shows
   // the stored values rather than the abandoned edits — resetting them in an effect here
   // would be a cascading-render anti-pattern the lint config rejects.
@@ -124,7 +123,6 @@ export function HolidayBalanceDialog({
           current_entitlement_days: parseInt(currentEntitlement, 10),
           carryover_days: parseInt(carryover, 10),
           used_adjustment_days: usedAdjustment.trim() === "" ? 0 : parseInt(usedAdjustment, 10),
-          valid_until: validUntil.trim() === "" ? null : validUntil,
         }),
       });
       if (res.ok) {
@@ -230,18 +228,6 @@ export function HolidayBalanceDialog({
               </p>
             </div>
           )}
-
-          <div className="grid gap-1.5">
-            <Label htmlFor="valid-until">Do dnia (opcjonalnie)</Label>
-            <Input
-              id="valid-until"
-              type="date"
-              value={validUntil}
-              onChange={(e) => {
-                setValidUntil(e.target.value);
-              }}
-            />
-          </div>
         </div>
 
         <DialogFooter className={canDelete ? "sm:justify-between" : undefined}>

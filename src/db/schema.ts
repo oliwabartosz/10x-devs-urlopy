@@ -79,8 +79,6 @@ export const holiday_balances = pgTable(
     carryover_days: integer("carryover_days").notNull().default(0),
     // Reconciliation baseline for pre-app usage; keeps Left correct on mid-year adoption.
     used_adjustment_days: integer("used_adjustment_days").notNull().default(0),
-    // "Do dnia" — informational HR provenance date; nullable.
-    valid_until: date("valid_until"),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

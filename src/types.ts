@@ -20,7 +20,6 @@ export interface HolidayBalanceView {
   current_entitlement_days: number;
   carryover_days: number;
   used_adjustment_days: number;
-  valid_until: string | null;
   used_days: number;
   left_days: number;
 }

@@ -7,7 +7,6 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
-import { DateSchema } from "@/lib/validators";
 import { extractPgErrorCode } from "@/lib/db-errors";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
@@ -112,7 +111,6 @@ const HolidayBalanceUpsertSchema = z.object({
   // With a default, a moderator request that simply omitted the field would silently wipe
   // the stored value — the same clobber the non-moderator path is explicitly built to avoid.
   used_adjustment_days: z.number().int().min(0).optional(),
-  valid_until: DateSchema.nullable().optional(),
 });
 
 export const POST: APIRoute = async (context) => {
@@ -144,10 +142,9 @@ export const POST: APIRoute = async (context) => {
   if (!parsed.success) {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
-  const { employee_id, year, current_entitlement_days, carryover_days, used_adjustment_days, valid_until } =
-    parsed.data;
+  const { employee_id, year, current_entitlement_days, carryover_days, used_adjustment_days } = parsed.data;
 
-  // Both roles may edit any balance's entitlement, carryover and "Do dnia" — no role gate on
+  // Both roles may edit any balance's entitlement and carryover — no role gate on
   // those (S-15, context/archive/2026-06-22-urlop-balance/plan.md:34). The one exception is
   // `used_adjustment_days` ("Korekta wykorzystania"), which S-17 narrowed to moderators: a
   // non-moderator's submitted value is ignored and the stored one preserved (see the upsert
@@ -189,7 +186,6 @@ export const POST: APIRoute = async (context) => {
         year,
         current_entitlement_days,
         carryover_days,
-        valid_until: valid_until ?? null,
         ...(canWriteAdjustment ? { used_adjustment_days } : {}),
       })
       .onConflictDoUpdate({
@@ -197,7 +193,6 @@ export const POST: APIRoute = async (context) => {
         set: {
           current_entitlement_days,
           carryover_days,
-          valid_until: valid_until ?? null,
           updated_at: new Date(),
           ...(canWriteAdjustment ? { used_adjustment_days } : {}),
         },
@@ -231,7 +226,6 @@ export const POST: APIRoute = async (context) => {
         current_entitlement_days: row.current_entitlement_days,
         carryover_days: row.carryover_days,
         used_adjustment_days: row.used_adjustment_days,
-        valid_until: row.valid_until,
         used_days: usedFallback,
         left_days: row.current_entitlement_days + row.carryover_days - usedFallback,
       } satisfies HolidayBalanceView,

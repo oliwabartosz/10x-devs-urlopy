@@ -43,15 +43,12 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
           {isEmpty ? (
             <p className="text-muted-foreground text-sm">Brak wprowadzonego wymiaru urlopu.</p>
           ) : (
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline">
               <span
                 className={cn("text-[40px] leading-none font-bold", negative ? "text-destructive" : "text-primary")}
               >
                 {formatDays(balance.left_days)} dni
               </span>
-              {balance.valid_until && (
-                <span className="text-muted-foreground text-[13px]">Do dnia: {balance.valid_until}</span>
-              )}
             </div>
           )}
         </div>
