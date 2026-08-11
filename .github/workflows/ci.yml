@@ -99,9 +99,24 @@ jobs:
             cat /tmp/body.txt
             exit 1
           fi
-          if ! grep -qi "sign.in\|email\|login" /tmp/body.txt; then
-            echo "FAIL: response does not look like an auth page"
-            cat /tmp/body.txt
-            exit 1
-          fi
+          # The exact strings tests/e2e/setup/auth.setup.ts resolves its locators against.
+          # The previous check grepped for "sign.in\|email\|login", which id="email" in the
+          # markup satisfied — so it stayed green straight through f748ba5 Polonizing the
+          # form and left the E2E suite broken for a day. The label->input bindings are
+          # included because that is what getByLabel actually resolves against; a bare
+          # "Zaloguj się" is also produced by the card subheading, not just the button.
+          #
+          # -F is load-bearing: the literals are non-ASCII and must be byte-compared, not
+          # read as regex. Do NOT add -i — case-folding non-ASCII is locale-dependent, and
+          # case insensitivity is not wanted here anyway.
+          for NEEDLE in 'Użytkownik / ID' 'Hasło' 'Zaloguj się' 'for="email"' 'for="password"'; do
+            if ! grep -qF "$NEEDLE" /tmp/body.txt; then
+              echo "FAIL: the signin page no longer contains the literal: ${NEEDLE}"
+              echo "The E2E signin locators resolve against this string. If the copy changed"
+              echo "on purpose, update tests/e2e/setup/auth.setup.ts (and the signin entry in"
+              echo "tests/e2e/e2e-rules.md) in the same change."
+              cat /tmp/body.txt
+              exit 1
+            fi
+          done
           echo "OK: HTTP ${HTTP_CODE}"

@@ -337,22 +337,22 @@ during Phase 1, delete it and re-run.
 
 #### Automated
 
-- [x] 2.1 Full suite passes: `npm run e2e` (1 setup + 3 chromium, zero failures)
-- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.1 Full suite passes: `npm run e2e` (1 setup + 3 chromium, zero failures) — 78048f0
+- [x] 2.2 Linting passes: `npm run lint` — 78048f0
 
 #### Manual
 
-- [x] 2.3 Every failure triaged test-side vs product-side, decision recorded
-- [x] 2.4 Any product-side defect spun out into its own change folder
-- [x] 2.5 Criterion 3.1 of `absence-hours-window` ticked against a genuinely green run
+- [x] 2.3 Every failure triaged test-side vs product-side, decision recorded — 78048f0
+- [x] 2.4 Any product-side defect spun out into its own change folder — 78048f0
+- [x] 2.5 Criterion 3.1 of `absence-hours-window` ticked against a genuinely green run — 78048f0
 
 ### Phase 3: Harden the post-deploy health check
 
 #### Automated
 
-- [ ] 3.1 All five literals present in the live response via `curl` + `grep -qF`
+- [x] 3.1 All five literals present in the live response via `curl` + `grep -qF`
 - [ ] 3.2 CI `deploy` job's health-check step passes on push to `main`
-- [ ] 3.3 Linting passes: `npm run lint`
+- [x] 3.3 Linting passes: `npm run lint`
 
 #### Manual
 

@@ -50,7 +50,8 @@
   `getByLabel("Hasło", { exact: true })` for password, and
   `getByRole("button", { name: "Zaloguj się" })` for submit. `exact: true` on the password label
   is required because the visibility toggle's `aria-label` ("Pokaż hasło" / "Ukryj hasło")
-  contains `hasło`.
+  contains `hasło`. The `Post-deploy health check` step in `.github/workflows/ci.yml` asserts
+  these same strings, so renaming the copy means moving both files in one change.
 
 ## Exemplar
 
