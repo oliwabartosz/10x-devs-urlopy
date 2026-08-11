@@ -11,13 +11,13 @@ setup("authenticate", async ({ page }) => {
   }
 
   await page.goto("/auth/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Użytkownik / ID").fill(email);
+  await page.getByLabel("Hasło", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Zaloguj się" }).click();
 
-  // Signin redirects to '/' on success; dashboard is a separate navigation
-  await page.waitForURL("/");
-  await page.goto("/dashboard");
+  // Signin redirects to '/' on success, which redirects authenticated users on to
+  // /dashboard (src/pages/index.astro) — so '/' is never a settled URL here.
+  await page.waitForURL("**/dashboard");
   // Wait for the tab nav — confirms dashboard loaded and auth is valid
   await expect(page.getByRole("link", { name: "Siatka" })).toBeVisible();
 

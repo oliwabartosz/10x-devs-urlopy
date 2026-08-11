@@ -22,6 +22,9 @@
 
 - Always authenticate via `storageState` (set up in `tests/e2e/setup/auth.setup.ts`).
 - Never log in through the UI inside individual tests.
+- After a successful signin the POST redirects to `/`, which redirects authenticated users
+  on to `/dashboard` (`src/pages/index.astro`). Wait for `**/dashboard`, never for `/` —
+  `/` is never a settled URL for an authenticated session.
 
 ## Assertions
 
@@ -43,6 +46,11 @@
   React island (client:load) has hydrated and onClick handlers are attached.
 - Form dialog: `getByRole("dialog")` scoped to `getByRole("heading", { name: … })`.
 - Tab navigation: `getByRole("link", { name: "Siatka" })` — reliable dashboard-loaded signal.
+- Signin form (`LoginCardForm.tsx`): `getByLabel("Użytkownik / ID")` for email,
+  `getByLabel("Hasło", { exact: true })` for password, and
+  `getByRole("button", { name: "Zaloguj się" })` for submit. `exact: true` on the password label
+  is required because the visibility toggle's `aria-label` ("Pokaż hasło" / "Ukryj hasło")
+  contains `hasło`.
 
 ## Exemplar
 
