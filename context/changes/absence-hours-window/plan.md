@@ -522,8 +522,8 @@ want the option.
 #### Automated
 
 - [ ] 3.1 E2E suite passes: `npm run e2e`
-- [x] 3.2 Type checking passes: `npm run build`
-- [x] 3.3 Linting passes: `npm run lint`
+- [x] 3.2 Type checking passes: `npm run build` — 70ff594
+- [x] 3.3 Linting passes: `npm run lint` — 70ff594
 
 #### Manual
 
@@ -537,9 +537,9 @@ want the option.
 
 #### Automated
 
-- [ ] 4.1 Migration applies cleanly: `npm run db:migrate`
-- [ ] 4.2 Full suite still passes: `npm run test:run`
-- [ ] 4.3 `npm run db:generate` produces no new migration
+- [x] 4.1 Migration applies cleanly: `npm run db:migrate`
+- [x] 4.2 Full suite still passes: `npm run test:run`
+- [x] 4.3 `npm run db:generate` produces no new migration
 
 #### Manual
 
