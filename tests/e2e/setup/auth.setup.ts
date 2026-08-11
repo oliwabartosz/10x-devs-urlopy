@@ -11,8 +11,21 @@ setup("authenticate", async ({ page }) => {
   }
 
   await page.goto("/auth/signin");
-  await page.getByLabel("Użytkownik / ID").fill(email);
-  await page.getByLabel("Hasło", { exact: true }).fill(password);
+  // LoginCardForm is a React island (client:load) with controlled inputs. Filling before
+  // hydration writes to the DOM but never to React state, and hydration then resets the
+  // fields — the submit posts nothing and the form re-renders with "Podaj adres email".
+  // Wait for the island's script to land before typing.
+  await page.waitForLoadState("networkidle");
+
+  const emailInput = page.getByLabel("Użytkownik / ID");
+  const passwordInput = page.getByLabel("Hasło", { exact: true });
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+  // Fail fast and legibly here if hydration ever wipes the fields again, instead of
+  // timing out 30 s later on waitForURL with an empty-form redirect.
+  await expect(emailInput).toHaveValue(email);
+  await expect(passwordInput).toHaveValue(password);
+
   await page.getByRole("button", { name: "Zaloguj się" }).click();
 
   // Signin redirects to '/' on success, which redirects authenticated users on to

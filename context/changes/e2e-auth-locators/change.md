@@ -31,3 +31,33 @@ Playwright suite fails at the setup project, so no E2E test has run since; this 
   should be a data-testid, a smoke test in CI, or left as-is is a real question for the plan —
   CI runs lint + build + deploy but never `npm run e2e`, which is why this went unnoticed for
   a day.
+
+### Phase 2 triage record (2026-08-11)
+
+The first full run surfaced two distinct failures. Both were triaged **test-side** and fixed in
+`tests/e2e/`; no product-side defect was found, so no new change folder was opened.
+
+**Failure 1 — `setup` timed out on `waitForURL("**/dashboard")`.** Not a locator problem: the
+three Phase 1 locators resolved fine. The error snapshot showed both fields *empty* and the form
+re-rendered with its client-side validation errors ("Podaj adres email" / "Podaj hasło"), which
+only `validate()` in `LoginCardForm.tsx:47` produces. `LoginCardForm` is a `client:load` island
+(`signin.astro:26`) with controlled inputs (`value={email}`, `:90`/`:134`), so a `fill()` that
+lands before hydration writes to the DOM but never to React state, and hydration then resets the
+fields — the submit posts nothing. Phase 1 passed in 2.3 s because it won that race; three
+consecutive re-runs later failed it. **Test-side**: `auth.setup.ts` now waits for
+`networkidle` before typing and asserts `toHaveValue` on both fields, so a future regression
+fails in seconds with a legible message instead of timing out on `waitForURL`.
+
+**Failure 2 — all three `absence-form-dialog` tests: `getByRole("checkbox", { name: "Cały
+dzień" })` not found.** The dialog renders the full-day toggle and the time inputs behind
+`canBePartialDay` (`AbsenceFormDialog.tsx:231`), which is false until an absence type in
+`PARTIAL_DAY_TYPE_NAMES` (`src/lib/absence-types.ts:11` — the two training types) is selected.
+A freshly opened add-dialog has `absenceTypeId === null`, so neither control exists. This is the
+documented domain rule working correctly, **not** the clamp feature misbehaving — the plan's
+Phase 2 stop-rule names "the dialog not rendering the time inputs" as a product-side symptom,
+but that branch is predicated on the feature misbehaving, and here it does not. **Test-side**:
+the spec had never executed once (blocked at `setup` since f748ba5), so it had never been
+confirmed against the real dialog. `openPartialDayDialog` now selects
+"szkolenie w miejscu pracy" and waits for the toggle before returning.
+
+After both fixes: 3 consecutive green full runs (1 setup + 3 chromium, ~12 s each).

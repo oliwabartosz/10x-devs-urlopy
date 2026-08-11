@@ -325,9 +325,9 @@ during Phase 1, delete it and re-run.
 
 #### Automated
 
-- [x] 1.1 Setup project authenticates: `npx playwright test --project=setup`
-- [x] 1.2 Session state written: `tests/e2e/.auth/user.json` fresh with non-empty `cookies`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Setup project authenticates: `npx playwright test --project=setup` — cf45bbe
+- [x] 1.2 Session state written: `tests/e2e/.auth/user.json` fresh with non-empty `cookies` — cf45bbe
+- [x] 1.3 Linting passes: `npm run lint` — cf45bbe
 
 #### Manual
 
@@ -337,14 +337,14 @@ during Phase 1, delete it and re-run.
 
 #### Automated
 
-- [ ] 2.1 Full suite passes: `npm run e2e` (1 setup + 3 chromium, zero failures)
-- [ ] 2.2 Linting passes: `npm run lint`
+- [x] 2.1 Full suite passes: `npm run e2e` (1 setup + 3 chromium, zero failures)
+- [x] 2.2 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.3 Every failure triaged test-side vs product-side, decision recorded
-- [ ] 2.4 Any product-side defect spun out into its own change folder
-- [ ] 2.5 Criterion 3.1 of `absence-hours-window` ticked against a genuinely green run
+- [x] 2.3 Every failure triaged test-side vs product-side, decision recorded
+- [x] 2.4 Any product-side defect spun out into its own change folder
+- [x] 2.5 Criterion 3.1 of `absence-hours-window` ticked against a genuinely green run
 
 ### Phase 3: Harden the post-deploy health check
 

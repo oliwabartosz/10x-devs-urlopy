@@ -12,9 +12,9 @@
  */
 import { test, expect } from "@playwright/test";
 
-// Opens the add-absence dialog on an empty cell of a future month, with "Cały dzień"
-// unchecked so both time inputs are on screen. No DB writes happen — every test below
-// closes with "Anuluj", so no cleanup is needed.
+// Opens the add-absence dialog on an empty cell of a future month and selects an absence
+// type that may carry a time range, which is what puts "Cały dzień" on screen. No DB writes
+// happen — every test below closes with "Anuluj", so no cleanup is needed.
 async function openPartialDayDialog(page: import("@playwright/test").Page) {
   // Navigate to a future month guaranteed to have empty cells — no test data needed
   await page.goto("/dashboard?month=2027-01");
@@ -26,6 +26,13 @@ async function openPartialDayDialog(page: import("@playwright/test").Page) {
   // Open the form dialog by clicking any empty clickable cell (shows '+')
   await page.getByText("+").first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
+
+  // The full-day toggle and the time inputs are gated behind `canBePartialDay`
+  // (AbsenceFormDialog.tsx) — only the two training types in PARTIAL_DAY_TYPE_NAMES
+  // (src/lib/absence-types.ts) may carry a range, and no type is selected on open.
+  // Without this step the dialog renders neither control, by design.
+  await page.getByRole("radio", { name: "szkolenie w miejscu pracy" }).click();
+  await expect(page.getByRole("checkbox", { name: "Cały dzień" })).toBeVisible();
 }
 
 test("form dialog reveals time-range inputs when partial-day is selected", async ({ page }) => {

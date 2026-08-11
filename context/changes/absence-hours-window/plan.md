@@ -521,7 +521,7 @@ want the option.
 
 #### Automated
 
-- [ ] 3.1 E2E suite passes: `npm run e2e`
+- [x] 3.1 E2E suite passes: `npm run e2e` — e2e-auth-locators p2
 - [x] 3.2 Type checking passes: `npm run build` — 70ff594
 - [x] 3.3 Linting passes: `npm run lint` — 70ff594
 
