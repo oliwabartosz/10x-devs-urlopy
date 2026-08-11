@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { typeAllowsPartialDay } from "@/lib/absence-types";
+import { clampAbsenceHours } from "@/lib/absence-hours";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { useRovingRadioGroup } from "@/components/hooks/useRovingRadioGroup";
@@ -77,6 +78,23 @@ export function AbsenceFormDialog({
       setStartTime("");
       setEndTime("");
     }
+  };
+
+  // Correct the range when focus leaves either time input, using the same module the API
+  // enforces with (`@/lib/absence-hours`) — one rule, one source, exactly as
+  // `typeAllowsPartialDay` is already shared between this form and the routes. The user sees
+  // the value that will actually be stored instead of discovering it after the reload.
+  //
+  // Deliberately not on `onChange`: `<input type="time">` fires per keystroke, so clamping
+  // there would rewrite a start time mid-entry. Skipped while either field is empty (the user
+  // is mid-entry, and `saveDisabled` already gates that), and skipped on a rejection — that
+  // range keeps its existing path of a server 400 surfaced through `toast.error`.
+  const clampTimesOnBlur = () => {
+    if (!startTime || !endTime) return;
+    const clamped = clampAbsenceHours(startTime, endTime);
+    if (!clamped.ok) return;
+    setStartTime(clamped.startTime);
+    setEndTime(clamped.endTime);
   };
 
   const typeGroup = useRovingRadioGroup(
@@ -242,6 +260,7 @@ export function AbsenceFormDialog({
                       onChange={(e) => {
                         setStartTime(e.target.value);
                       }}
+                      onBlur={clampTimesOnBlur}
                       className="w-32"
                     />
                     <span className="text-muted-foreground">–</span>
@@ -254,6 +273,7 @@ export function AbsenceFormDialog({
                       onChange={(e) => {
                         setEndTime(e.target.value);
                       }}
+                      onBlur={clampTimesOnBlur}
                       className="w-32"
                     />
                   </div>

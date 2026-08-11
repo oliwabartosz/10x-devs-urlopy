@@ -3,7 +3,7 @@ change_id: absence-hours-window
 title: Bound partial-day absence ranges (max 8h, start from 06:00)
 created: 2026-08-07
 status: implementing
-updated: 2026-08-10
+updated: 2026-08-11
 archived_at: null
 ---
 

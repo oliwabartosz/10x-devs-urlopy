@@ -505,10 +505,10 @@ want the option.
 
 #### Automated
 
-- [x] 2.1 Route tests pass against the direct DB
-- [x] 2.2 Full suite passes: `npm run test:run`
-- [x] 2.3 Type checking passes: `npm run build`
-- [x] 2.4 Linting passes: `npm run lint`
+- [x] 2.1 Route tests pass against the direct DB — 23ebe24
+- [x] 2.2 Full suite passes: `npm run test:run` — 23ebe24
+- [x] 2.3 Type checking passes: `npm run build` — 23ebe24
+- [x] 2.4 Linting passes: `npm run lint` — 23ebe24
 
 #### Manual
 
@@ -522,8 +522,8 @@ want the option.
 #### Automated
 
 - [ ] 3.1 E2E suite passes: `npm run e2e`
-- [ ] 3.2 Type checking passes: `npm run build`
-- [ ] 3.3 Linting passes: `npm run lint`
+- [x] 3.2 Type checking passes: `npm run build`
+- [x] 3.3 Linting passes: `npm run lint`
 
 #### Manual
 

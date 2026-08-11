@@ -37,9 +37,7 @@
 
 ## Project-specific locators
 
-- Time inputs in AbsenceFormDialog: `locator("#start-time")` / `locator("#end-time")`.
-  (These have `aria-label="Czas od"` / `aria-label="Czas do"` in the codebase —
-  switch to `getByLabel("Czas od")` / `getByLabel("Czas do")` once deployed.)
+- Time inputs in AbsenceFormDialog: `getByLabel("Czas od")` / `getByLabel("Czas do")`.
 - Full-day toggle: `getByRole("checkbox", { name: "Cały dzień" })`.
 - Empty grid cell: `getByText("+")` after `waitForLoadState("networkidle")` to ensure
   React island (client:load) has hydrated and onClick handlers are attached.
