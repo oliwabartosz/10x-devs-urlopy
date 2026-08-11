@@ -436,23 +436,23 @@ its true angle; only dragging snaps.
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm run test:run`
-- [x] 1.2 Type checking passes: `npx astro sync && npx tsc --noEmit`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 `time-dial.ts` imports nothing beyond `@/lib/absence-hours` and `@/lib/hours`
+- [x] 1.1 Unit tests pass: `npm run test:run` — 202fa37
+- [x] 1.2 Type checking passes: `npx astro sync && npx tsc --noEmit` — 202fa37
+- [x] 1.3 Linting passes: `npm run lint` — 202fa37
+- [x] 1.4 `time-dial.ts` imports nothing beyond `@/lib/absence-hours` and `@/lib/hours` — 202fa37
 
 #### Manual
 
-- [x] 1.5 The 06:00 and 8h figures derive from existing constants, not literals
+- [x] 1.5 The 06:00 and 8h figures derive from existing constants, not literals — 202fa37
 
 ### Phase 2: Popover primitive and dial component
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Build succeeds: `npm run build`
-- [ ] 2.4 No new dependency added: `git diff package.json` is empty
+- [x] 2.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Build succeeds: `npm run build`
+- [x] 2.4 No new dependency added: `git diff package.json` is empty
 
 #### Manual
 

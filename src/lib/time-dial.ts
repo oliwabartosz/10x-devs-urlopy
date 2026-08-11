@@ -113,6 +113,23 @@ export function constrainHandle({
   return circularDistance(snapped, min) <= circularDistance(snapped, max) ? min : max;
 }
 
+/**
+ * The grid stop `steps` away from `minutes`, moving in the sign of `steps`.
+ *
+ * Not `snapToStep(minutes) + steps * STEP_MINUTES`: a row typed as `16:27` would snap to `16:30`
+ * and *then* step, so one press of ArrowUp would skip `16:30` entirely. Stepping off the stop
+ * behind (or ahead of) an off-grid value instead means the first press lands on the grid and
+ * every press after that moves exactly one stop.
+ *
+ * May return a value outside the day; {@link constrainHandle} folds it back onto the face and
+ * into the handle's window.
+ */
+export function stepFrom(minutes: number, steps: number): number {
+  if (steps === 0) return snapToStep(minutes);
+  const anchor = steps > 0 ? Math.floor(minutes / STEP_MINUTES) : Math.ceil(minutes / STEP_MINUTES);
+  return (anchor + steps) * STEP_MINUTES;
+}
+
 /** Nearest quarter hour, ties rounding up. `07:07` → `07:00`, `07:08` → `07:15`. */
 export function snapToStep(minutes: number): number {
   const snapped = Math.round(normalizeMinutes(minutes) / STEP_MINUTES) * STEP_MINUTES;

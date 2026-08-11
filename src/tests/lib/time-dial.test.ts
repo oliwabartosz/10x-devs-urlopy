@@ -17,6 +17,7 @@ import {
   parseClockTime,
   polarToCartesian,
   snapToStep,
+  stepFrom,
 } from "@/lib/time-dial";
 
 /** `"HH:MM"` → minutes, for readable expectations. Throws rather than returning null. */
@@ -89,6 +90,31 @@ describe("snapToStep", () => {
     // 23:53 is nearer to 24:00 than to 23:45, and 24:00 is 00:00 today.
     expect(snapToStep(at("23:53"))).toBe(at("00:00"));
     expect(snapToStep(at("23:52"))).toBe(at("23:45"));
+  });
+});
+
+describe("stepFrom", () => {
+  it("moves one grid stop per step from an on-grid value", () => {
+    expect(stepFrom(at("09:00"), 1)).toBe(at("09:15"));
+    expect(stepFrom(at("09:00"), -1)).toBe(at("08:45"));
+    expect(stepFrom(at("09:00"), 4)).toBe(at("10:00"));
+    expect(stepFrom(at("09:00"), -4)).toBe(at("08:00"));
+  });
+
+  it("lands on the grid with the first press from an off-grid value", () => {
+    // The trap: snapping first would take 16:27 to 16:30 and *then* step, skipping 16:30.
+    expect(stepFrom(at("16:27"), 1)).toBe(at("16:30"));
+    expect(stepFrom(at("16:27"), -1)).toBe(at("16:15"));
+    expect(stepFrom(at("16:27"), 4)).toBe(at("17:15"));
+  });
+
+  it("snaps in place for a zero step", () => {
+    expect(stepFrom(at("16:27"), 0)).toBe(at("16:30"));
+  });
+
+  it("may leave the day, for constrainHandle to fold back", () => {
+    expect(stepFrom(at("00:00"), -1)).toBe(-STEP_MINUTES);
+    expect(stepFrom(at("23:45"), 1)).toBe(MINUTES_PER_DAY);
   });
 });
 
