@@ -512,10 +512,10 @@ want the option.
 
 #### Manual
 
-- [ ] 2.5 Crafted POST `01:00–22:00` returns 201 with `06:00:00`–`14:00:00` in the body
-- [ ] 2.6 Crafted POST `01:00–03:00` returns 400 naming 06:00
-- [ ] 2.7 Editing an existing in-bounds absence saves unchanged
-- [ ] 2.8 Editing an out-of-window legacy row succeeds and silently corrects it
+- [x] 2.5 Crafted POST `01:00–22:00` returns 201 with `06:00:00`–`14:00:00` in the body — 23ebe24
+- [x] 2.6 Crafted POST `01:00–03:00` returns 400 naming 06:00 — 23ebe24
+- [x] 2.7 Editing an existing in-bounds absence saves unchanged — 23ebe24
+- [x] 2.8 Editing an out-of-window legacy row succeeds and silently corrects it — 23ebe24
 
 ### Phase 3: Client-side on-blur correction
 
@@ -527,22 +527,22 @@ want the option.
 
 #### Manual
 
-- [ ] 3.4 `04:00–13:00` becomes `06:00–13:00` on blur
-- [ ] 3.5 `08:00–20:00` becomes `08:00–16:00` on blur
-- [ ] 3.6 `01:00–03:00` left untouched; Save produces the 06:00 toast
-- [ ] 3.7 Typing a start time is never rewritten mid-entry
-- [ ] 3.8 Switching to a non-training type still clears the range
+- [x] 3.4 `04:00–13:00` becomes `06:00–13:00` on blur — 70ff594
+- [x] 3.5 `08:00–20:00` becomes `08:00–16:00` on blur — 70ff594
+- [x] 3.6 `01:00–03:00` left untouched; Save produces the 06:00 toast — 70ff594
+- [x] 3.7 Typing a start time is never rewritten mid-entry — 70ff594
+- [x] 3.8 Switching to a non-training type still clears the range — 70ff594
 
 ### Phase 4: Purge the two demo rows
 
 #### Automated
 
-- [x] 4.1 Migration applies cleanly: `npm run db:migrate`
-- [x] 4.2 Full suite still passes: `npm run test:run`
-- [x] 4.3 `npm run db:generate` produces no new migration
+- [x] 4.1 Migration applies cleanly: `npm run db:migrate` — 5246e09
+- [x] 4.2 Full suite still passes: `npm run test:run` — 5246e09
+- [x] 4.3 `npm run db:generate` produces no new migration — 5246e09
 
 #### Manual
 
-- [ ] 4.4 Partial-day rows number 6, all within the floor and the cap
-- [ ] 4.5 Both purged dates show no absence in the grid
-- [ ] 4.6 Balance card totals dropped by exactly 0.875 days
+- [x] 4.4 Partial-day rows number 6, all within the floor and the cap — 5246e09
+- [x] 4.5 Both purged dates show no absence in the grid — 5246e09
+- [x] 4.6 Balance card totals dropped by exactly 0.875 days — 5246e09
