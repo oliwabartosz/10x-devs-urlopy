@@ -331,7 +331,7 @@ during Phase 1, delete it and re-run.
 
 #### Manual
 
-- [ ] 1.4 `e2e-rules.md` strings read back identically to `LoginCardForm.tsx:78,122,29`
+- [x] 1.4 `e2e-rules.md` strings read back identically to `LoginCardForm.tsx:78,122,29` — cf45bbe
 
 ### Phase 2: Get the full suite green
 
@@ -350,11 +350,11 @@ during Phase 1, delete it and re-run.
 
 #### Automated
 
-- [x] 3.1 All five literals present in the live response via `curl` + `grep -qF`
+- [x] 3.1 All five literals present in the live response via `curl` + `grep -qF` — 5a8cc7b
 - [ ] 3.2 CI `deploy` job's health-check step passes on push to `main`
-- [x] 3.3 Linting passes: `npm run lint`
+- [x] 3.3 Linting passes: `npm run lint` — 5a8cc7b
 
 #### Manual
 
-- [ ] 3.4 Negative test: a mangled string makes the check exit 1
-- [ ] 3.5 Failure message names the missing literal and points at `auth.setup.ts`
+- [x] 3.4 Negative test: a mangled string makes the check exit 1 — 5a8cc7b
+- [x] 3.5 Failure message names the missing literal and points at `auth.setup.ts` — 5a8cc7b

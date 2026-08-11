@@ -1,7 +1,7 @@
 ---
 change_id: e2e-auth-locators
 title: Repair the E2E signin locators so the Playwright suite can run again
-status: implementing
+status: implemented
 created: 2026-08-11
 updated: 2026-08-11
 archived_at: null
