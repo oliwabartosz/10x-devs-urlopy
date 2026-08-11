@@ -497,18 +497,18 @@ want the option.
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm run test:run`
-- [x] 1.2 Type checking passes: `npm run build`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Unit tests pass: `npm run test:run` — ee5678f
+- [x] 1.2 Type checking passes: `npm run build` — ee5678f
+- [x] 1.3 Linting passes: `npm run lint` — ee5678f
 
 ### Phase 2: Server-side enforcement
 
 #### Automated
 
-- [ ] 2.1 Route tests pass against the direct DB
-- [ ] 2.2 Full suite passes: `npm run test:run`
-- [ ] 2.3 Type checking passes: `npm run build`
-- [ ] 2.4 Linting passes: `npm run lint`
+- [x] 2.1 Route tests pass against the direct DB
+- [x] 2.2 Full suite passes: `npm run test:run`
+- [x] 2.3 Type checking passes: `npm run build`
+- [x] 2.4 Linting passes: `npm run lint`
 
 #### Manual
 

@@ -11,6 +11,11 @@ import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
+
+// Kept in step with the same message in `index.ts` — a clamp rejection is the same rule
+// broken whichever route it arrives through.
+const END_BEFORE_FLOOR_ERROR = `Wpis godzinowy zaczyna się najwcześniej o ${MIN_START_TIME}, więc musi kończyć się później niż ${MIN_START_TIME}.`;
 
 const AbsenceUpdateSchema = z
   .object({
@@ -90,11 +95,20 @@ export const PATCH: APIRoute = async (context) => {
 
   // Load the existing row (ownership-scoped) to resolve the *effective* type/full-day state
   // for the partial-day guard: a PATCH may omit either field, and a body that changes only
-  // the type must not leave an existing partial-day range on a now-ineligible type.
-  let existing: { absence_type_id: number; is_full_day: boolean } | undefined;
+  // the type must not leave an existing partial-day range on a now-ineligible type. The two
+  // time columns are read for the same reason — the hours clamp below needs the effective
+  // range, and a body that patches only one end must be clamped against the stored other end.
+  let existing:
+    | { absence_type_id: number; is_full_day: boolean; start_time: string | null; end_time: string | null }
+    | undefined;
   try {
     existing = await db
-      .select({ absence_type_id: absences.absence_type_id, is_full_day: absences.is_full_day })
+      .select({
+        absence_type_id: absences.absence_type_id,
+        is_full_day: absences.is_full_day,
+        start_time: absences.start_time,
+        end_time: absences.end_time,
+      })
       .from(absences)
       .where(ownershipWhere)
       .then((r) => r[0]);
@@ -104,8 +118,21 @@ export const PATCH: APIRoute = async (context) => {
   }
   if (!existing) return json({ error: "Nie znaleziono." }, 404);
 
+  // Captured before the clamp merges values into `parsed.data`: from here on, "the body
+  // omitted this field" can no longer be read off `parsed.data`, and both the effective-value
+  // resolution and the CAS pins below depend on it. Note `null` is a *supplied* value here
+  // (it clears the range for a full-day switch), so `??` would resolve it wrongly.
+  const omitted = {
+    absence_type_id: parsed.data.absence_type_id === undefined,
+    is_full_day: parsed.data.is_full_day === undefined,
+    start_time: parsed.data.start_time === undefined,
+    end_time: parsed.data.end_time === undefined,
+  };
+
   const effectiveTypeId = parsed.data.absence_type_id ?? existing.absence_type_id;
   const effectiveIsFullDay = parsed.data.is_full_day ?? existing.is_full_day;
+  const effectiveStartTime = omitted.start_time ? existing.start_time : (parsed.data.start_time ?? null);
+  const effectiveEndTime = omitted.end_time ? existing.end_time : (parsed.data.end_time ?? null);
 
   let partialDayViolation: boolean;
   try {
@@ -118,14 +145,37 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
+  // Same domain rule as POST, applied to the *effective* range. The clamped values are merged
+  // back into `parsed.data` so they reach the UPDATE's `set` even for a column the body
+  // omitted — a body patching only `end_time` still corrects a stored out-of-window start.
+  if (!effectiveIsFullDay && effectiveStartTime !== null && effectiveEndTime !== null) {
+    const clamped = clampAbsenceHours(effectiveStartTime, effectiveEndTime);
+    if (!clamped.ok) {
+      return json(
+        { error: clamped.reason === "end-before-floor" ? END_BEFORE_FLOOR_ERROR : "Nieprawidłowy format godziny." },
+        400,
+      );
+    }
+    parsed.data.start_time = clamped.startTime;
+    parsed.data.end_time = clamped.endTime;
+  }
+
   // The guard above judged the *effective* state, which for any field the body omitted was
   // read from `existing` a moment ago. Pin exactly those fields in the UPDATE's WHERE so a
   // concurrent write that changes them makes this statement match zero rows instead of
   // landing on stale premises (e.g. another PATCH flips the type to an ineligible one after
   // we read it, and this UPDATE then writes a time range onto it).
+  //
+  // `start_time`/`end_time` are nullable — a full-day row holds NULL in both — so the pin for
+  // an absent stored value must be `isNull()`. `eq(col, null)` does not compile to `IS NULL`
+  // and would silently match zero rows, surfacing as a spurious 409.
+  const timePin = (column: typeof absences.start_time | typeof absences.end_time, value: string | null) =>
+    value === null ? isNull(column) : eq(column, value);
   const casConditions = [
-    parsed.data.absence_type_id === undefined ? eq(absences.absence_type_id, existing.absence_type_id) : undefined,
-    parsed.data.is_full_day === undefined ? eq(absences.is_full_day, existing.is_full_day) : undefined,
+    omitted.absence_type_id ? eq(absences.absence_type_id, existing.absence_type_id) : undefined,
+    omitted.is_full_day ? eq(absences.is_full_day, existing.is_full_day) : undefined,
+    omitted.start_time ? timePin(absences.start_time, existing.start_time) : undefined,
+    omitted.end_time ? timePin(absences.end_time, existing.end_time) : undefined,
   ].filter((c) => c !== undefined);
   const updateWhere = casConditions.length > 0 ? and(ownershipWhere, ...casConditions) : ownershipWhere;
 

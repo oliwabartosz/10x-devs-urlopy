@@ -11,12 +11,18 @@ import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
 
 const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
   new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json", ...extraHeaders },
   });
+
+// The one range the clamp cannot correct: flooring the start to MIN_START_TIME would leave
+// the end at or before it. Deliberately distinct from the full-day combination message —
+// it names the rule that was actually broken.
+const END_BEFORE_FLOOR_ERROR = `Wpis godzinowy zaczyna się najwcześniej o ${MIN_START_TIME}, więc musi kończyć się później niż ${MIN_START_TIME}.`;
 
 // Hard cap on a list response. Consumers that aggregate over the whole list (statistics,
 // the Details yearly view) must know when they were handed a partial one, so GET reports
@@ -219,6 +225,22 @@ export const POST: APIRoute = async (context) => {
   }
   if (partialDayViolation) {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
+  }
+
+  // Domain rule: a partial-day range starts no earlier than MIN_START_TIME and runs no longer
+  // than one working day. Clamped rather than rejected — the stored row goes back in the 201
+  // body (`.returning(...)` below), so a corrected range is visible to the caller.
+  // The schema's refine above guarantees both times are present when is_full_day is false.
+  if (!absenceData.is_full_day && absenceData.start_time !== null && absenceData.end_time !== null) {
+    const clamped = clampAbsenceHours(absenceData.start_time, absenceData.end_time);
+    if (!clamped.ok) {
+      return json(
+        { error: clamped.reason === "end-before-floor" ? END_BEFORE_FLOOR_ERROR : "Nieprawidłowy format godziny." },
+        400,
+      );
+    }
+    absenceData.start_time = clamped.startTime;
+    absenceData.end_time = clamped.endTime;
   }
 
   try {
