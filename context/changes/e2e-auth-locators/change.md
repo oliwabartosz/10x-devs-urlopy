@@ -1,9 +1,9 @@
 ---
 change_id: e2e-auth-locators
 title: Repair the E2E signin locators so the Playwright suite can run again
-status: implemented
+status: impl_reviewed
 created: 2026-08-11
-updated: 2026-08-11
+updated: 2026-08-12
 archived_at: null
 ---
 
@@ -62,14 +62,13 @@ confirmed against the real dialog. `openPartialDayDialog` now selects
 
 After both fixes: 3 consecutive green full runs (1 setup + 3 chromium, ~12 s each).
 
-### Open criterion at close (2026-08-12)
+### Criterion 3.2 closed (2026-08-12)
 
-Criterion 3.2 ("CI `deploy` job's health-check step passes on push to `main`") is the one item
-left `- [ ]`. It cannot be satisfied locally: the `deploy` job is gated on
-`github.event_name == 'push' && github.ref == 'refs/heads/main'`, and this change's four commits
-are still unpushed. The check's assertions were verified by hand instead — all five literals
-present in the live response, and a mangled literal confirmed to exit 1 — but the job itself has
-never run them.
+3.2 ("CI `deploy` job's health-check step passes on push to `main`") could not be satisfied
+locally — the `deploy` job is gated on
+`github.event_name == 'push' && github.ref == 'refs/heads/main'` — so it stayed `- [ ]` through
+the epilogue while the change sat unpushed.
 
-**Tick 3.2 on the next push to `main`**, against the real CI run rather than the manual proof.
-Until then the plan is closed with one unverified assertion, deliberately and visibly.
+Closed on run **31602628557** (`9a838c7`, which carries `9deb26f`). The step log confirms the
+hardened check ran, including the review's `SUBMIT_HITS` count and the bounded failure dumps,
+and reported `OK: HTTP 200`. All 13 criteria are now green.

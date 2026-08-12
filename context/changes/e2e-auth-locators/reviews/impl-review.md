@@ -4,8 +4,9 @@
 - **Plan**: `context/changes/e2e-auth-locators/plan.md`
 - **Scope**: Phases 1–3 of 3
 - **Date**: 2026-08-12
-- **Verdict**: NEEDS ATTENTION
+- **Verdict**: NEEDS ATTENTION → triaged, 8 of 9 fixed
 - **Findings**: 0 critical, 5 warnings, 4 observations
+- **Triage** (2026-08-12): F1–F8 fixed, F9 skipped (concurrent edits in that file)
 
 ## Verdicts
 
@@ -115,7 +116,7 @@
 - **Location**: `.github/workflows/ci.yml:118`
 - **Detail**: Nothing sensitive is in the body (verified: `curl -o` captures body only, no `Set-Cookie`; secrets are `access: "secret"` in `astro.config.mjs` so Astro won't inline them). But the repo is public and the dump went from unreachable to firing on any label rename.
 - **Fix**: `head -c 2000 /tmp/body.txt` — the failing literal is already echoed, so the full body adds little.
-- **Decision**: PENDING
+- **Decision**: FIXED. Both content-check failure paths (the literal loop and the new `Zaloguj się` count) now dump at most 2000 bytes. The pre-existing 5xx branch was left unbounded on purpose — that one dumps an error page, where more context helps. Verified: the negative run emits 2360 bytes total instead of the full page.
 
 ### F8 — Bad credentials look identical to a hydration failure
 
@@ -125,7 +126,7 @@
 - **Location**: `tests/e2e/setup/auth.setup.ts:33`
 - **Detail**: `api/auth/signin.ts:19` redirects to `/?error=<message>` on auth failure; `/` renders the login card for an unauthenticated user, so `waitForURL` times out generically and the Supabase error text on screen never reaches the log.
 - **Fix**: Add `await expect(page).not.toHaveURL(/error=/)` before `waitForURL`.
-- **Decision**: PENDING
+- **Decision**: FIXED.
 
 ### F9 — Spec durability: substring "+" locator and a decaying future month
 
@@ -135,7 +136,7 @@
 - **Location**: `tests/e2e/absence-form-dialog.spec.ts:20`, `:27`
 - **Detail**: Both lines are unchanged by this change and the plan correctly left them alone (they didn't fail). Still: `getByText("+")` is substring-matched and `.first()` suppresses the strict-mode error that would flag an ambiguity — one "+2 więcej" badge away from clicking the wrong element. And hardcoded `2027-01` is ~5 months out, so "guaranteed empty" is decaying.
 - **Fix**: Scope the locator to a cell and compute the month relative to today (e.g. +24 months).
-- **Decision**: PENDING
+- **Decision**: SKIPPED. A concurrent session was actively editing this spec (radial-timepicker p4) during the review, so an edit here would have conflicted. The root cause of the one failure observed is the hydration race, now documented in `e2e-rules.md` under F5; the locator breadth and the hardcoded month remain open for whoever next touches this file.
 
 ## Not flagged
 

@@ -358,7 +358,7 @@ during Phase 1, delete it and re-run.
 #### Automated
 
 - [x] 3.1 All five literals present in the live response via `curl` + `grep -qF` — 5a8cc7b
-- [ ] 3.2 CI `deploy` job's health-check step passes on push to `main`
+- [x] 3.2 CI `deploy` job's health-check step passes on push to `main` — 9deb26f
 - [x] 3.3 Linting passes: `npm run lint` — 5a8cc7b
 
 #### Manual
