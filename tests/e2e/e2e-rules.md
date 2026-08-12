@@ -40,7 +40,14 @@
 
 ## Project-specific locators
 
-- Time inputs in AbsenceFormDialog: `getByLabel("Czas od")` / `getByLabel("Czas do")`.
+- Time inputs in AbsenceFormDialog: `getByLabel("Czas od")` / `getByLabel("Czas do")`. Each field
+  has a clock button opening the radial dial:
+  `getByRole("button", { name: "Wybierz godzinę rozpoczęcia na tarczy zegara" })` and
+  `… { name: "Wybierz godzinę zakończenia na tarczy zegara" }`. The dial's two handles are
+  `getByRole("slider", { name: "Godzina rozpoczęcia" })` / `{ name: "Godzina zakończenia" }`, read
+  through `aria-valuetext` (`"HH:MM"`). Drive them with the keyboard — a pointer drag depends on
+  pixel geometry. While the dial is open its `PopoverContent` is a second `role="dialog"`, so
+  `getByRole("dialog")` is only unambiguous with the dial closed.
 - Full-day toggle: `getByRole("checkbox", { name: "Cały dzień" })`.
 - Empty grid cell: `getByText("+")` after `waitForLoadState("networkidle")` to ensure
   React island (client:load) has hydrated and onClick handlers are attached.

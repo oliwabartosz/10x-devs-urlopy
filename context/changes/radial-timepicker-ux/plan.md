@@ -467,21 +467,21 @@ its true angle; only dragging snaps.
 
 #### Automated
 
-- [x] 3.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Build succeeds: `npm run build`
-- [x] 3.4 Existing API and lib suites still pass: `npm run test:run`
+- [x] 3.1 Type checking passes: `npx astro sync && npx tsc --noEmit` — deab4eb
+- [x] 3.2 Linting passes: `npm run lint` — deab4eb
+- [x] 3.3 Build succeeds: `npm run build` — deab4eb
+- [x] 3.4 Existing API and lib suites still pass: `npm run test:run` — deab4eb
 
 #### Manual
 
-- [x] 3.5 Typing `04:00`–`13:00` corrects the start and raises a toast
-- [x] 3.6 Typing `08:00`–`20:00` caps the end and raises a toast
-- [x] 3.7 Tabbing through a legal range raises no toast
-- [x] 3.8 A dial-set range saves exactly as shown
-- [x] 3.9 Escape closes the dial only; a second Escape closes the form
-- [x] 3.10 Focus returns to the trigger when the dial closes
-- [x] 3.11 Hours row matches the mockup's two-column layout
-- [x] 3.12 Switching to a non-training type still clears both times
+- [x] 3.5 Typing `04:00`–`13:00` corrects the start and raises a toast — deab4eb
+- [x] 3.6 Typing `08:00`–`20:00` caps the end and raises a toast — deab4eb
+- [x] 3.7 Tabbing through a legal range raises no toast — deab4eb
+- [x] 3.8 A dial-set range saves exactly as shown — deab4eb
+- [x] 3.9 Escape closes the dial only; a second Escape closes the form — deab4eb
+- [x] 3.10 Focus returns to the trigger when the dial closes — deab4eb
+- [x] 3.11 Hours row matches the mockup's two-column layout — deab4eb
+- [x] 3.12 Switching to a non-training type still clears both times — deab4eb
 
 ### Phase 4: E2E update (deferred)
 
