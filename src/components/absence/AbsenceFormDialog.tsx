@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Clock } from "lucide-react";
+import { CircleHelp, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeRangeDial } from "@/components/absence/TimeRangeDial";
 import { typeAllowsPartialDay } from "@/lib/absence-types";
-import { clampAbsenceHours } from "@/lib/absence-hours";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
 import { FULL_DAY_HOURS } from "@/lib/hours";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
@@ -21,6 +22,20 @@ import type { Absence, AbsenceType, Employee } from "@/types";
  * by it (`e2e-rules.md:43`) — a rename here has to move both files in one change.
  */
 const DIAL_TRIGGER_NAME = "Wybierz godziny na tarczy zegara";
+
+const HOURS_HELP_NAME = "Zasady dotyczące godzin";
+
+/**
+ * The rules stated up front, so they are readable *before* a correction happens rather than only
+ * in the toast that follows one. Both figures are interpolated from the shared domain constants —
+ * the same two `clampAbsenceHours` enforces — so this text cannot drift from what the server does.
+ */
+const HOURS_HELP_TEXT = [
+  `Nieobecność nie może zaczynać się przed ${MIN_START_TIME}.`,
+  `Zakres nie może trwać dłużej niż ${String(FULL_DAY_HOURS)} godz.`,
+  "Wpisane godziny poza tymi zasadami poprawiamy automatycznie po wyjściu z pola — pokażemy powiadomienie z nową wartością.",
+  "Na tarczy zegara tych granic nie da się przekroczyć, a wskazówki przeskakują co 15 minut.",
+];
 
 interface HoursColumnProps {
   /** Kept as `start-time` / `end-time`; the `<label>` points at it. */
@@ -367,6 +382,30 @@ export function AbsenceFormDialog({
                       <TimeRangeDial startTime={startTime} endTime={endTime} onChange={setRangeFromDial} />
                     </PopoverContent>
                   </Popover>
+
+                  {/* The rules, before they bite. A real `<button>` rather than an icon with a
+                      `title`: a tooltip on a focusable element opens on keyboard focus too, so the
+                      explanation is not pointer-only. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={HOURS_HELP_NAME}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <CircleHelp />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="end">
+                      <div className="space-y-1.5">
+                        {HOURS_HELP_TEXT.map((line) => (
+                          <p key={line}>{line}</p>
+                        ))}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               )}
             </>
