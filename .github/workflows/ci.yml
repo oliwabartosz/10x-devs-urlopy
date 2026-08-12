@@ -108,15 +108,32 @@ jobs:
           #
           # -F is load-bearing: the literals are non-ASCII and must be byte-compared, not
           # read as regex. Do NOT add -i — case-folding non-ASCII is locale-dependent, and
-          # case insensitivity is not wanted here anyway.
-          for NEEDLE in 'Użytkownik / ID' 'Hasło' 'Zaloguj się' 'for="email"' 'for="password"'; do
+          # -i would also make 'Hasło' vacuous by matching the placeholder "Wpisz hasło".
+          for NEEDLE in 'Użytkownik / ID' 'Hasło' 'for="email"' 'for="password"'; do
             if ! grep -qF "$NEEDLE" /tmp/body.txt; then
               echo "FAIL: the signin page no longer contains the literal: ${NEEDLE}"
               echo "The E2E signin locators resolve against this string. If the copy changed"
               echo "on purpose, update tests/e2e/setup/auth.setup.ts (and the signin entry in"
               echo "tests/e2e/e2e-rules.md) in the same change."
-              cat /tmp/body.txt
+              # Bounded: this repo is public, so the whole page lands in a world-readable log
+              # on every copy edit. The missing literal is already named above.
+              head -c 2000 /tmp/body.txt
               exit 1
             fi
           done
+          # "Zaloguj się" is counted, not merely present. The card subheading
+          # ("Zaloguj się, aby uzyskać dostęp do panelu", src/pages/auth/signin.astro)
+          # already supplies one occurrence, so a presence grep would stay green even if the
+          # submit button — the only thing getByRole in auth.setup.ts resolves against — were
+          # renamed. Count occurrences, not lines: the response is minified onto two lines,
+          # so both hits share a line and `grep -c` would report 1.
+          SUBMIT_HITS=$(grep -oF 'Zaloguj się' /tmp/body.txt | wc -l)
+          if [ "$SUBMIT_HITS" -lt 2 ]; then
+            echo "FAIL: expected >=2 occurrences of 'Zaloguj się' (card subheading + submit"
+            echo "button), found ${SUBMIT_HITS}. The submit button's accessible name is what"
+            echo "tests/e2e/setup/auth.setup.ts clicks. If the copy changed on purpose, update"
+            echo "that file (and the signin entry in tests/e2e/e2e-rules.md) in the same change."
+            head -c 2000 /tmp/body.txt
+            exit 1
+          fi
           echo "OK: HTTP ${HTTP_CODE}"

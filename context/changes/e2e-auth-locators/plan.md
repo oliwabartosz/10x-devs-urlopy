@@ -126,6 +126,13 @@ the setup project can authenticate again.
 else in the file changes: the `waitForURL("/")` → `/dashboard` → `getByRole("link", { name:
 "Siatka" })` sequence and the `storageState` write are all still correct.
 
+> **Deviation (cf45bbe).** The last sentence above was wrong when written. 7c34d01 had added a
+> `/` → `/dashboard` redirect for authenticated users (`src/pages/index.astro:8`), so
+> `waitForURL("/")` could never settle — `/` is not a resting URL for a signed-in session.
+> cf45bbe therefore replaced `waitForURL("/")` + `page.goto("/dashboard")` with a single
+> `waitForURL("**/dashboard")`, and documented the reason in the commit body and in
+> `tests/e2e/e2e-rules.md`. The `storageState` write and the `Siatka` assertion are unchanged.
+
 #### 2. E2E locator conventions
 
 **File**: `tests/e2e/e2e-rules.md`

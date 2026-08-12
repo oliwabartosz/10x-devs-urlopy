@@ -11,6 +11,31 @@
 - Never use `page.waitForTimeout()`. Wait for concrete state:
   `toBeVisible()`, `waitForURL()`, `waitForResponse()`.
 
+### Waiting for island hydration
+
+`waitForLoadState("networkidle")` is a **proxy, not a barrier**. It settles after 500 ms with no
+in-flight requests, which is not the same as "hydrateRoot committed": a warm cache produces no
+requests at all, and Astro's `importWithRetry` sleeps 1 s between attempts — a window with zero
+traffic. Use it as a cheap first pass, never as a guarantee.
+
+For anything that must survive a pre-hydration interaction, make the step **self-healing** rather
+than one-shot. Controlled React inputs are the sharp case: a `fill()` that lands before hydration
+writes to the DOM but not to React state, hydration then resets the field, and the submit posts
+nothing. A single `toHaveValue()` does not catch this either — web-first assertions return on
+their first passing poll, so a wipe landing just after still gets through. Re-fill until it
+sticks (`tests/e2e/setup/auth.setup.ts` is the reference):
+
+```ts
+await expect(async () => {
+  await input.fill(value);
+  await expect(input).toHaveValue(value, { timeout: 1000 });
+}).toPass({ timeout: 15_000 });
+```
+
+The same applies to clicking a not-yet-hydrated element: the click succeeds against the DOM, no
+handler runs, and the failure surfaces later as a missing dialog. Prefer `toPass()` around
+click-then-assert over trusting `networkidle` alone.
+
 ## Test independence
 
 - Each test must be self-contained: own setup → action → assertion → cleanup.
@@ -48,8 +73,11 @@
   pixel geometry. While the dial is open its `PopoverContent` is a second `role="dialog"`, so
   `getByRole("dialog")` is only unambiguous with the dial closed.
 - Full-day toggle: `getByRole("checkbox", { name: "Cały dzień" })`.
-- Empty grid cell: `getByText("+")` after `waitForLoadState("networkidle")` to ensure
-  React island (client:load) has hydrated and onClick handlers are attached.
+- Empty grid cell: `getByText("+")`, after `waitForLoadState("networkidle")` as a first pass.
+  Note this does **not** guarantee `AbsenceGrid` (client:load) has attached its onClick handlers
+  — see "Waiting for island hydration". A click that lands early is silently swallowed and shows
+  up later as a dialog that never opened; this has been observed intermittently. Prefer wrapping
+  the click and the `expect(dialog).toBeVisible()` in a single `toPass()`.
 - Form dialog: `getByRole("dialog")` scoped to `getByRole("heading", { name: … })`.
 - Tab navigation: `getByRole("link", { name: "Siatka" })` — reliable dashboard-loaded signal.
 - Signin form (`LoginCardForm.tsx`): `getByLabel("Użytkownik / ID")` for email,

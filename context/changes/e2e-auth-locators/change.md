@@ -61,3 +61,15 @@ confirmed against the real dialog. `openPartialDayDialog` now selects
 "szkolenie w miejscu pracy" and waits for the toggle before returning.
 
 After both fixes: 3 consecutive green full runs (1 setup + 3 chromium, ~12 s each).
+
+### Open criterion at close (2026-08-12)
+
+Criterion 3.2 ("CI `deploy` job's health-check step passes on push to `main`") is the one item
+left `- [ ]`. It cannot be satisfied locally: the `deploy` job is gated on
+`github.event_name == 'push' && github.ref == 'refs/heads/main'`, and this change's four commits
+are still unpushed. The check's assertions were verified by hand instead — all five literals
+present in the live response, and a mangled literal confirmed to exit 1 — but the job itself has
+never run them.
+
+**Tick 3.2 on the next push to `main`**, against the real CI run rather than the manual proof.
+Until then the plan is closed with one unverified assertion, deliberately and visibly.
