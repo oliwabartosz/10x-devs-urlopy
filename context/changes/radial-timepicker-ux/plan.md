@@ -449,10 +449,10 @@ its true angle; only dragging snaps.
 
 #### Automated
 
-- [x] 2.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Build succeeds: `npm run build`
-- [x] 2.4 No new dependency added: `git diff package.json` is empty
+- [x] 2.1 Type checking passes: `npx astro sync && npx tsc --noEmit` — 8580fc9
+- [x] 2.2 Linting passes: `npm run lint` — 8580fc9
+- [x] 2.3 Build succeeds: `npm run build` — 8580fc9
+- [x] 2.4 No new dependency added: `git diff package.json` is empty — 8580fc9
 
 #### Manual
 
@@ -467,21 +467,21 @@ its true angle; only dragging snaps.
 
 #### Automated
 
-- [ ] 3.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Build succeeds: `npm run build`
-- [ ] 3.4 Existing API and lib suites still pass: `npm run test:run`
+- [x] 3.1 Type checking passes: `npx astro sync && npx tsc --noEmit`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Build succeeds: `npm run build`
+- [x] 3.4 Existing API and lib suites still pass: `npm run test:run`
 
 #### Manual
 
-- [ ] 3.5 Typing `04:00`–`13:00` corrects the start and raises a toast
-- [ ] 3.6 Typing `08:00`–`20:00` caps the end and raises a toast
-- [ ] 3.7 Tabbing through a legal range raises no toast
-- [ ] 3.8 A dial-set range saves exactly as shown
-- [ ] 3.9 Escape closes the dial only; a second Escape closes the form
-- [ ] 3.10 Focus returns to the trigger when the dial closes
-- [ ] 3.11 Hours row matches the mockup's two-column layout
-- [ ] 3.12 Switching to a non-training type still clears both times
+- [x] 3.5 Typing `04:00`–`13:00` corrects the start and raises a toast
+- [x] 3.6 Typing `08:00`–`20:00` caps the end and raises a toast
+- [x] 3.7 Tabbing through a legal range raises no toast
+- [x] 3.8 A dial-set range saves exactly as shown
+- [x] 3.9 Escape closes the dial only; a second Escape closes the form
+- [x] 3.10 Focus returns to the trigger when the dial closes
+- [x] 3.11 Hours row matches the mockup's two-column layout
+- [x] 3.12 Switching to a non-training type still clears both times
 
 ### Phase 4: E2E update (deferred)
 

@@ -1,16 +1,96 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TimeRangeDial } from "@/components/absence/TimeRangeDial";
 import { typeAllowsPartialDay } from "@/lib/absence-types";
 import { clampAbsenceHours } from "@/lib/absence-hours";
+import { FULL_DAY_HOURS } from "@/lib/hours";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { useRovingRadioGroup } from "@/components/hooks/useRovingRadioGroup";
 import { cn } from "@/lib/utils";
 import type { Absence, AbsenceType, Employee } from "@/types";
+
+interface HoursColumnProps {
+  /** Kept as `start-time` / `end-time`; the `<label>` points at it. */
+  id: string;
+  /** The visible column heading, per the mockup. */
+  label: string;
+  /**
+   * The input's `aria-label`. It wins over the `<label>` element, so the accessible name stays
+   * „Czas od" / „Czas do" — the E2E suite locates these fields by it (`e2e-rules.md:43`).
+   */
+  fieldName: string;
+  /** Accessible name for the clock button. Distinct per column so the two are tellable apart. */
+  dialName: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  onBlur: () => void;
+  startTime: string;
+  endTime: string;
+  onRangeChange: (startTime: string, endTime: string) => void;
+}
+
+/**
+ * One labelled time field with the dial behind a clock button — half of the mockup's two-column
+ * hours row (`new-design/10xUrlopy.dc.html:563-575`).
+ *
+ * Each column owns its own `Popover`, so the dial anchors to the button that opened it and focus
+ * returns there on close, but both dials are bound to the same pair of state values and write back
+ * through the same setter. The typed field and the dial therefore cannot disagree: they are two
+ * paths onto one `startTime` / `endTime`, not two sources.
+ */
+function HoursColumn({
+  id,
+  label,
+  fieldName,
+  dialName,
+  value,
+  onValueChange,
+  onBlur,
+  startTime,
+  endTime,
+  onRangeChange,
+}: HoursColumnProps) {
+  return (
+    <div className="min-w-0 flex-1">
+      <Label htmlFor={id} className="mb-1.5 text-xs font-bold tracking-[0.05em] text-black uppercase">
+        {label}
+      </Label>
+      <div className="flex items-center gap-1.5">
+        <Input
+          id={id}
+          aria-label={fieldName}
+          type="time"
+          lang="pl-PL"
+          value={value}
+          onChange={(e) => {
+            onValueChange(e.target.value);
+          }}
+          onBlur={onBlur}
+          className="min-w-0 flex-1"
+        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="outline" size="icon" aria-label={dialName} title={dialName}>
+              <Clock />
+            </Button>
+          </PopoverTrigger>
+          {/* `w-auto` overrides the primitive's `w-72`: the dial sizes itself and the popover
+              should shrink to it rather than the other way round. */}
+          <PopoverContent className="w-auto p-3">
+            <TimeRangeDial startTime={startTime} endTime={endTime} onChange={onRangeChange} />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
+}
 
 interface AbsenceFormDialogProps {
   open: boolean;
@@ -89,12 +169,39 @@ export function AbsenceFormDialog({
   // there would rewrite a start time mid-entry. Skipped while either field is empty (the user
   // is mid-entry, and `saveDisabled` already gates that), and skipped on a rejection — that
   // range keeps its existing path of a server 400 surfaced through `toast.error`.
+  //
+  // A correction that nobody is told about is the second symptom this change exists to remove,
+  // so a rewrite raises a toast naming both the new value and the rule behind it. The toast
+  // fires *only* when a value actually moved — comparing against what was entered rather than
+  // against `clamped.ok`, or every tab through an already-legal range would raise one. Start
+  // moved means the 06:00 floor; end moved means the duration cap; both can fire at once
+  // (`04:00–20:00` floors, then caps).
   const clampTimesOnBlur = () => {
     if (!startTime || !endTime) return;
     const clamped = clampAbsenceHours(startTime, endTime);
     if (!clamped.ok) return;
+    const startCorrected = clamped.startTime !== startTime;
+    const endCorrected = clamped.endTime !== endTime;
     setStartTime(clamped.startTime);
     setEndTime(clamped.endTime);
+    const notices: string[] = [];
+    if (startCorrected) {
+      notices.push(`Poprawiono początek na ${clamped.startTime} — nieobecność nie może zaczynać się wcześniej.`);
+    }
+    if (endCorrected) {
+      notices.push(
+        `Poprawiono koniec na ${clamped.endTime} — nieobecność nie może trwać dłużej niż ${String(FULL_DAY_HOURS)} godz.`,
+      );
+    }
+    if (notices.length > 0) toast.info(notices.join(" "));
+  };
+
+  // The dial constrains every candidate position before committing it (`constrainHandle`), so
+  // what arrives here is already inside the domain — deliberately not routed through
+  // `clampTimesOnBlur`, which could only ever be a no-op on it.
+  const setRangeFromDial = (start: string, end: string) => {
+    setStartTime(start);
+    setEndTime(end);
   };
 
   const typeGroup = useRovingRadioGroup(
@@ -248,35 +355,31 @@ export function AbsenceFormDialog({
               </div>
 
               {!isFullDay && (
-                <div className="grid gap-1.5">
-                  <Label>Godziny</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="start-time"
-                      aria-label="Czas od"
-                      type="time"
-                      lang="pl-PL"
-                      value={startTime}
-                      onChange={(e) => {
-                        setStartTime(e.target.value);
-                      }}
-                      onBlur={clampTimesOnBlur}
-                      className="w-32"
-                    />
-                    <span className="text-muted-foreground">–</span>
-                    <Input
-                      id="end-time"
-                      aria-label="Czas do"
-                      type="time"
-                      lang="pl-PL"
-                      value={endTime}
-                      onChange={(e) => {
-                        setEndTime(e.target.value);
-                      }}
-                      onBlur={clampTimesOnBlur}
-                      className="w-32"
-                    />
-                  </div>
+                <div className="flex gap-3.5">
+                  <HoursColumn
+                    id="start-time"
+                    label="Od godziny"
+                    fieldName="Czas od"
+                    dialName="Wybierz godzinę rozpoczęcia na tarczy zegara"
+                    value={startTime}
+                    onValueChange={setStartTime}
+                    onBlur={clampTimesOnBlur}
+                    startTime={startTime}
+                    endTime={endTime}
+                    onRangeChange={setRangeFromDial}
+                  />
+                  <HoursColumn
+                    id="end-time"
+                    label="Do godziny"
+                    fieldName="Czas do"
+                    dialName="Wybierz godzinę zakończenia na tarczy zegara"
+                    value={endTime}
+                    onValueChange={setEndTime}
+                    onBlur={clampTimesOnBlur}
+                    startTime={startTime}
+                    endTime={endTime}
+                    onRangeChange={setRangeFromDial}
+                  />
                 </div>
               )}
             </>
