@@ -338,9 +338,14 @@ export function AbsenceFormDialog({
                       setEndTime("");
                     }
                   }}
-                  className="h-4 w-4"
+                  // `accent-color` on the native control rather than a Radix Checkbox: it paints
+                  // the tick navy instead of the browser's blue while keeping a real
+                  // `<input type="checkbox">`, which the E2E suite drives with check()/uncheck().
+                  className="accent-primary focus-visible:ring-ring/50 h-4 w-4 cursor-pointer rounded-[4px] focus-visible:ring-[3px] focus-visible:outline-none"
                 />
-                <Label htmlFor="is-full-day">Cały dzień</Label>
+                <Label htmlFor="is-full-day" className="cursor-pointer">
+                  Cały dzień
+                </Label>
               </div>
 
               {!isFullDay && (
