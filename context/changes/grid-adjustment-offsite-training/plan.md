@@ -459,27 +459,27 @@ No absence rows are read or written by this change.
 
 #### Automated
 
-- [x] 1.1 Existing suite still green: `npm run test:run`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Stored icon is one codepoint (`length(icon) = 1` for `display_order = 2`)
+- [x] 1.1 Existing suite still green: `npm run test:run` — 23628c0
+- [x] 1.2 Linting passes: `npm run lint` — 23628c0
+- [x] 1.3 Stored icon is one codepoint (`length(icon) = 1` for `display_order = 2`) — 23628c0
 
 #### Manual
 
-- [x] 1.4 Offsite legend chip shows a single running-person glyph
-- [x] 1.5 The other six legend icons are unchanged
+- [x] 1.4 Offsite legend chip shows a single running-person glyph — 23628c0
+- [x] 1.5 The other six legend icons are unchanged — 23628c0
 
 ### Phase 2: Extract and type-gate the cell range helper
 
 #### Automated
 
-- [ ] 2.1 New unit tests pass: `npm run test:run`
-- [ ] 2.2 Type checking and linting pass: `npm run lint`
-- [ ] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 New unit tests pass: `npm run test:run`
+- [x] 2.2 Type checking and linting pass: `npm run lint`
+- [x] 2.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.4 Partial-day training cell still shows its `HH:MM–HH:MM`
-- [ ] 2.5 Tooltip `Godziny:` line still shows the same hours
+- [x] 2.4 Partial-day training cell still shows its `HH:MM–HH:MM`
+- [x] 2.5 Tooltip `Godziny:` line still shows the same hours
 
 ### Phase 3: Cell content — icon and range, no type name
 

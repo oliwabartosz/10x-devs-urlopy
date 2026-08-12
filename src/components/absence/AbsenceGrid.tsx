@@ -15,6 +15,7 @@ import { SortableContext, useSortable, horizontalListSortingStrategy, arrayMove 
 import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { initialsOf } from "@/lib/initials";
+import { formatTime, cellTimeRange } from "@/lib/absence-grid-cell";
 import { cn } from "@/lib/utils";
 
 interface AbsenceGridProps {
@@ -24,15 +25,6 @@ interface AbsenceGridProps {
   currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
   year: number;
   month: number;
-}
-
-function formatTime(t: string | null | undefined): string {
-  return t?.slice(0, 5) ?? "";
-}
-
-function timeRangeOf(absence: Absence): string {
-  if (absence.is_full_day || !absence.start_time || !absence.end_time) return "";
-  return `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
 }
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -135,7 +127,15 @@ export default function AbsenceGrid({
     const substituteName = absence.substitute_employee_id
       ? employeeNameMap.get(absence.substitute_employee_id)
       : undefined;
-    const range = timeRangeOf(absence);
+    // Deliberately NOT cellTimeRange: the tooltip is ungated where the cell is not. A legacy
+    // row carrying hours on a type the product forbids partial days on renders as a full-day
+    // chip, while this line still reports the hours actually stored. The cell obeys the
+    // product rule; the tooltip stays the one surface where such a row is visible to a
+    // moderator rather than silently hidden.
+    const range =
+      absence.is_full_day || !absence.start_time || !absence.end_time
+        ? ""
+        : `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
     const lines = [
       `Pracownik: ${emp.first_name} ${emp.last_name}`,
       `Data: ${dateFmt.format(date)} (${weekdayFmt.format(date)})`,
@@ -298,7 +298,7 @@ export default function AbsenceGrid({
                       const absence = absenceMap.get(`${emp.id}_${dateStr}`);
                       const absenceType = absence ? absenceTypeMap.get(absence.absence_type_id) : undefined;
                       const clickable = (isOwn || isModerator) && !isWeekend && !isInactive;
-                      const range = absence ? timeRangeOf(absence) : "";
+                      const range = absence ? cellTimeRange(absence, absenceType?.name) : "";
                       const substituteInitials =
                         absence?.substitute_employee_id != null
                           ? initialsOf(employeeNameMap.get(absence.substitute_employee_id) ?? "")
