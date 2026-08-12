@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+// One rounding rule for day counts, shared with the statistics matrices — see hours.ts.
+import { formatDayCount } from "@/lib/hours";
 import type { HolidayBalanceView, UserRole } from "@/types";
 
 interface HolidayBalanceDialogProps {
@@ -15,11 +17,6 @@ interface HolidayBalanceDialogProps {
   employeeId: string;
   year: number;
   currentRole: UserRole;
-}
-
-// Trim trailing zeros so 2.5 stays "2,5" and 3.0 shows as "3"; Polish decimal comma.
-function formatDays(n: number): string {
-  return (Math.round(n * 100) / 100).toLocaleString("pl-PL", { maximumFractionDigits: 2 });
 }
 
 function toIntOr(value: string, fallback: number): number {
@@ -151,12 +148,12 @@ export function HolidayBalanceDialog({
               Pozostanie
             </div>
             <div className={cn("text-2xl font-bold", previewLeft < 0 ? "text-destructive" : "text-primary")}>
-              {formatDays(previewLeft)} dni
+              {formatDayCount(previewLeft)} dni
             </div>
           </div>
           <div className="text-muted-foreground max-w-[230px] text-right text-xs">
-            Bieżące {formatDays(toIntOr(currentEntitlement, 0))} + Zaległe {formatDays(toIntOr(carryover, 0))} −
-            Wykorzystane {formatDays(previewUsed)}
+            Bieżące {formatDayCount(toIntOr(currentEntitlement, 0))} + Zaległe {formatDayCount(toIntOr(carryover, 0))} −
+            Wykorzystane {formatDayCount(previewUsed)}
           </div>
         </div>
 

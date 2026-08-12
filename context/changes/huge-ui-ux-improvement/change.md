@@ -3,7 +3,7 @@ change_id: huge-ui-ux-improvement
 title: Adopt the new-design HTML/JS prototype as the app's UI/UX
 status: impl_reviewed
 created: 2026-08-07
-updated: 2026-08-10
+updated: 2026-08-11
 archived_at: null
 ---
 

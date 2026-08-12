@@ -10,6 +10,7 @@ import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
+import { visibleEmployeesFilter } from "@/lib/employees";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
 
@@ -95,10 +96,14 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
+  // `visibleEmployeesFilter()` on both arms: the Details table renders these rows raw, so an
+  // is_system-owned absence would surface as an unnamed row carrying its date, type, hours and
+  // comment. The employee lists are already scoped; this closes the same hole on the join
+  // (context/changes/admin-bootstrap/plan.md).
   const joinCondition =
     employeeRow.role === "moderator"
-      ? eq(absences.employee_id, employees.id)
-      : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at));
+      ? and(eq(absences.employee_id, employees.id), visibleEmployeesFilter())
+      : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at), visibleEmployeesFilter());
 
   try {
     const data = await db

@@ -68,7 +68,7 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
     >
       <div className="flex items-center justify-center gap-1">
         {isModerator && (
-          <span className="shrink-0 cursor-grab text-[#9a9a9a]" {...attributes} {...listeners}>
+          <span className="text-muted-foreground shrink-0 cursor-grab" {...attributes} {...listeners}>
             <GripVertical className="size-3.5" />
           </span>
         )}
@@ -248,7 +248,7 @@ export default function AbsenceGrid({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="border-line bg-line-strong w-[132px] min-w-[132px] border-r border-b-2 px-3 py-3.5 text-left text-xs font-bold tracking-[0.06em] text-black uppercase">
+                <th className="border-line bg-line-strong sticky left-0 z-20 w-[132px] min-w-[132px] border-r border-b-2 px-3 py-3.5 text-left text-xs font-bold tracking-[0.06em] text-black uppercase">
                   Dzień
                 </th>
                 {self && (
@@ -277,10 +277,17 @@ export default function AbsenceGrid({
 
                 return (
                   <tr key={dateStr} className={isWeekend ? "bg-surface" : "bg-white"}>
-                    <td className="border-r-line border-b-line-strong w-[132px] border-r border-b px-3 py-0 text-[13px]">
+                    {/* Sticky so the date stays readable once the employee columns overflow
+                        1480px. Needs its own background — the row's would scroll under it. */}
+                    <td
+                      className={cn(
+                        "border-r-line border-b-line-strong sticky left-0 z-10 w-[132px] border-r border-b px-3 py-0 text-[13px]",
+                        isWeekend ? "bg-surface" : "bg-white",
+                      )}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="min-w-[22px] text-right font-bold text-black">{date.getDate()}</span>
-                        <span className={cn("text-xs", isWeekend ? "text-[#9a9a9a]" : "text-muted-foreground")}>
+                        <span className={cn("text-xs", isWeekend ? "text-muted-foreground" : "text-muted-foreground")}>
                           {weekdayFmt.format(date)}
                         </span>
                       </div>

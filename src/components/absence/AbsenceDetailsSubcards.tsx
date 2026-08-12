@@ -4,14 +4,7 @@ import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import { AbsenceFormDialog } from "@/components/absence/AbsenceFormDialog";
 import { entryCountLabel } from "@/lib/plural";
 import { cn } from "@/lib/utils";
-import {
-  toggleHidden,
-  clearHidden,
-  hideAll,
-  filterToggleAction,
-  isFilterActive,
-  visibleByType,
-} from "@/lib/type-filter";
+import { toggleHidden, clearHidden, isFilterActive, visibleByType } from "@/lib/type-filter";
 
 interface AbsenceDetailsSubcardsProps {
   absences: Absence[];
@@ -138,6 +131,10 @@ export default function AbsenceDetailsSubcards({
   useEffect(() => {
     if (activeSubcard !== "today" || todayFetched.current) return;
     const controller = new AbortController();
+    // Clear the previous attempt's error. The render guard checks it before the data branch,
+    // so a stale error would hide a successful retry's rows for good — the fetched ref is
+    // already true by then and blocks any further attempt.
+    setWeekError(null);
     setWeekLoading(true);
     fetch(`/api/absences?from=${weekRange.from}&to=${weekRange.to}`, { signal: controller.signal })
       .then((r) => {
@@ -166,6 +163,8 @@ export default function AbsenceDetailsSubcards({
   useEffect(() => {
     if (activeSubcard !== "yearly" || yearlyFetched.current) return;
     const controller = new AbortController();
+    // See the today effect: a stale error would outlive a successful retry.
+    setYearlyError(null);
     setYearlyLoading(true);
     fetch(`/api/absences?year=${year}`, { signal: controller.signal })
       .then((r) => {
@@ -227,8 +226,6 @@ export default function AbsenceDetailsSubcards({
   const groupProps = { employees, absenceTypes, onRowClick: openRow, canEdit };
 
   const hasHidden = isFilterActive(hiddenTypeIds);
-  // Two-state control: hide everything when nothing is hidden, restore everything otherwise.
-  const toggleAction = filterToggleAction(hiddenTypeIds);
 
   return (
     <div className="flex flex-col gap-5">
@@ -263,7 +260,7 @@ export default function AbsenceDetailsSubcards({
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtruj wg typu nieobecności">
           {absenceTypes.map((type) => {
             const off = hiddenTypeIds.has(type.id);
             return (
@@ -271,13 +268,16 @@ export default function AbsenceDetailsSubcards({
                 key={type.id}
                 type="button"
                 title={type.name}
+                // The chip is icon-only, and text content beats `title` for the accessible
+                // name — without this it announces as the emoji ("palm tree"), not the type.
+                aria-label={type.name}
                 aria-pressed={!off}
                 onClick={() => {
                   toggleType(type.id);
                 }}
                 className={cn(
                   "flex items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs transition-colors",
-                  off ? "border-line-strong bg-[#fafafa] text-[#9a9a9a]" : "border-line bg-white text-black",
+                  off ? "border-line-strong text-muted-foreground bg-[#fafafa]" : "border-line bg-white text-black",
                 )}
               >
                 <span
@@ -291,15 +291,15 @@ export default function AbsenceDetailsSubcards({
           <button
             type="button"
             onClick={() => {
-              setHiddenTypeIds(toggleAction === "hide-all" ? hideAll(absenceTypes.map((t) => t.id)) : clearHidden());
+              setHiddenTypeIds(clearHidden());
             }}
             className={cn(
               "hover:border-accent hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-[7px] rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
               hasHidden ? "border-primary bg-primary text-white" : "border-line text-primary bg-white",
             )}
           >
-            <span>{toggleAction === "hide-all" ? "✕" : "✓"}</span>
-            <span>{toggleAction === "hide-all" ? "Wyczyść filtry" : "Zaznacz wszystkie"}</span>
+            <span>✕</span>
+            <span>Wyczyść filtry</span>
           </button>
         </div>
       </div>

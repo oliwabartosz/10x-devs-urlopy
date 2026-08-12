@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HolidayBalanceDialog } from "@/components/holiday/HolidayBalanceDialog";
 import { cn } from "@/lib/utils";
+// One rounding rule for day counts, shared with the statistics matrices — see hours.ts.
+import { formatDayCount } from "@/lib/hours";
 import type { HolidayBalanceView, UserRole } from "@/types";
 
 interface HolidayBalanceCardProps {
@@ -9,11 +11,6 @@ interface HolidayBalanceCardProps {
   employeeId: string;
   year: number;
   currentRole: UserRole;
-}
-
-// Trim trailing zeros so 2.5 stays "2,5" and 3.0 shows as "3"; Polish decimal comma.
-function formatDays(n: number): string {
-  return (Math.round(n * 100) / 100).toLocaleString("pl-PL", { maximumFractionDigits: 2 });
 }
 
 function Tile({ label, value }: { label: string; value: string }) {
@@ -47,7 +44,7 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
               <span
                 className={cn("text-[40px] leading-none font-bold", negative ? "text-destructive" : "text-primary")}
               >
-                {formatDays(balance.left_days)} dni
+                {formatDayCount(balance.left_days)} dni
               </span>
             </div>
           )}
@@ -55,9 +52,9 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
 
         {!isEmpty && (
           <div className="border-line bg-line flex gap-px overflow-hidden rounded-[10px] border">
-            <Tile label="Bieżące" value={formatDays(balance.current_entitlement_days)} />
-            <Tile label="Zaległe" value={formatDays(balance.carryover_days)} />
-            <Tile label="Wykorzystane" value={formatDays(balance.used_days)} />
+            <Tile label="Bieżące" value={formatDayCount(balance.current_entitlement_days)} />
+            <Tile label="Zaległe" value={formatDayCount(balance.carryover_days)} />
+            <Tile label="Wykorzystane" value={formatDayCount(balance.used_days)} />
           </div>
         )}
       </div>
@@ -77,7 +74,7 @@ export default function HolidayBalanceCard({ initialBalance, employeeId, year, c
           <div className="border-destructive flex items-center gap-2 rounded-lg border bg-[#fdecef] px-3 py-[7px]">
             <span className="bg-destructive block size-2 rounded-full" />
             <span className="text-destructive text-xs font-bold">
-              Przekroczono wymiar urlopu o {formatDays(Math.abs(balance.left_days))} dni
+              Przekroczono wymiar urlopu o {formatDayCount(Math.abs(balance.left_days))} dni
             </span>
           </div>
         )}

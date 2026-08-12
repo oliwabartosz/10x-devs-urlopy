@@ -161,4 +161,29 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
     expect(res.status).toBe(200);
     expect((await storedRow()).used_adjustment_days).toBe(5);
   });
+
+  // The schema deliberately carries no `.default(0)` on `used_adjustment_days`: omitting the
+  // field must mean "leave unchanged", not "set to zero". Every case above sends the field
+  // explicitly, so they pass either way — these two are the ones that fail if the default
+  // comes back.
+  it("moderator omitting the adjustment leaves the stored value alone", async () => {
+    await db.insert(holiday_balances).values({
+      employee_id: employeeId,
+      year: YEAR,
+      current_entitlement_days: 20,
+      carryover_days: 0,
+      used_adjustment_days: 5,
+    });
+
+    // `undefined` is dropped by JSON.stringify, so the body carries no such key at all.
+    const res = await post(moderatorAuthId, payload({ used_adjustment_days: undefined }));
+    expect(res.status).toBe(200);
+    expect((await storedRow()).used_adjustment_days).toBe(5); // preserved, not zeroed
+  });
+
+  it("moderator omitting the adjustment on insert takes the column default", async () => {
+    const res = await post(moderatorAuthId, payload({ used_adjustment_days: undefined }));
+    expect(res.status).toBe(200);
+    expect((await storedRow()).used_adjustment_days).toBe(0);
+  });
 });

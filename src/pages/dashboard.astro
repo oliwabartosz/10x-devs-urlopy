@@ -96,10 +96,17 @@ if (currentEmployee) {
     is_system: employeesTable.is_system,
   };
 
+  // `visibleEmployeesFilter()` on both arms, matching the employee selects below: an
+  // is_system-owned absence would otherwise reach the grid and the Details table with no
+  // employee to resolve it to (context/changes/admin-bootstrap/plan.md).
   const absencesJoin =
     currentEmployee.role === "moderator"
-      ? eq(absencesTable.employee_id, employeesTable.id)
-      : and(eq(absencesTable.employee_id, employeesTable.id), isNull(employeesTable.deleted_at));
+      ? and(eq(absencesTable.employee_id, employeesTable.id), visibleEmployeesFilter())
+      : and(
+          eq(absencesTable.employee_id, employeesTable.id),
+          isNull(employeesTable.deleted_at),
+          visibleEmployeesFilter(),
+        );
 
   try {
     const [employeesResult, absencesResult, typesResult, balanceRow] = await Promise.all([

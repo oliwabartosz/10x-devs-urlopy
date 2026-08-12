@@ -1,11 +1,11 @@
 // Details-tab type filter, held as the set of *hidden* absence-type ids.
 //
-// The control is a two-state toggle, not a one-way clear: with everything visible it offers
-// "Wyczyść filtry" and hides all; with anything hidden it offers "Zaznacz wszystkie" and
-// restores all. The prototype (`new-design/10xUrlopy.dc.html`) only ever performs the first
-// arm — clearFilters (`:1321`) assigns every type id while the label still says "clear", and
-// hasFilters (`:1446`) / clearStyle (`:1447`) never reflect the real state. Hiding everything
-// is a legitimate action here precisely because the label says so and the next click undoes it.
+// "Wyczyść filtry" is a one-way clear: it always empties the set, so every type comes back.
+// It renders active only while at least one type is hidden. The prototype
+// (`new-design/10xUrlopy.dc.html`) gets both halves backwards — clearFilters (`:1321`) assigns
+// every type id, hiding everything while the label says "clear", and hasFilters (`:1446`) /
+// clearStyle (`:1447`) never reflect the real state. Do not reintroduce a hide-all arm on this
+// control: the all-hidden state is only escapable because clearing is unconditional.
 //
 // Dependency-free on purpose: safe to import from both React islands and server routes.
 
@@ -17,27 +17,9 @@ export function toggleHidden(hidden: ReadonlySet<number>, typeId: number): Reado
   return next;
 }
 
-/** "Zaznacz wszystkie" — restores every type. An empty hidden set, never a full one. */
+/** "Wyczyść filtry" — restores every type. An empty hidden set, never a full one. */
 export function clearHidden(): ReadonlySet<number> {
   return new Set();
-}
-
-/** "Wyczyść filtry" — hides every type. Only reachable while nothing is hidden. */
-export function hideAll(typeIds: readonly number[]): ReadonlySet<number> {
-  return new Set(typeIds);
-}
-
-export type FilterToggleAction = "hide-all" | "show-all";
-
-/**
- * Which arm of the toggle the control offers next.
- *
- * Nothing hidden → the only useful move is to hide everything. Anything hidden → the only
- * useful move is to restore, including when everything is hidden (the state that traps the
- * prototype, where the same control would hide again and the tab could never come back).
- */
-export function filterToggleAction(hidden: ReadonlySet<number>): FilterToggleAction {
-  return hidden.size === 0 ? "hide-all" : "show-all";
 }
 
 /** True while at least one type is hidden — drives the control's active styling. */

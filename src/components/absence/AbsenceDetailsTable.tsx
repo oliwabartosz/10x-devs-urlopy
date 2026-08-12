@@ -143,8 +143,16 @@ export default function AbsenceDetailsTable({
     return sort.direction === "asc" ? "↑" : "↓";
   }
 
+  // The ↕/↑/↓ glyph is the only visual sort cue; spell it out so it is not sight-only.
+  // These headers are buttons in a div grid, not `th`s, so `aria-sort` has nowhere valid
+  // to live — the state rides on the accessible name instead.
+  function sortLabel(column: SortColumn, label: string) {
+    if (sort.column !== column) return `${label} — sortuj`;
+    return sort.direction === "asc" ? `${label} — sortowanie rosnące` : `${label} — sortowanie malejące`;
+  }
+
   if (sorted.length === 0) {
-    return <div className="px-[18px] py-[34px] text-center text-[13px] text-[#9a9a9a]">{emptyLabel}</div>;
+    return <div className="text-muted-foreground px-[18px] py-[34px] text-center text-[13px]">{emptyLabel}</div>;
   }
 
   return (
@@ -158,6 +166,7 @@ export default function AbsenceDetailsTable({
             <button
               key={col.id}
               type="button"
+              aria-label={sortLabel(col.id, col.label)}
               onClick={() => {
                 toggleSort(col.id);
               }}
@@ -185,15 +194,28 @@ export default function AbsenceDetailsTable({
             <div
               key={absence.id}
               // Rows the caller may not edit stay inert and gain no hover cue — the same
-              // rule the grid cell applies (AbsenceGrid.tsx clickability).
+              // rule the grid cell applies (AbsenceGrid.tsx clickability). An editable row is
+              // the only way to open the dialog from this tab, so it must be a real control:
+              // reachable by Tab and operable by Enter/Space, not mouse-only.
               className={cn(
-                "grid items-center gap-[14px] border-b border-[#f2f2f2] px-[18px] py-3",
+                "focus-visible:ring-ring grid items-center gap-[14px] border-b border-[#f2f2f2] px-[18px] py-3 focus-visible:ring-2 focus-visible:outline-none",
                 editable ? "cursor-pointer hover:bg-[#f7fafc]" : "cursor-default",
               )}
               style={{ gridTemplateColumns: GRID_TEMPLATE }}
+              role={editable ? "button" : undefined}
+              tabIndex={editable ? 0 : undefined}
               onClick={
                 editable
                   ? () => {
+                      onRowClick(absence, employee);
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                editable
+                  ? (e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
                       onRowClick(absence, employee);
                     }
                   : undefined

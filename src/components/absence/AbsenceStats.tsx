@@ -77,7 +77,7 @@ function KpiTile({ label, value, note }: { label: string; value: string; note: s
     <div className="border-line rounded-[14px] border bg-white px-5 py-[18px]">
       <div className="text-muted-foreground mb-2.5 text-[11px] font-bold tracking-[0.07em] uppercase">{label}</div>
       <div className="text-primary mb-2 text-[32px] leading-none font-bold">{value}</div>
-      <div className="text-xs text-[#9a9a9a]">{note}</div>
+      <div className="text-muted-foreground text-xs">{note}</div>
     </div>
   );
 }
@@ -118,7 +118,7 @@ function TypeBreakdown({
                 />
               </div>
               <div className="text-primary text-[13px] font-bold">{cellText(days)}</div>
-              <div className="text-right text-xs text-[#9a9a9a]">{`${String(Math.round(share))}%`}</div>
+              <div className="text-muted-foreground text-right text-xs">{`${String(Math.round(share))}%`}</div>
             </div>
           );
         })}

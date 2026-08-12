@@ -47,7 +47,7 @@ function EmployeeRow({
         <span
           className={cn(
             "flex size-[34px] shrink-0 items-center justify-center rounded-full text-xs font-bold",
-            inactive ? "text-[#9a9a9a]" : "text-white",
+            inactive ? "text-muted-foreground" : "text-white",
           )}
           style={{ backgroundColor: inactive ? "#dcdcdc" : avatarColor(colorIndex) }}
         >
