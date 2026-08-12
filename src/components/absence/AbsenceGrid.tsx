@@ -322,7 +322,15 @@ export default function AbsenceGrid({
                           }
                         >
                           {absenceType && absence ? (
+                            // The chip carries no text but the range, so the type name has to reach
+                            // assistive technology some other way — same reasoning as the icon-only
+                            // filter chips (AbsenceDetailsSubcards.tsx). `role="img"` is required
+                            // here where it was not there: this is a `div`, not a `button`, and
+                            // `aria-label` on a generic element with no role is ignored by several
+                            // screen readers. It also stops the emoji being announced separately.
                             <div
+                              role="img"
+                              aria-label={range ? `${absenceType.name}, ${range}` : absenceType.name}
                               className="relative flex h-full w-full items-center justify-center gap-[5px] overflow-hidden rounded-[7px] px-1.5 text-[11px] font-bold whitespace-nowrap"
                               style={{ backgroundColor: absenceType.color, color: absenceType.text_color }}
                               title={buildTooltip(emp, date, absenceType, absence)}
@@ -330,10 +338,7 @@ export default function AbsenceGrid({
                               {absenceType.icon && (
                                 <span className="shrink-0 text-[12px] leading-none">{absenceType.icon}</span>
                               )}
-                              <span className="truncate">
-                                {absenceType.name}
-                                {range && ` ${range}`}
-                              </span>
+                              {range && <span className="truncate">{range}</span>}
                               {substituteInitials && (
                                 <span className="text-primary absolute top-1/2 left-1 flex -translate-y-1/2 items-center gap-[2px] rounded-full bg-white/75 px-[5px] py-px text-[9px] leading-[1.4] font-bold">
                                   <span className="text-[8px] leading-none">🔁</span>

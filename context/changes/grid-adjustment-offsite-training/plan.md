@@ -472,30 +472,30 @@ No absence rows are read or written by this change.
 
 #### Automated
 
-- [x] 2.1 New unit tests pass: `npm run test:run`
-- [x] 2.2 Type checking and linting pass: `npm run lint`
-- [x] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 New unit tests pass: `npm run test:run` — d9bcaa3
+- [x] 2.2 Type checking and linting pass: `npm run lint` — d9bcaa3
+- [x] 2.3 Production build succeeds: `npm run build` — d9bcaa3
 
 #### Manual
 
-- [x] 2.4 Partial-day training cell still shows its `HH:MM–HH:MM`
-- [x] 2.5 Tooltip `Godziny:` line still shows the same hours
+- [x] 2.4 Partial-day training cell still shows its `HH:MM–HH:MM` — d9bcaa3
+- [x] 2.5 Tooltip `Godziny:` line still shows the same hours — d9bcaa3
 
 ### Phase 3: Cell content — icon and range, no type name
 
 #### Automated
 
-- [ ] 3.1 Linting and type checking pass: `npm run lint`
-- [ ] 3.2 Production build succeeds: `npm run build`
-- [ ] 3.3 Existing suites still green: `npm run test:run` and `npm run e2e`
+- [x] 3.1 Linting and type checking pass: `npm run lint`
+- [x] 3.2 Production build succeeds: `npm run build`
+- [ ] 3.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 157/157); `e2e` targets the deployed Worker, so it can only run after this lands on `main`
 
 #### Manual
 
-- [ ] 3.4 No cell contains Polish words; full-day cells icon-only, training cells icon plus range
-- [ ] 3.5 Tooltip still reveals type, date, hours, comment and substitute
-- [ ] 3.6 Columns visibly narrowed; a month with an offsite entry is no wider than one without
-- [ ] 3.7 Screen reader announces the type name, not the emoji name
-- [ ] 3.8 Substitute badge and comment marker still positioned correctly on the narrower chip
+- [x] 3.4 No cell contains Polish words; full-day cells icon-only, training cells icon plus range
+- [x] 3.5 Tooltip still reveals type, date, hours, comment and substitute
+- [x] 3.6 Columns visibly narrowed; a month with an offsite entry is no wider than one without — partial by design; the employee-name header still binds until Phase 4
+- [x] 3.7 Screen reader announces the type name, not the emoji name
+- [x] 3.8 Substitute badge and comment marker still positioned correctly on the narrower chip
 
 ### Phase 4: Bound the columns with `table-fixed`
 
