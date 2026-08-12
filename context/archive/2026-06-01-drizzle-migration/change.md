@@ -1,10 +1,10 @@
 ---
 change_id: drizzle-migration
 title: Migrate Supabase JS client to Drizzle ORM for typesafe queries
-status: impl_reviewed
+status: archived
 created: 2026-06-01
-updated: 2026-06-03
-archived_at: null
+updated: 2026-08-12
+archived_at: 2026-08-12T14:13:30Z
 ---
 
 ## Notes
