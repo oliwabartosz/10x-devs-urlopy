@@ -1,10 +1,10 @@
 ---
 change_id: monthly-grid-own-absence
 title: Monthly absence grid with own-absence CRUD (S-01)
-status: impl_reviewed
+status: archived
 created: 2026-05-28
-updated: 2026-05-29
-archived_at: null
+updated: 2026-08-12
+archived_at: 2026-08-12T14:13:30Z
 ---
 
 ## Notes
