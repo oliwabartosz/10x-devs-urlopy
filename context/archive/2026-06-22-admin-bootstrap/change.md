@@ -1,12 +1,13 @@
 ---
 id: admin-bootstrap
 title: "S-11: Bootstrap konta admin z plików env"
-status: impl_reviewed
+status: archived
 created: 2026-06-22
-updated: 2026-08-06
+updated: 2026-08-12
 roadmap_id: S-11
 prerequisites: [data-schema-and-rls, employee-management]
 parallel_with: [dev-vars-rename]
+archived_at: 2026-08-12T14:13:30Z
 ---
 
 # S-11: Bootstrap konta admin z plików env
