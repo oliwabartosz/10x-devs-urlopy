@@ -492,6 +492,6 @@ its true angle; only dragging snaps.
 
 #### Manual
 
-- [ ] 4.3 Breaking the dial's snap makes the new test fail
-- [ ] 4.4 No absence rows created by the run
-- [ ] 4.5 `e2e-rules.md` diff touches only the time-input entry
+- [x] 4.3 Breaking the dial's snap makes the new test fail — 1182bd4
+- [x] 4.4 No absence rows created by the run — 1182bd4
+- [x] 4.5 `e2e-rules.md` diff touches only the time-input entry — 1182bd4
