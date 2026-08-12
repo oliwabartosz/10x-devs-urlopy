@@ -115,7 +115,7 @@ test("the dial writes a keyboard-moved handle back into the bound field", async 
   await endInput.fill("12:00");
   await endInput.blur();
 
-  await page.getByRole("button", { name: "Wybierz godzinę rozpoczęcia na tarczy zegara" }).click();
+  await page.getByRole("button", { name: "Wybierz godziny na tarczy zegara" }).click();
 
   const startHandle = page.getByRole("slider", { name: "Godzina rozpoczęcia" });
   const endHandle = page.getByRole("slider", { name: "Godzina zakończenia" });

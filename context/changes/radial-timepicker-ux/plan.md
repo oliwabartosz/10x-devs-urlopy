@@ -456,12 +456,12 @@ its true angle; only dragging snaps.
 
 #### Manual
 
-- [ ] 2.5 Dragging the start handle below 06:00 stops at 06:00
-- [ ] 2.6 Widening past 8 hours stops at the cap, from both directions
-- [ ] 2.7 Handles snap to `:00`, `:15`, `:30`, `:45` only
-- [ ] 2.8 Tab reaches both handles; arrows, PageUp/PageDown, Home/End behave per contract
-- [ ] 2.9 Screen reader announces each handle's name and time
-- [ ] 2.10 Dial fits without horizontal scrolling at 1280px and 390px
+- [x] 2.5 Dragging the start handle below 06:00 stops at 06:00 — 8580fc9
+- [x] 2.6 Widening past 8 hours stops at the cap, from both directions — 8580fc9
+- [x] 2.7 Handles snap to `:00`, `:15`, `:30`, `:45` only — 8580fc9
+- [x] 2.8 Tab reaches both handles; arrows, PageUp/PageDown, Home/End behave per contract — 8580fc9
+- [x] 2.9 Screen reader announces each handle's name and time — 8580fc9
+- [x] 2.10 Dial fits without horizontal scrolling at 1280px and 390px — 8580fc9
 
 ### Phase 3: Form integration
 
@@ -487,8 +487,8 @@ its true angle; only dragging snaps.
 
 #### Automated
 
-- [ ] 4.1 Full suite passes: `npm run e2e`
-- [ ] 4.2 Linting passes: `npm run lint`
+- [x] 4.1 Full suite passes: `npm run e2e` — eb55a2c
+- [x] 4.2 Linting passes: `npm run lint` — eb55a2c
 
 #### Manual
 

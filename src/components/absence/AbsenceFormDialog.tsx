@@ -16,6 +16,12 @@ import { useRovingRadioGroup } from "@/components/hooks/useRovingRadioGroup";
 import { cn } from "@/lib/utils";
 import type { Absence, AbsenceType, Employee } from "@/types";
 
+/**
+ * Accessible name of the single dial trigger. Named once because the E2E suite locates the button
+ * by it (`e2e-rules.md:43`) — a rename here has to move both files in one change.
+ */
+const DIAL_TRIGGER_NAME = "Wybierz godziny na tarczy zegara";
+
 interface HoursColumnProps {
   /** Kept as `start-time` / `end-time`; the `<label>` points at it. */
   id: string;
@@ -26,68 +32,36 @@ interface HoursColumnProps {
    * „Czas od" / „Czas do" — the E2E suite locates these fields by it (`e2e-rules.md:43`).
    */
   fieldName: string;
-  /** Accessible name for the clock button. Distinct per column so the two are tellable apart. */
-  dialName: string;
   value: string;
   onValueChange: (value: string) => void;
   onBlur: () => void;
-  startTime: string;
-  endTime: string;
-  onRangeChange: (startTime: string, endTime: string) => void;
 }
 
 /**
- * One labelled time field with the dial behind a clock button — half of the mockup's two-column
- * hours row (`new-design/10xUrlopy.dc.html:563-575`).
+ * One labelled time field — half of the mockup's two-column hours row
+ * (`new-design/10xUrlopy.dc.html:563-575`).
  *
- * Each column owns its own `Popover`, so the dial anchors to the button that opened it and focus
- * returns there on close, but both dials are bound to the same pair of state values and write back
- * through the same setter. The typed field and the dial therefore cannot disagree: they are two
- * paths onto one `startTime` / `endTime`, not two sources.
+ * The dial is not here: one dial holds both ends of the range, so a trigger per column would be
+ * two buttons opening the same control. The single trigger sits beside the pair instead.
  */
-function HoursColumn({
-  id,
-  label,
-  fieldName,
-  dialName,
-  value,
-  onValueChange,
-  onBlur,
-  startTime,
-  endTime,
-  onRangeChange,
-}: HoursColumnProps) {
+function HoursColumn({ id, label, fieldName, value, onValueChange, onBlur }: HoursColumnProps) {
   return (
     <div className="min-w-0 flex-1">
       <Label htmlFor={id} className="mb-1.5 text-xs font-bold tracking-[0.05em] text-black uppercase">
         {label}
       </Label>
-      <div className="flex items-center gap-1.5">
-        <Input
-          id={id}
-          aria-label={fieldName}
-          type="time"
-          lang="pl-PL"
-          value={value}
-          onChange={(e) => {
-            onValueChange(e.target.value);
-          }}
-          onBlur={onBlur}
-          className="min-w-0 flex-1"
-        />
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="outline" size="icon" aria-label={dialName} title={dialName}>
-              <Clock />
-            </Button>
-          </PopoverTrigger>
-          {/* `w-auto` overrides the primitive's `w-72`: the dial sizes itself and the popover
-              should shrink to it rather than the other way round. */}
-          <PopoverContent className="w-auto p-3">
-            <TimeRangeDial startTime={startTime} endTime={endTime} onChange={onRangeChange} />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <Input
+        id={id}
+        aria-label={fieldName}
+        type="time"
+        lang="pl-PL"
+        value={value}
+        onChange={(e) => {
+          onValueChange(e.target.value);
+        }}
+        onBlur={onBlur}
+        className="w-full min-w-0"
+      />
     </div>
   );
 }
@@ -355,31 +329,44 @@ export function AbsenceFormDialog({
               </div>
 
               {!isFullDay && (
-                <div className="flex gap-3.5">
+                <div className="flex items-end gap-3.5">
                   <HoursColumn
                     id="start-time"
                     label="Od godziny"
                     fieldName="Czas od"
-                    dialName="Wybierz godzinę rozpoczęcia na tarczy zegara"
                     value={startTime}
                     onValueChange={setStartTime}
                     onBlur={clampTimesOnBlur}
-                    startTime={startTime}
-                    endTime={endTime}
-                    onRangeChange={setRangeFromDial}
                   />
                   <HoursColumn
                     id="end-time"
                     label="Do godziny"
                     fieldName="Czas do"
-                    dialName="Wybierz godzinę zakończenia na tarczy zegara"
                     value={endTime}
                     onValueChange={setEndTime}
                     onBlur={clampTimesOnBlur}
-                    startTime={startTime}
-                    endTime={endTime}
-                    onRangeChange={setRangeFromDial}
                   />
+                  {/* One trigger for one dial: the dial carries both ends of the range, so a button
+                      per column would be two ways to open the same control. It sits outside the two
+                      `flex-1` columns and aligns with the inputs, whose labels sit above them. */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label={DIAL_TRIGGER_NAME}
+                        title={DIAL_TRIGGER_NAME}
+                      >
+                        <Clock />
+                      </Button>
+                    </PopoverTrigger>
+                    {/* `w-auto` overrides the primitive's `w-72`: the dial sizes itself and the
+                        popover should shrink to it rather than the other way round. */}
+                    <PopoverContent className="w-auto p-3">
+                      <TimeRangeDial startTime={startTime} endTime={endTime} onChange={setRangeFromDial} />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </>
