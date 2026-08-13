@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatTime, cellTimeRange } from "@/lib/absence-grid-cell";
+import { formatTime, rawTimeRange, cellTimeRange } from "@/lib/absence-grid-cell";
 import { ONSITE_TRAINING_TYPE_NAME, OFFSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
 
 // The seven seeded names, verbatim from 20260807122840_faulty_hobgoblin.sql.
@@ -20,6 +20,29 @@ describe("formatTime", () => {
   it("returns an empty string for a missing value", () => {
     expect(formatTime(null)).toBe("");
     expect(formatTime(undefined)).toBe("");
+  });
+});
+
+describe("rawTimeRange — the tooltip's ungated view", () => {
+  it.each([...PARTIAL_DAY_TYPES, ...FULL_DAY_ONLY_TYPES])(
+    "reports the stored hours regardless of type, including %s",
+    () => {
+      // No type argument at all: the tooltip is the one surface where an out-of-contract row
+      // stays visible to a moderator. Only the gate may differ from cellTimeRange.
+      expect(rawTimeRange(partialDay())).toBe("08:00–16:00");
+    },
+  );
+
+  it("shares its formatting with cellTimeRange", () => {
+    expect(rawTimeRange(partialDay("06:30:00", "14:45:00"))).toBe(
+      cellTimeRange(partialDay("06:30:00", "14:45:00"), ONSITE_TRAINING_TYPE_NAME),
+    );
+  });
+
+  it("renders nothing for a full-day absence or a missing time", () => {
+    expect(rawTimeRange({ is_full_day: true, start_time: "08:00:00", end_time: "16:00:00" })).toBe("");
+    expect(rawTimeRange({ is_full_day: false, start_time: null, end_time: "16:00:00" })).toBe("");
+    expect(rawTimeRange({ is_full_day: false, start_time: "08:00:00", end_time: null })).toBe("");
   });
 });
 

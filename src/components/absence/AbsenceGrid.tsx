@@ -15,7 +15,7 @@ import { SortableContext, useSortable, horizontalListSortingStrategy, arrayMove 
 import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { initialsOf } from "@/lib/initials";
-import { formatTime, cellTimeRange } from "@/lib/absence-grid-cell";
+import { rawTimeRange, cellTimeRange } from "@/lib/absence-grid-cell";
 import { cn } from "@/lib/utils";
 
 interface AbsenceGridProps {
@@ -134,10 +134,7 @@ export default function AbsenceGrid({
     // chip, while this line still reports the hours actually stored. The cell obeys the
     // product rule; the tooltip stays the one surface where such a row is visible to a
     // moderator rather than silently hidden.
-    const range =
-      absence.is_full_day || !absence.start_time || !absence.end_time
-        ? ""
-        : `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
+    const range = rawTimeRange(absence);
     const lines = [
       `Pracownik: ${emp.first_name} ${emp.last_name}`,
       `Data: ${dateFmt.format(date)} (${weekdayFmt.format(date)})`,
@@ -315,6 +312,23 @@ export default function AbsenceGrid({
                         absence?.substitute_employee_id != null
                           ? initialsOf(employeeNameMap.get(absence.substitute_employee_id) ?? "")
                           : "";
+                      // The chip is `role="img"`, which makes its children presentational — the
+                      // substitute badge and the comment marker below are invisible to assistive
+                      // technology, so both have to be named here instead. The substitute reads as
+                      // a full name rather than the initials the badge shows.
+                      const chipLabel =
+                        absenceType && absence
+                          ? [
+                              absenceType.name,
+                              range,
+                              absence.substitute_employee_id != null
+                                ? `zastępstwo: ${employeeNameMap.get(absence.substitute_employee_id) ?? ""}`
+                                : "",
+                              absence.comment ? "komentarz" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(", ")
+                          : "";
 
                       return (
                         <td
@@ -342,7 +356,7 @@ export default function AbsenceGrid({
                             // screen readers. It also stops the emoji being announced separately.
                             <div
                               role="img"
-                              aria-label={range ? `${absenceType.name}, ${range}` : absenceType.name}
+                              aria-label={chipLabel}
                               className="relative flex h-full w-full items-center justify-center gap-[5px] overflow-hidden rounded-[7px] px-1.5 text-[11px] font-bold whitespace-nowrap"
                               style={{ backgroundColor: absenceType.color, color: absenceType.text_color }}
                               title={buildTooltip(emp, date, absenceType, absence)}

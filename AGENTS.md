@@ -57,6 +57,13 @@ All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js`
 
 `drizzle-kit` outputs to `supabase/migrations/` alongside hand-authored Supabase CLI migrations. **Always manually review the generated diff before running `db:migrate`** — the Drizzle schema intentionally omits some DB-level constraints (CHECK constraints on `absence_types.color` and `absences.hours`; the `auth.users` FK cascade) because they cannot be represented in Drizzle. A generated migration will not include them, so any future schema change must re-add them manually after inspecting the diff.
 
+**Hand-authored data migrations are not in the journal, so `db:migrate` never runs them.** `drizzle-kit` generates DDL only; any file that changes *data* is written by hand and deliberately left out of `supabase/migrations/meta/_journal.json`. Applying one is a manual `psql`/SQL-editor step against `DATABASE_URL_DIRECT`. Provisioning a new environment must include:
+
+- `20260812153000_offsite_training_single_codepoint_icon.sql` — **required**. The journaled `20260807122840_faulty_hobgoblin.sql` seeds the offsite type's icon as an 8-codepoint ZWJ sequence; this file corrects it to a single codepoint. Since the monthly grid's cell chip carries no type name, the icon is the only per-type signal, so an environment that skips this renders three or four glyphs per offsite cell.
+- `20260811120000_purge_demo_partial_day_absences.sql` — **not** required on a fresh database; it is a one-off cleanup of rows that only ever existed in an already-provisioned environment.
+
+The pre-drizzle baseline (`20260526000001` through `20260714114608`) is likewise unjournaled and applied via the Supabase CLI before `db:migrate` takes over.
+
 ### Authorization
 
 The `DATABASE_URL` uses the service role key, which bypasses Supabase RLS. All row-level authorization must be enforced explicitly in handler code (ownership checks, role checks against `context.locals.user`). Do not rely on RLS as a safety net for Drizzle queries.

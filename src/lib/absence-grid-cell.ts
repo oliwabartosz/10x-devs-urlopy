@@ -25,17 +25,30 @@ export function formatTime(t: string | null | undefined): string {
 }
 
 /**
+ * The stored time range, formatted but **ungated** — `""` when the absence is full-day or
+ * either time is missing, otherwise `HH:MM–HH:MM` joined by U+2013 EN DASH with no
+ * surrounding spaces (the cell is ~120px wide, so the spaces are not affordable).
+ *
+ * The type gate lives in `cellTimeRange`, not here. This is what the cell's tooltip reports,
+ * so an out-of-contract row stays visible to a moderator instead of being silently hidden.
+ * Shared rather than duplicated at the call site so the two surfaces can only ever differ in
+ * the gate, never in the formatting.
+ */
+export function rawTimeRange(absence: Pick<Absence, "is_full_day" | "start_time" | "end_time">): string {
+  if (absence.is_full_day || !absence.start_time || !absence.end_time) return "";
+  return `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
+}
+
+/**
  * The time range a grid cell may render for this absence, or `""` for none.
  *
- * `""` when the absence is full-day, when either time is missing, or when the type is not
- * on the partial-day whitelist. Otherwise `HH:MM–HH:MM` joined by U+2013 EN DASH with no
- * surrounding spaces — the cell is ~120px wide, so the spaces are not affordable.
+ * `rawTimeRange` gated on the partial-day whitelist: also `""` when the type is not one the
+ * product permits partial days on.
  */
 export function cellTimeRange(
   absence: Pick<Absence, "is_full_day" | "start_time" | "end_time">,
   typeName: string | null | undefined,
 ): string {
-  if (absence.is_full_day || !absence.start_time || !absence.end_time) return "";
   if (!typeAllowsPartialDay(typeName)) return "";
-  return `${formatTime(absence.start_time)}–${formatTime(absence.end_time)}`;
+  return rawTimeRange(absence);
 }

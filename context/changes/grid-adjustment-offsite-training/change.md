@@ -1,9 +1,9 @@
 ---
 change_id: grid-adjustment-offsite-training
 title: Bound the grid's column width and drop the type name from the cell
-status: implementing
+status: impl_reviewed
 created: 2026-08-11
-updated: 2026-08-12
+updated: 2026-08-13
 archived_at: null
 ---
 
@@ -29,6 +29,17 @@ planned below. The Phase 1 icon migration needed no action: production already s
 (`length = 1`), and all seven types verified as single-codepoint, re-confirming 1.3 against prod.
 
 All plan criteria are now satisfied; the change is ready to archive.
+
+### Impl review 2026-08-13 — NEEDS ATTENTION, all three findings fixed
+
+`reviews/impl-review.md`. Plan Adherence, Scope Discipline, Architecture, Pattern Consistency and
+Success Criteria all PASS; Safety & Quality WARNING on two findings, both now fixed. F1: the Phase 1
+icon migration had no execution path — the journaled seed reinstates the ZWJ sequence on a fresh
+environment and `db:migrate` skips the unjournaled correction, so AGENTS.md now documents the
+hand-apply step. F2: `role="img"` made the substitute badge and comment marker presentational, so
+the chip's `aria-label` now names them. F3 (observation): the tooltip's range formatting was an
+untested copy — `rawTimeRange` is now shared, so only the gate differs. The fixes are uncommitted;
+they need their own commit before archiving.
 
 ### Open criterion after Phase 3 (2026-08-12) — superseded by the note above
 
