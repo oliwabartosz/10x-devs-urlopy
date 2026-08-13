@@ -501,15 +501,15 @@ No absence rows are read or written by this change.
 
 #### Automated
 
-- [x] 4.1 Linting and type checking pass: `npm run lint` — d42056a
-- [x] 4.2 Production build succeeds: `npm run build` — d42056a
+- [x] 4.1 Linting and type checking pass: `npm run lint` — 4d9b2c5
+- [x] 4.2 Production build succeeds: `npm run build` — 4d9b2c5
 - [ ] 4.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 161/161); `e2e` targets the deployed Worker, so it can only run after this lands on `main`, together with 3.3
 
 #### Manual
 
-- [x] 4.4 Ten employees fit at 1480px with no horizontal scrollbar, all columns equal width — d42056a
-- [x] 4.5 With three or four employees the columns stretch to fill the card — d42056a
-- [x] 4.6 Past ten employees a scrollbar appears and the day column stays pinned — d42056a
-- [x] 4.7 A long name clips with an ellipsis and its full value appears on hover, including ` (nieakt.)` — d42056a
-- [x] 4.8 Drag-to-reorder still works and the overlay shows the full name — d42056a
-- [x] 4.9 Weekend shading, the pale `+`, and the hover highlight are unchanged — d42056a
+- [x] 4.4 Ten employees fit at 1480px with no horizontal scrollbar, all columns equal width — 4d9b2c5
+- [x] 4.5 With three or four employees the columns stretch to fill the card — 4d9b2c5
+- [x] 4.6 Past ten employees a scrollbar appears and the day column stays pinned — 4d9b2c5
+- [x] 4.7 A long name clips with an ellipsis and its full value appears on hover, including ` (nieakt.)` — 4d9b2c5
+- [x] 4.8 Drag-to-reorder still works and the overlay shows the full name — 4d9b2c5
+- [x] 4.9 Weekend shading, the pale `+`, and the hover highlight are unchanged — 4d9b2c5
