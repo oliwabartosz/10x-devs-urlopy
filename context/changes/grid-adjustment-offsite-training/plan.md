@@ -485,31 +485,31 @@ No absence rows are read or written by this change.
 
 #### Automated
 
-- [x] 3.1 Linting and type checking pass: `npm run lint`
-- [x] 3.2 Production build succeeds: `npm run build`
+- [x] 3.1 Linting and type checking pass: `npm run lint` — 6bd2f3d
+- [x] 3.2 Production build succeeds: `npm run build` — 6bd2f3d
 - [ ] 3.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 157/157); `e2e` targets the deployed Worker, so it can only run after this lands on `main`
 
 #### Manual
 
-- [x] 3.4 No cell contains Polish words; full-day cells icon-only, training cells icon plus range
-- [x] 3.5 Tooltip still reveals type, date, hours, comment and substitute
-- [x] 3.6 Columns visibly narrowed; a month with an offsite entry is no wider than one without — partial by design; the employee-name header still binds until Phase 4
-- [x] 3.7 Screen reader announces the type name, not the emoji name
-- [x] 3.8 Substitute badge and comment marker still positioned correctly on the narrower chip
+- [x] 3.4 No cell contains Polish words; full-day cells icon-only, training cells icon plus range — 6bd2f3d
+- [x] 3.5 Tooltip still reveals type, date, hours, comment and substitute — 6bd2f3d
+- [x] 3.6 Columns visibly narrowed; a month with an offsite entry is no wider than one without — partial by design; the employee-name header still binds until Phase 4 — 6bd2f3d
+- [x] 3.7 Screen reader announces the type name, not the emoji name — 6bd2f3d
+- [x] 3.8 Substitute badge and comment marker still positioned correctly on the narrower chip — 6bd2f3d
 
 ### Phase 4: Bound the columns with `table-fixed`
 
 #### Automated
 
-- [ ] 4.1 Linting and type checking pass: `npm run lint`
-- [ ] 4.2 Production build succeeds: `npm run build`
-- [ ] 4.3 Existing suites still green: `npm run test:run` and `npm run e2e`
+- [x] 4.1 Linting and type checking pass: `npm run lint` — d42056a
+- [x] 4.2 Production build succeeds: `npm run build` — d42056a
+- [ ] 4.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 161/161); `e2e` targets the deployed Worker, so it can only run after this lands on `main`, together with 3.3
 
 #### Manual
 
-- [ ] 4.4 Ten employees fit at 1480px with no horizontal scrollbar, all columns equal width
-- [ ] 4.5 With three or four employees the columns stretch to fill the card
-- [ ] 4.6 Past ten employees a scrollbar appears and the day column stays pinned
-- [ ] 4.7 A long name clips with an ellipsis and its full value appears on hover, including ` (nieakt.)`
-- [ ] 4.8 Drag-to-reorder still works and the overlay shows the full name
-- [ ] 4.9 Weekend shading, the pale `+`, and the hover highlight are unchanged
+- [x] 4.4 Ten employees fit at 1480px with no horizontal scrollbar, all columns equal width — d42056a
+- [x] 4.5 With three or four employees the columns stretch to fill the card — d42056a
+- [x] 4.6 Past ten employees a scrollbar appears and the day column stays pinned — d42056a
+- [x] 4.7 A long name clips with an ellipsis and its full value appears on hover, including ` (nieakt.)` — d42056a
+- [x] 4.8 Drag-to-reorder still works and the overlay shows the full name — d42056a
+- [x] 4.9 Weekend shading, the pale `+`, and the hover highlight are unchanged — d42056a

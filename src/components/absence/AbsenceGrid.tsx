@@ -46,6 +46,7 @@ function selfFirst(emps: Employee[], currentId: string): Employee[] {
 function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerator: boolean }) {
   const { setNodeRef, attributes, listeners, isDragging } = useSortable({ id: emp.id });
   const isInactive = !!emp.deleted_at;
+  const fullName = `${emp.first_name} ${emp.last_name}${isInactive ? " (nieakt.)" : ""}`;
 
   return (
     // No CSS transform on the <th> and listeners on the handle only — a table layout
@@ -53,7 +54,7 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
     <th
       ref={setNodeRef}
       className={cn(
-        "border-line min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold",
+        "border-line w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold",
         isInactive ? "text-muted-foreground bg-[#dcdcdc]" : "bg-line-strong text-black",
       )}
       style={{ opacity: isDragging ? 0.5 : 1 }}
@@ -64,9 +65,10 @@ function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerat
             <GripVertical className="size-3.5" />
           </span>
         )}
-        <span className="truncate">
-          {emp.first_name} {emp.last_name}
-          {isInactive ? " (nieakt.)" : ""}
+        {/* The column is capped at 120px now, so a long name clips — `title` is what makes
+            the full value, including the ` (nieakt.)` suffix, recoverable on hover. */}
+        <span className="truncate" title={fullName}>
+          {fullName}
         </span>
       </div>
     </th>
@@ -245,15 +247,25 @@ export default function AbsenceGrid({
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          {/* `table-fixed` so column widths come from the header `width`s rather than from the
+              widest content anywhere in the month — the prototype's `flex: 1 1 0; min-width: 120px`
+              has no direct table equivalent. The floor is computed, not a literal, because a
+              fixed-layout table whose declared widths exceed `width: 100%` has no dependable
+              behaviour: without it ten columns would silently compress below 120px instead of
+              overflowing into the wrapper's scroll. `w-full` on top restores the stretch-to-fill
+              when the team is small. */}
+          <table
+            className="w-full table-fixed border-collapse text-sm"
+            style={{ minWidth: `${(132 + orderedEmployees.length * 120).toString()}px` }}
+          >
             <thead>
               <tr>
                 <th className="border-line bg-line-strong sticky left-0 z-20 w-[132px] min-w-[132px] border-r border-b-2 px-3 py-3.5 text-left text-xs font-bold tracking-[0.06em] text-black uppercase">
                   Dzień
                 </th>
                 {self && (
-                  <th className="border-line bg-line-strong min-w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold text-black">
-                    <span className="block truncate">
+                  <th className="border-line bg-line-strong w-[120px] border-r border-b-2 px-2.5 py-3.5 text-center align-middle text-[13px] font-bold text-black">
+                    <span className="block truncate" title={`${self.first_name} ${self.last_name}`}>
                       {self.first_name} {self.last_name}
                     </span>
                   </th>
