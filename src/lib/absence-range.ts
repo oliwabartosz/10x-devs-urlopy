@@ -32,6 +32,29 @@ export function isWeekend(date: Date): boolean {
   return weekday === 0 || weekday === 6;
 }
 
+/**
+ * {@link isWeekend} for a `YYYY-MM-DD` key — the server's half of the weekend guard.
+ *
+ * The *rule* is shared with the client; the *policy* is not. The grid silently skips weekends
+ * inside a range, while the bulk route rejects the whole request, because a weekend date
+ * reaching the API can only come from a client bug or a hand-crafted body and should fail
+ * loudly rather than be quietly dropped.
+ *
+ * Parsed as UTC, deliberately. A route has no meaningful local timezone — workerd runs in UTC
+ * while a developer's machine does not — so `new Date("2026-08-15")` interpreted locally would
+ * make the same body pass in one place and fail in another. The key carries no time, so fixing
+ * the interpretation to UTC is the only reading that is stable everywhere.
+ *
+ * Returns `false` for anything that is not a well-formed key; `DateSchema` is what rejects those,
+ * and a weekday check is not the place to also be a format check.
+ */
+export function isWeekendDateKey(key: string): boolean {
+  const parsed = new Date(`${key}T00:00:00Z`);
+  if (isNaN(parsed.getTime())) return false;
+  const weekday = parsed.getUTCDay();
+  return weekday === 0 || weekday === 6;
+}
+
 /** An inclusive run of day indices into the rendered month, always `start <= end`. */
 export interface DaySpan {
   start: number;

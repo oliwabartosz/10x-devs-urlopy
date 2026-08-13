@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   dateKey,
   isWeekend,
+  isWeekendDateKey,
   selectionSpan,
   isRangeGesture,
   isCellSelected,
@@ -104,6 +105,44 @@ describe("dateKey", () => {
 describe("isWeekend", () => {
   it("is true for Saturday and Sunday only", () => {
     expect(AUGUST.filter(isWeekend).map((d) => d.getDate())).toEqual([1, 2, 8, 9, 15, 16, 22, 23, 29, 30]);
+  });
+});
+
+describe("isWeekendDateKey — the server's half of the guard", () => {
+  it("agrees with isWeekend for every day of the reference month", () => {
+    // One rule, two call sites. The client drops these days; the route rejects the request.
+    for (const date of AUGUST) {
+      expect(isWeekendDateKey(dateKey(date))).toBe(isWeekend(date));
+    }
+  });
+
+  it("names the weekend days of the reference month", () => {
+    expect(AUGUST.map(dateKey).filter(isWeekendDateKey)).toEqual([
+      "2026-08-01",
+      "2026-08-02",
+      "2026-08-08",
+      "2026-08-09",
+      "2026-08-15",
+      "2026-08-16",
+      "2026-08-22",
+      "2026-08-23",
+      "2026-08-29",
+      "2026-08-30",
+    ]);
+  });
+
+  it("reads the key as UTC, so the answer does not depend on where the server runs", () => {
+    // 15 August 2026 is a Saturday everywhere. A local-time parse would keep saying so on this
+    // machine and could disagree elsewhere; pinning to UTC is what makes the rule portable.
+    expect(isWeekendDateKey("2026-08-15")).toBe(true);
+    expect(isWeekendDateKey("2026-08-16")).toBe(true);
+    expect(isWeekendDateKey("2026-08-17")).toBe(false);
+    expect(isWeekendDateKey("2026-08-14")).toBe(false);
+  });
+
+  it("defers format rejection to DateSchema rather than answering for a malformed key", () => {
+    expect(isWeekendDateKey("nonsense")).toBe(false);
+    expect(isWeekendDateKey("")).toBe(false);
   });
 });
 
