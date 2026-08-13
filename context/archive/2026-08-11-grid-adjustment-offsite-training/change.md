@@ -1,10 +1,10 @@
 ---
 change_id: grid-adjustment-offsite-training
 title: Bound the grid's column width and drop the type name from the cell
-status: impl_reviewed
+status: archived
 created: 2026-08-11
 updated: 2026-08-13
-archived_at: null
+archived_at: 2026-08-13T08:20:24Z
 ---
 
 ## Notes
