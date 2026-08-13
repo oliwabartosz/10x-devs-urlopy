@@ -77,6 +77,30 @@ export function handleBounds(handle: DialHandle, startMinutes: number, endMinute
 }
 
 /**
+ * {@link handleBounds}, made safe to put on a `role="slider"`.
+ *
+ * The raw window is the truth about where a handle may *move*, and it is deliberately allowed to be
+ * empty or to exclude the handle's current position — a pair saved before these rules existed can
+ * sit outside its own window. Neither is expressible in ARIA: `aria-valuenow` must lie within
+ * `[aria-valuemin, aria-valuemax]`, and an inverted pair announces nonsense.
+ *
+ * So the announced range is widened to contain the current value, and a handle with nowhere legal
+ * to go announces a single point plus `movable: false`, which the component turns into
+ * `aria-disabled`. Movement itself still goes through {@link constrainHandle} against the raw
+ * window — this only governs what is said, never what is reachable.
+ */
+export function announcedBounds(
+  handle: DialHandle,
+  minutes: number,
+  startMinutes: number,
+  endMinutes: number,
+): HandleBounds & { movable: boolean } {
+  const { min, max } = handleBounds(handle, startMinutes, endMinutes);
+  if (min > max) return { min: minutes, max: minutes, movable: false };
+  return { min: Math.min(min, minutes), max: Math.max(max, minutes), movable: true };
+}
+
+/**
  * The position `handle` is permitted to take for a candidate the pointer or keyboard proposed.
  *
  * Prevention, not correction: the caller commits the *return value*, never the candidate. A dial
@@ -111,6 +135,48 @@ export function constrainHandle({
   if (snapped >= min && snapped <= max) return snapped;
 
   return circularDistance(snapped, min) <= circularDistance(snapped, max) ? min : max;
+}
+
+/**
+ * The whole range after `handle` moves to `candidateMinutes` — the pair the dial commits.
+ *
+ * {@link constrainHandle} only governs the handle being moved. Emitting the *anchor* untouched is
+ * not safe, because the anchor is whatever the typed field holds and the blur clamp does not run
+ * while the other field is empty: a start of `04:00` with an empty end survives into the dial, and
+ * moving the end handle would otherwise re-commit `04:00` — a value the API rewrites to `06:00`
+ * behind the user's back. This function is the guarantee that whatever the dial emits, the server
+ * would return unchanged.
+ *
+ * The anchor is **clamped, never snapped**. A row typed as `16:27` is legal and stays editable by
+ * typing (see the plan's migration note), so dragging the *other* handle must not drag it onto the
+ * quarter-hour grid. Only the handle actually being moved snaps.
+ *
+ * Order matters when the end handle moves: the start is floored *first*, so the end's cap is
+ * measured from the floored start — `min(8h, 23:59 − start)` — exactly as `clampAbsenceHours`
+ * measures it. Capping against the un-floored start would announce a ceiling the server does not
+ * enforce.
+ */
+export function constrainPair({
+  handle,
+  candidateMinutes,
+  startMinutes,
+  endMinutes,
+}: {
+  handle: DialHandle;
+  candidateMinutes: number;
+  startMinutes: number;
+  endMinutes: number;
+}): { startMinutes: number; endMinutes: number } {
+  if (handle === "start") {
+    const start = constrainHandle({ handle, candidateMinutes, startMinutes, endMinutes });
+    return { startMinutes: start, endMinutes: clampToBounds("end", endMinutes, start, endMinutes) };
+  }
+  // The floor is the only rule a start obeys on its own; everything else is relative to it.
+  const start = Math.max(startMinutes, MIN_START_MINUTES);
+  return {
+    startMinutes: start,
+    endMinutes: constrainHandle({ handle, candidateMinutes, startMinutes: start, endMinutes }),
+  };
 }
 
 /**
@@ -198,6 +264,20 @@ export function formatClockTime(minutes: number): string {
   const hh = String(Math.floor(normalized / 60)).padStart(2, "0");
   const mm = String(normalized % 60).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+/**
+ * Clamp into a handle's window *without* snapping, and without the circular reasoning
+ * {@link constrainHandle} applies. Both differences are deliberate: this is only ever used on the
+ * handle the user is not touching, so it must not move onto the grid, and it cannot be "past
+ * midnight" — it is a value already on the face, not a pointer angle.
+ *
+ * An empty window (`min > max`) leaves the value alone, matching {@link constrainHandle}.
+ */
+function clampToBounds(handle: DialHandle, minutes: number, startMinutes: number, endMinutes: number): number {
+  const { min, max } = handleBounds(handle, startMinutes, endMinutes);
+  if (min > max) return minutes;
+  return Math.min(Math.max(minutes, min), max);
 }
 
 /** Shorter way round the face between two times, in minutes. */

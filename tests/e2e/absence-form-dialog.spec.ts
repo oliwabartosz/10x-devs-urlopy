@@ -11,6 +11,11 @@
  * Escape must dismiss only the dial — if either breaks, the pointer path silently disagrees
  * with the typed one.
  *
+ * Risk: the dial's hard stops are the change's headline behaviour — a handle that could reach
+ * a value the server then rewrites would reproduce the very symptom this change removes. The
+ * 06:00 floor and the 8 h cap must be unreachable from either handle, not merely corrected
+ * after the fact.
+ *
  * Ref: context/changes/absence-hours-range/plan.md — Phase 3, steps 3.3–3.5
  *      context/changes/absence-hours-window/plan.md — Phase 3
  *      context/changes/radial-timepicker-ux/plan.md — Phase 4
@@ -29,9 +34,14 @@ async function openPartialDayDialog(page: import("@playwright/test").Page) {
   // before React attaches onClick handlers to the grid cells.
   await page.waitForLoadState("networkidle");
 
-  // Open the form dialog by clicking any empty clickable cell (shows '+')
-  await page.getByText("+").first().click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  // `networkidle` is a first pass, not a guarantee: it says the requests stopped, not that React
+  // attached its handlers. A click that lands early is swallowed by the DOM and surfaces later as
+  // a dialog that never opened — observed intermittently on this very locator. So click and assert
+  // together and let `toPass` retry the pair, per `e2e-rules.md:36-37,76-80`.
+  await expect(async () => {
+    await page.getByText("+").first().click();
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
 
   // The full-day toggle and the time inputs are gated behind `canBePartialDay`
   // (AbsenceFormDialog.tsx) — only the two training types in PARTIAL_DAY_TYPE_NAMES
@@ -81,6 +91,10 @@ test("blurring the time inputs floors a start before 06:00", async ({ page }) =>
   await expect(startInput).toHaveValue("06:00");
   // The end is inside the 8 h cap measured from the floored start, so it must not move.
   await expect(endInput).toHaveValue("13:00");
+  // A correction nobody is told about is the second symptom this change exists to remove, so the
+  // rewrite has to be announced as well as applied. The notice is deferred (see
+  // `announceCorrection`), hence a text assertion rather than an immediate one.
+  await expect(page.getByText("Poprawiono początek na 06:00")).toBeVisible();
 
   await page.getByRole("button", { name: "Anuluj" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -99,6 +113,7 @@ test("blurring the time inputs caps a range longer than 8 h", async ({ page }) =
   // Start is already past the floor, so only the end is pulled back — to start + 8 h.
   await expect(startInput).toHaveValue("08:00");
   await expect(endInput).toHaveValue("16:00");
+  await expect(page.getByText("Poprawiono koniec na 16:00")).toBeVisible();
 
   await page.getByRole("button", { name: "Anuluj" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -144,6 +159,58 @@ test("the dial writes a keyboard-moved handle back into the bound field", async 
   await expect(page.getByRole("heading", { name: "Dodaj nieobecność" })).toBeVisible();
   await expect(startInput).toHaveValue("08:15");
 
+  await page.getByRole("button", { name: "Anuluj" }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+});
+
+test("the dial's handles stop at the 06:00 floor and the 8 h cap", async ({ page }) => {
+  await openPartialDayDialog(page);
+  await page.getByRole("checkbox", { name: "Cały dzień" }).uncheck();
+
+  const startInput = page.getByLabel("Czas od");
+  const endInput = page.getByLabel("Czas do");
+  await startInput.fill("08:00");
+  await endInput.fill("12:00");
+  await endInput.blur();
+
+  await page.getByRole("button", { name: "Wybierz godziny na tarczy zegara" }).click();
+
+  const startHandle = page.getByRole("slider", { name: "Godzina rozpoczęcia" });
+  const endHandle = page.getByRole("slider", { name: "Godzina zakończenia" });
+  await expect(startHandle).toBeVisible();
+  await expect(endHandle).toBeVisible();
+
+  // Home is that handle's legal extreme, so it lands exactly on the floor rather than near it.
+  await startHandle.focus();
+  await page.keyboard.press("Home");
+  await expect(startHandle).toHaveAttribute("aria-valuetext", "06:00");
+  await expect(startInput).toHaveValue("06:00");
+
+  // The stop itself: one more step in the same direction must be refused outright. `commit`
+  // returns early when the constrained pair is unchanged, so a working stop shows up as a value
+  // that does not move — which only means something because the press above proved the key works.
+  await page.keyboard.press("ArrowDown");
+  await expect(startHandle).toHaveAttribute("aria-valuetext", "06:00");
+  await expect(startInput).toHaveValue("06:00");
+
+  // The end's extreme is `start + 8 h` (14:00), not 23:59 — the duration cap, not the day's end.
+  await endHandle.focus();
+  await page.keyboard.press("End");
+  await expect(endHandle).toHaveAttribute("aria-valuetext", "14:00");
+  await expect(endInput).toHaveValue("14:00");
+
+  await page.keyboard.press("ArrowUp");
+  await expect(endHandle).toHaveAttribute("aria-valuetext", "14:00");
+  await expect(endInput).toHaveValue("14:00");
+
+  // Widening from the other side is the case a per-handle clamp gets wrong: with the end at 14:00
+  // the start is pinned at 06:00 by the cap measured backwards, so it cannot retreat either.
+  await startHandle.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(startInput).toHaveValue("06:00");
+  await expect(endInput).toHaveValue("14:00");
+
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Anuluj" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });

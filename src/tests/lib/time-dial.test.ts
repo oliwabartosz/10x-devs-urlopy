@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MIN_START_TIME } from "@/lib/absence-hours";
+import { MIN_START_TIME, clampAbsenceHours } from "@/lib/absence-hours";
 import { FULL_DAY_HOURS } from "@/lib/hours";
 import {
   DEGREES_PER_MINUTE,
@@ -9,8 +9,10 @@ import {
   MIN_START_MINUTES,
   STEP_MINUTES,
   angleToMinutes,
+  announcedBounds,
   cartesianToAngle,
   constrainHandle,
+  constrainPair,
   formatClockTime,
   handleBounds,
   minutesToAngle,
@@ -196,12 +198,36 @@ describe("constrainHandle", () => {
   it("never lands outside the announced window, for any candidate on the face", () => {
     // aria-valuemin/max come from handleBounds; a reachable position outside them would make the
     // screen-reader announcement a lie.
-    for (const handle of ["start", "end"] as const) {
-      const { min, max } = handleBounds(handle, range.startMinutes, range.endMinutes);
-      for (let candidate = 0; candidate < MINUTES_PER_DAY; candidate++) {
-        const result = constrainHandle({ handle, candidateMinutes: candidate, ...range });
-        expect(result).toBeGreaterThanOrEqual(min);
-        expect(result).toBeLessThanOrEqual(max);
+    //
+    // Swept over the shapes a pair can actually take rather than one comfortable range: the
+    // 23:59 ceiling and the empty windows behind F3 are exactly where a clamp is likeliest to
+    // step outside, and a single mid-day range never reaches either.
+    const pairs = [
+      { name: "a plain mid-day range", startMinutes: at("09:00"), endMinutes: at("13:00") },
+      { name: "a range butting against the 23:59 ceiling", startMinutes: at("20:00"), endMinutes: at("23:45") },
+      { name: "a legal off-grid pair", startMinutes: at("16:27"), endMinutes: at("16:52") },
+      // Below the floor: the start has nowhere legal to go, the end still does.
+      { name: "a pair below the 06:00 floor", startMinutes: at("00:05"), endMinutes: at("00:10") },
+      // Against the ceiling: the mirror case — here it is the end whose window is empty.
+      { name: "a pair pinned against midnight", startMinutes: at("23:50"), endMinutes: at("23:55") },
+    ];
+
+    for (const pair of pairs) {
+      const { startMinutes, endMinutes } = pair;
+      for (const handle of ["start", "end"] as const) {
+        const { min, max } = handleBounds(handle, startMinutes, endMinutes);
+        const current = handle === "start" ? startMinutes : endMinutes;
+        for (let candidate = 0; candidate < MINUTES_PER_DAY; candidate++) {
+          const result = constrainHandle({ handle, candidateMinutes: candidate, startMinutes, endMinutes });
+          if (min > max) {
+            // An empty window has no position to offer, so the only legal answer is "did not
+            // move" — inventing one would rewrite a row on first touch.
+            expect(result, `${handle} on ${pair.name}`).toBe(current);
+          } else {
+            expect(result, `${handle} on ${pair.name}`).toBeGreaterThanOrEqual(min);
+            expect(result, `${handle} on ${pair.name}`).toBeLessThanOrEqual(max);
+          }
+        }
       }
     }
   });
@@ -223,6 +249,124 @@ describe("constrainHandle", () => {
     const offGrid = { startMinutes: at("16:27"), endMinutes: at("16:52") };
     expect(constrainHandle({ handle: "end", candidateMinutes: at("18:03"), ...offGrid })).toBe(at("18:00"));
     expect(constrainHandle({ handle: "start", candidateMinutes: at("16:20"), ...offGrid })).toBe(at("16:15"));
+  });
+});
+
+describe("announcedBounds", () => {
+  it("matches the raw window when the handle sits inside it", () => {
+    const range = { startMinutes: at("09:00"), endMinutes: at("13:00") };
+    const raw = handleBounds("start", range.startMinutes, range.endMinutes);
+    expect(announcedBounds("start", range.startMinutes, range.startMinutes, range.endMinutes)).toEqual({
+      ...raw,
+      movable: true,
+    });
+  });
+
+  it("widens to contain a value that sits outside its own window", () => {
+    // An inverted pair is typeable (`saveDisabled` does not require end > start), and ARIA
+    // requires valuenow to lie within valuemin..valuemax — announcing 09:00 as outside its own
+    // range is invalid markup, not a useful signal.
+    const inverted = { startMinutes: at("14:00"), endMinutes: at("09:00") };
+    const announced = announcedBounds("end", inverted.endMinutes, inverted.startMinutes, inverted.endMinutes);
+    expect(announced.min).toBeLessThanOrEqual(at("09:00"));
+    expect(announced.max).toBeGreaterThanOrEqual(at("09:00"));
+    expect(announced.movable).toBe(true);
+  });
+
+  it("announces a single point for a handle with nowhere legal to go", () => {
+    // 23:50–23:55: the end cannot step up without leaving the day, so its window is empty and
+    // the raw bounds invert (min 1445 > max 1439).
+    const tooLate = { startMinutes: at("23:50"), endMinutes: at("23:55") };
+    expect(announcedBounds("end", tooLate.endMinutes, tooLate.startMinutes, tooLate.endMinutes)).toEqual({
+      min: at("23:55"),
+      max: at("23:55"),
+      movable: false,
+    });
+  });
+
+  it("never announces an inverted or non-containing range, for any pair on the face", () => {
+    for (let start = 0; start < MINUTES_PER_DAY; start += STEP_MINUTES) {
+      for (let end = 0; end < MINUTES_PER_DAY; end += 60) {
+        for (const [handle, value] of [
+          ["start", start],
+          ["end", end],
+        ] as const) {
+          const { min, max } = announcedBounds(handle, value, start, end);
+          expect(min).toBeLessThanOrEqual(max);
+          expect(value).toBeGreaterThanOrEqual(min);
+          expect(value).toBeLessThanOrEqual(max);
+        }
+      }
+    }
+  });
+});
+
+describe("constrainPair", () => {
+  it("floors an illegal anchor instead of re-committing it", () => {
+    // The path this closes: a start of 04:00 with an empty end never meets the blur clamp
+    // (`AbsenceFormDialog.clampTimesOnBlur` returns early while either field is empty), so it
+    // reaches the dial intact. Moving the *end* handle used to echo 04:00 straight back out, and
+    // the API would then rewrite it to 06:00 without telling anyone.
+    const illegal = { startMinutes: at("04:00"), endMinutes: at("12:00") };
+    expect(constrainPair({ handle: "end", candidateMinutes: at("10:00"), ...illegal })).toEqual({
+      startMinutes: at("06:00"),
+      endMinutes: at("10:00"),
+    });
+  });
+
+  it("measures the end's cap from the floored start, as the server does", () => {
+    // Capping against the un-floored 04:00 would stop the end at 12:00, a ceiling the API does
+    // not enforce — it clamps to `06:00 + 8h`. (A candidate much further round the face would
+    // reach the *lower* edge instead, by the circular rule constrainHandle is tested for above.)
+    const illegal = { startMinutes: at("04:00"), endMinutes: at("12:00") };
+    expect(constrainPair({ handle: "end", candidateMinutes: at("15:00"), ...illegal })).toEqual({
+      startMinutes: at("06:00"),
+      endMinutes: at("14:00"),
+    });
+  });
+
+  it("clamps the anchor without snapping it", () => {
+    // Free-minute rows stay editable by typing, so dragging one handle must not drag the other
+    // onto the quarter-hour grid — only the handle being moved snaps.
+    const offGrid = { startMinutes: at("16:27"), endMinutes: at("16:52") };
+    expect(constrainPair({ handle: "end", candidateMinutes: at("18:03"), ...offGrid })).toEqual({
+      startMinutes: at("16:27"),
+      endMinutes: at("18:00"),
+    });
+  });
+
+  it("pulls the anchor in when the moved handle would otherwise leave it illegal", () => {
+    // Dragging the start forward past `end − 8h` is impossible, but dragging it forward at all
+    // must keep the end inside the span measured from the new start.
+    const wide = { startMinutes: at("08:00"), endMinutes: at("16:00") };
+    expect(constrainPair({ handle: "start", candidateMinutes: at("09:00"), ...wide })).toEqual({
+      startMinutes: at("09:00"),
+      endMinutes: at("16:00"),
+    });
+  });
+
+  it("emits only pairs the server returns unchanged", () => {
+    // The invariant the whole module exists for, stated as a property rather than a comment:
+    // whatever leaves the dial must be a fixed point of `clampAbsenceHours`. This is the check
+    // that would have caught the anchor bug at Phase 1.
+    const pairs = [
+      { startMinutes: at("09:00"), endMinutes: at("13:00") },
+      { startMinutes: at("04:00"), endMinutes: at("12:00") }, // start below the floor
+      { startMinutes: at("14:00"), endMinutes: at("09:00") }, // inverted
+      { startMinutes: at("08:00"), endMinutes: at("22:00") }, // wider than the cap
+      { startMinutes: at("16:27"), endMinutes: at("16:52") }, // off-grid but legal
+      { startMinutes: at("20:00"), endMinutes: at("23:55") }, // against the ceiling
+    ];
+    for (const pair of pairs) {
+      for (const handle of ["start", "end"] as const) {
+        for (let candidate = 0; candidate < MINUTES_PER_DAY; candidate += STEP_MINUTES) {
+          const next = constrainPair({ handle, candidateMinutes: candidate, ...pair });
+          const startTime = formatClockTime(next.startMinutes);
+          const endTime = formatClockTime(next.endMinutes);
+          expect(clampAbsenceHours(startTime, endTime)).toEqual({ ok: true, startTime, endTime });
+        }
+      }
+    }
   });
 });
 

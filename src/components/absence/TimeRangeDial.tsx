@@ -7,8 +7,9 @@ import {
   MIN_START_MINUTES,
   STEP_MINUTES,
   angleToMinutes,
+  announcedBounds,
   cartesianToAngle,
-  constrainHandle,
+  constrainPair,
   formatClockTime,
   handleBounds,
   minutesToAngle,
@@ -83,14 +84,14 @@ export function TimeRangeDial({ startTime, endTime, onChange }: TimeRangeDialPro
   const startMinutes = parseClockTime(startTime) ?? SEED_START_MINUTES;
   const endMinutes = parseClockTime(endTime) ?? Math.min(startMinutes + MAX_SPAN_MINUTES, MAX_END_MINUTES);
 
+  // `constrainPair`, not `constrainHandle`: the anchor is whatever the typed field holds, and the
+  // blur clamp does not run while the other field is empty — so echoing it back unchanged could
+  // commit a value the API rewrites silently. The pair that leaves here is one the server returns
+  // untouched.
   const commit = (handle: DialHandle, candidateMinutes: number) => {
-    const current = handle === "start" ? startMinutes : endMinutes;
-    const next = constrainHandle({ handle, candidateMinutes, startMinutes, endMinutes });
-    if (next === current) return;
-    onChange(
-      formatClockTime(handle === "start" ? next : startMinutes),
-      formatClockTime(handle === "end" ? next : endMinutes),
-    );
+    const next = constrainPair({ handle, candidateMinutes, startMinutes, endMinutes });
+    if (next.startMinutes === startMinutes && next.endMinutes === endMinutes) return;
+    onChange(formatClockTime(next.startMinutes), formatClockTime(next.endMinutes));
   };
 
   const onHandleKeyDown = (handle: DialHandle) => (event: KeyboardEvent<SVGGElement>) => {
@@ -244,7 +245,9 @@ export function TimeRangeDial({ startTime, endTime, onChange }: TimeRangeDialPro
       </text>
 
       {handles.map(({ handle, minutes, label }) => {
-        const bounds = handleBounds(handle, startMinutes, endMinutes);
+        // What is *said* about the handle, which is not always what `handleBounds` returns — see
+        // `announcedBounds`. Movement still goes through the raw window, via `commit`.
+        const bounds = announcedBounds(handle, minutes, startMinutes, endMinutes);
         const point = polarToCartesian({
           cx: CENTER,
           cy: CENTER,
@@ -257,10 +260,15 @@ export function TimeRangeDial({ startTime, endTime, onChange }: TimeRangeDialPro
             role="slider"
             tabIndex={0}
             aria-label={label}
+            // No `aria-orientation`: a circular slider is neither horizontal nor vertical, and
+            // ARIA's third value ("undefined") is not in React's prop types. The implied
+            // horizontal costs nothing here — both arrow pairs are handled, so either assumption
+            // matches the keys that work.
             aria-valuemin={bounds.min}
             aria-valuemax={bounds.max}
             aria-valuenow={minutes}
             aria-valuetext={formatClockTime(minutes)}
+            aria-disabled={bounds.movable ? undefined : true}
             onKeyDown={onHandleKeyDown(handle)}
             onPointerDown={onHandlePointerDown(handle)}
             onPointerMove={onHandlePointerMove}

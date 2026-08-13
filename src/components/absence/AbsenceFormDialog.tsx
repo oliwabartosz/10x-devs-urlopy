@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CircleHelp, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -122,6 +122,15 @@ export function AbsenceFormDialog({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // The hours-rules tooltip is controlled so it can open on *tap* as well as on hover and focus.
+  // Radix Tooltip does not open on touch by design, which would leave a phone user with no path to
+  // the rules at all — the correction toast would become the only channel, which is the inverse of
+  // stating a rule before it bites.
+  const [hoursHelpOpen, setHoursHelpOpen] = useState(false);
+  // Radix asks to close on *pointerdown*, before the click handler runs, so by the time the click
+  // arrives the state no longer says whether this tap was opening or closing. Sample it at press.
+  const hoursHelpOpenAtPressRef = useRef(false);
+
   const dateStr = `${day.getFullYear().toString()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
   const dateHeading = day.toLocaleDateString("pl-PL", {
     weekday: "long",
@@ -133,6 +142,23 @@ export function AbsenceFormDialog({
   const canBePartialDay = typeAllowsPartialDay(selectedType?.name);
 
   const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
+
+  // What a deferred callback needs to know about the form as it stands *now* rather than as it
+  // stood when the callback was scheduled. Read only by `announceCorrection`.
+  //
+  // `useLayoutEffect`, not `useEffect`: the deferred notice decides during the click that follows
+  // the blur, and a passive effect may not have run by then. A layout effect commits inside the
+  // click's own dispatch, so the ref is current when it is read.
+  const liveRef = useRef({ mounted: true, open, showsHours: false, startTime, endTime });
+  useLayoutEffect(() => {
+    liveRef.current = { ...liveRef.current, open, showsHours: canBePartialDay && !isFullDay, startTime, endTime };
+  });
+  useEffect(
+    () => () => {
+      liveRef.current.mounted = false;
+    },
+    [],
+  );
 
   const otherEmployees = employees.filter((e) => e.id !== targetEmployee.id);
 
@@ -182,11 +208,38 @@ export function AbsenceFormDialog({
         `Poprawiono koniec na ${clamped.endTime} — nieobecność nie może trwać dłużej niż ${String(FULL_DAY_HOURS)} godz.`,
       );
     }
-    if (notices.length > 0) toast.info(notices.join(" "));
+    if (notices.length === 0) return;
+    announceCorrection(notices.join(" "), clamped.startTime, clamped.endTime);
   };
 
-  // The dial constrains every candidate position before committing it (`constrainHandle`), so
-  // what arrives here is already inside the domain — deliberately not routed through
+  // Blur fires on *mousedown*, so at this point the click that caused it has not run its handler
+  // yet. Announcing immediately means a toast describing a range that the very next click throws
+  // away — picking a non-training type, re-checking „Cały dzień" and Anuluj all clear or close the
+  // row. So the notice waits one task and then asks whether the range it describes still exists.
+  const announceCorrection = (notice: string, startTime: string, endTime: string) => {
+    const show = () => {
+      const live = liveRef.current;
+      if (!live.mounted || !live.open || !live.showsHours) return;
+      if (live.startTime !== startTime || live.endTime !== endTime) return;
+      toast.info(notice);
+    };
+    // The click lands on `document` after React has processed it, so by then the row has already
+    // been cleared or the dialog closed if that is where the click was going. A blur with no click
+    // behind it — Tab, or focus moving to the dial — never gets that signal, so a short timer backs
+    // the listener up; whichever fires first cancels the other.
+    const settled = window.setTimeout(() => {
+      document.removeEventListener("click", onClick);
+      show();
+    }, 250);
+    const onClick = () => {
+      window.clearTimeout(settled);
+      show();
+    };
+    document.addEventListener("click", onClick, { once: true });
+  };
+
+  // The dial constrains every candidate position before committing it (`constrainPair`), so what
+  // arrives here is already inside the domain — deliberately not routed through
   // `clampTimesOnBlur`, which could only ever be a no-op on it.
   const setRangeFromDial = (start: string, end: string) => {
     setStartTime(start);
@@ -382,22 +435,34 @@ export function AbsenceFormDialog({
                       </Button>
                     </PopoverTrigger>
                     {/* `w-auto` overrides the primitive's `w-72`: the dial sizes itself and the
-                        popover should shrink to it rather than the other way round. */}
-                    <PopoverContent className="w-auto p-3">
+                        popover should shrink to it rather than the other way round.
+
+                        Radix gives `PopoverContent` `role="dialog"` and no name of its own, so
+                        without this a screen reader announces a bare "dialog" on open. The SVG's
+                        own label names the handle group inside it, not the layer. Reusing the
+                        trigger's name keeps the two readings identical. */}
+                    <PopoverContent className="w-auto p-3" aria-label={DIAL_TRIGGER_NAME}>
                       <TimeRangeDial startTime={startTime} endTime={endTime} onChange={setRangeFromDial} />
                     </PopoverContent>
                   </Popover>
 
                   {/* The rules, before they bite. A real `<button>` rather than an icon with a
                       `title`: a tooltip on a focusable element opens on keyboard focus too, so the
-                      explanation is not pointer-only. */}
-                  <Tooltip>
+                      explanation is not pointer-only — and, controlled, on tap as well. */}
+                  <Tooltip open={hoursHelpOpen} onOpenChange={setHoursHelpOpen}>
                     <TooltipTrigger asChild>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         aria-label={HOURS_HELP_NAME}
+                        aria-expanded={hoursHelpOpen}
+                        onPointerDown={() => {
+                          hoursHelpOpenAtPressRef.current = hoursHelpOpen;
+                        }}
+                        onClick={() => {
+                          setHoursHelpOpen(!hoursHelpOpenAtPressRef.current);
+                        }}
                         className="text-muted-foreground hover:text-primary"
                       >
                         <CircleHelp />
