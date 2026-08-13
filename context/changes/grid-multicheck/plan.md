@@ -747,9 +747,9 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [x] 3.1 Type checking and linting pass: `npm run lint` — 0 errors on this phase's files; `astro check` 0 errors over 122 files
-- [x] 3.2 Production build succeeds: `npm run build`
-- [x] 3.3 Existing suite still green: `npm run test:run` — 19 files, 218/218
+- [x] 3.1 Type checking and linting pass: `npm run lint` — 0 errors on this phase's files; `astro check` 0 errors over 122 files — 0f4dae4
+- [x] 3.2 Production build succeeds: `npm run build` — 0f4dae4
+- [x] 3.3 Existing suite still green: `npm run test:run` — 19 files, 218/218 — 0f4dae4
 
 #### Manual
 
@@ -763,9 +763,9 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [ ] 4.1 Type checking and linting pass: `npm run lint`
-- [ ] 4.2 Production build succeeds: `npm run build`
-- [ ] 4.3 Existing suite still green: `npm run test:run`
+- [x] 4.1 Type checking and linting pass: `npm run lint` — 0 errors repo-wide; `astro check` 0 errors over 127 files
+- [x] 4.2 Production build succeeds: `npm run build`
+- [x] 4.3 Existing suite still green: `npm run test:run` — 21 files, 238/238
 
 #### Manual
 

@@ -14,7 +14,10 @@ import { FULL_DAY_HOURS } from "@/lib/hours";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { useRovingRadioGroup } from "@/components/hooks/useRovingRadioGroup";
+import { rawTimeRange } from "@/lib/absence-grid-cell";
+import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
+import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
 import type { Absence, AbsenceType, Employee } from "@/types";
 
 /**
@@ -81,27 +84,55 @@ function HoursColumn({ id, label, fieldName, value, onValueChange, onBlur }: Hou
   );
 }
 
-interface AbsenceFormDialogProps {
+interface AbsenceFormDialogBaseProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  day: Date;
-  existingAbsence: Absence | null;
   absenceTypes: AbsenceType[];
   employees: Employee[];
   currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
   targetEmployee: Employee;
 }
 
-export function AbsenceFormDialog({
-  open,
-  onOpenChange,
-  day,
-  existingAbsence,
-  absenceTypes,
-  employees,
-  currentEmployee,
-  targetEmployee,
-}: AbsenceFormDialogProps) {
+interface AbsenceFormDialogSingleProps extends AbsenceFormDialogBaseProps {
+  mode?: "single";
+  day: Date;
+  existingAbsence: Absence | null;
+}
+
+interface AbsenceFormDialogRangeProps extends AbsenceFormDialogBaseProps {
+  mode: "range";
+  /** Every non-weekend day the drag covers, in calendar order. Weekends are already dropped. */
+  rangeDays: RangeDay[];
+  /**
+   * The subset of `rangeDays` that already holds an entry, each carrying that entry.
+   *
+   * Computed by the grid from the absences it already renders, which is why the confirmation
+   * costs no request: at mouse-release the grid already knows every day it is about to replace.
+   */
+  occupiedDays: OccupiedRangeDay[];
+}
+
+/**
+ * A discriminated union rather than an optional second date, so the type system rules out the
+ * combination that has no meaning: a range plus an `existingAbsence`. Range mode is always
+ * create-only — there is no "edit these five days" — and that is what keeps the branching inside
+ * the component small enough to be worth having one component instead of two.
+ *
+ * `mode` is optional on the single arm so every existing single-day call site stays valid.
+ */
+type AbsenceFormDialogProps = AbsenceFormDialogSingleProps | AbsenceFormDialogRangeProps;
+
+export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
+  const { open, onOpenChange, absenceTypes, employees, currentEmployee, targetEmployee } = props;
+
+  const isRange = props.mode === "range";
+  // Range mode is create-only, so `existingAbsence` is null there by construction. Every seeding
+  // expression below already reads through it, which is what makes the range form open blank
+  // without a second code path — and what keeps the delete button's existing `existingAbsence &&`
+  // guard sufficient rather than needing a mode check of its own.
+  const existingAbsence = props.mode === "range" ? null : props.existingAbsence;
+  const rangeDays = props.mode === "range" ? props.rangeDays : [];
+  const occupiedDays = props.mode === "range" ? props.occupiedDays : [];
   // Defensive: an existing entry whose type is not partial-day eligible opens as full-day,
   // so the form can never resubmit a combination the API rejects. No such data is expected.
   const existingAllowsPartialDay = typeAllowsPartialDay(
@@ -131,12 +162,40 @@ export function AbsenceFormDialog({
   // arrives the state no longer says whether this tap was opening or closing. Sample it at press.
   const hoursHelpOpenAtPressRef = useRef(false);
 
-  const dateStr = `${day.getFullYear().toString()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-  const dateHeading = day.toLocaleDateString("pl-PL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  // Which step of the range dialog is showing. One `step` state swapping the body and the footer
+  // inside the *same* Radix Dialog rather than opening a nested one — two stacked Radix dialogs
+  // fight over the focus trap, and the confirmation is a step of this decision, not a new one.
+  // Always "form" in single-day mode, where nothing can move it.
+  const [step, setStep] = useState<"form" | "confirm">("form");
+
+  const dateStr =
+    props.mode === "range"
+      ? ""
+      : `${props.day.getFullYear().toString()}-${String(props.day.getMonth() + 1).padStart(2, "0")}-${String(props.day.getDate()).padStart(2, "0")}`;
+
+  // The span, in the prototype's `dayFrom–dayTo MONTH` shape, plus the working-day count — the
+  // count is what tells the user the weekends they dragged over were dropped rather than included.
+  // A selection cannot leave one rendered month, so the month is named once.
+  const rangeHeading = (() => {
+    if (rangeDays.length === 0) return "";
+    const first = rangeDays[0].date;
+    const last = rangeDays[rangeDays.length - 1].date;
+    const span =
+      first.getTime() === last.getTime()
+        ? first.toLocaleDateString("pl-PL", { day: "numeric", month: "long" })
+        : `${first.getDate().toString()}–${last.toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}`;
+    const count = rangeDays.length;
+    return `${span} · ${count.toString()} ${pluralPl(count, "dzień roboczy", "dni robocze", "dni roboczych")}`;
+  })();
+
+  const dateHeading =
+    props.mode === "range"
+      ? rangeHeading
+      : props.day.toLocaleDateString("pl-PL", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        });
 
   const selectedType = absenceTypes.find((t) => t.id === absenceTypeId);
   const canBePartialDay = typeAllowsPartialDay(selectedType?.name);
@@ -263,11 +322,25 @@ export function AbsenceFormDialog({
     selectSubstitute,
   );
 
+  // Pressing „Zapisz". In range mode a range that crosses existing entries stops here and asks
+  // first; a range over empty days writes straight through, because there is nothing to warn about
+  // and an unconditional confirmation would train the user to click past it.
+  //
+  // The confirmation is deliberately the *second* step rather than a gate before the form: asking
+  // someone to approve an overwrite before they have decided what replaces it is asking them to
+  // approve nothing in particular.
   const handleSave = async () => {
+    if (isRange && step === "form" && occupiedDays.length > 0) {
+      setStep("confirm");
+      return;
+    }
+    await submitAbsence();
+  };
+
+  const submitAbsence = async () => {
     setIsSubmitting(true);
     const sharedFields = {
       absence_type_id: absenceTypeId,
-      date: dateStr,
       is_full_day: isFullDay,
       start_time: isFullDay ? null : startTime,
       end_time: isFullDay ? null : endTime,
@@ -275,27 +348,44 @@ export function AbsenceFormDialog({
       substitute_employee_id: substituteEmployeeId,
     };
     try {
-      const res = existingAbsence
-        ? await fetch(`/api/absences/${existingAbsence.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(sharedFields),
-          })
-        : await fetch("/api/absences", {
+      // One request for the whole range, against the route whose conflict behaviour is overwrite.
+      // The single-day arms keep their exact previous behaviour, POST and PATCH alike.
+      const res = isRange
+        ? await fetch("/api/absences/bulk", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields }),
-          });
+            body: JSON.stringify({
+              employee_id: targetEmployee.id,
+              dates: rangeDays.map((d) => d.key),
+              ...sharedFields,
+            }),
+          })
+        : existingAbsence
+          ? await fetch(`/api/absences/${existingAbsence.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...sharedFields, date: dateStr }),
+            })
+          : await fetch("/api/absences", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields, date: dateStr }),
+            });
       if (res.ok) {
         window.location.reload();
       } else {
         const data = (await res.json()) as { error?: string };
         toast.error(data.error ?? "Nie udało się zapisać. Spróbuj ponownie.");
         setIsSubmitting(false);
+        // Back to the form on failure: the confirm step describes a write that did not happen, and
+        // leaving it up would offer a retry of an overwrite whose error the user cannot see behind
+        // the summary.
+        setStep("form");
       }
     } catch {
       toast.error("Nie udało się zapisać. Spróbuj ponownie.");
       setIsSubmitting(false);
+      setStep("form");
     }
   };
 
@@ -322,9 +412,11 @@ export function AbsenceFormDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">
-            {existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
+            {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
           </DialogTitle>
-          <p className="text-muted-foreground text-[13px] capitalize">{dateHeading}</p>
+          {/* `capitalize` only on the single-day heading, which starts with a weekday name. The
+              range heading starts with a digit, and capitalizing it would title-case the month. */}
+          <p className={cn("text-muted-foreground text-[13px]", !isRange && "capitalize")}>{dateHeading}</p>
           {targetEmployee.id !== currentEmployee.id && (
             <p className="text-primary text-[13px] font-bold">
               {targetEmployee.first_name} {targetEmployee.last_name}
@@ -332,7 +424,46 @@ export function AbsenceFormDialog({
           )}
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
+        {step === "confirm" && (
+          <div className="grid gap-3 py-2">
+            <p className="text-sm text-black">
+              Czy na pewno chcesz nadpisać {occupiedDays.length.toString()}{" "}
+              {pluralPl(occupiedDays.length, "istniejący wpis", "istniejące wpisy", "istniejących wpisów")}? Poniższe
+              dni zostaną zastąpione, a ich dotychczasowe godziny przepadną.
+            </p>
+            {/* Each affected day named, not just counted. Replacing a partial-day training entry
+                with a full-day urlop destroys its hours, and „3 wpisy" says neither which three nor
+                what they hold. The days come from a prop the grid computed off the absences it
+                already renders, so this list costs no request.
+
+                Hours read through `rawTimeRange`, the ungated view — the same reasoning as the
+                cell's tooltip. This names what is about to be destroyed, so a legacy row carrying
+                hours on a type the product now forbids them on must still show them. */}
+            <ul className="border-line divide-line max-h-[240px] divide-y overflow-y-auto rounded-[10px] border text-[13px]">
+              {occupiedDays.map(({ key, date, absence }) => {
+                const type = absenceTypes.find((t) => t.id === absence.absence_type_id);
+                const hours = rawTimeRange(absence);
+                return (
+                  <li key={key} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="shrink-0 font-bold text-black">
+                      {date.toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
+                    </span>
+                    <span className="text-muted-foreground min-w-0 flex-1 truncate text-right">
+                      {type?.name ?? "nieznany typ"}
+                    </span>
+                    <span className="text-muted-foreground shrink-0">{hours || "cały dzień"}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Hidden rather than unmounted on the confirm step. `display: none` takes it out of the
+            accessibility tree and out of the tab order just as unmounting would, but leaves the
+            DOM — and the roving-radiogroup tab indices — exactly as the user left them, so
+            „Anuluj" returns to the form they filled rather than to a freshly mounted one. */}
+        <div className={cn("grid gap-4 py-2", step === "confirm" && "hidden")}>
           <div className="grid gap-1.5">
             <Label id="absence-type-label">Typ nieobecności</Label>
             <div
@@ -564,30 +695,53 @@ export function AbsenceFormDialog({
         </div>
 
         <DialogFooter>
-          {existingAbsence && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isSubmitting}
-              className="mr-auto"
-            >
-              Usuń
-            </Button>
+          {step === "confirm" ? (
+            <>
+              {/* „Anuluj" here steps back to the form rather than closing the dialog — the user is
+                  declining the overwrite, not abandoning the absence they just described. */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setStep("form");
+                }}
+                disabled={isSubmitting}
+              >
+                Anuluj
+              </Button>
+              {/* Reuses `isSubmitting`, so a double-press cannot fire two bulk writes. */}
+              <Button type="button" variant="destructive" onClick={submitAbsence} disabled={isSubmitting}>
+                {isSubmitting ? "Zapisywanie…" : "Nadpisz i zapisz"}
+              </Button>
+            </>
+          ) : (
+            <>
+              {existingAbsence && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="mr-auto"
+                >
+                  Usuń
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false);
+                }}
+                disabled={isSubmitting}
+              >
+                Anuluj
+              </Button>
+              <Button type="button" onClick={handleSave} disabled={saveDisabled}>
+                Zapisz
+              </Button>
+            </>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-            }}
-            disabled={isSubmitting}
-          >
-            Anuluj
-          </Button>
-          <Button type="button" onClick={handleSave} disabled={saveDisabled}>
-            Zapisz
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
