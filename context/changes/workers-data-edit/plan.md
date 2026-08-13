@@ -507,14 +507,14 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Automated
 
-- [x] 3.1 Lint passes: `npm run lint`
-- [x] 3.2 Type checking passes: `npx astro check`
-- [x] 3.3 `src/tests/api/employees/email.test.ts` passes in full: `npm run test:run`
-- [x] 3.4 Regular-employee-gets-403 case passes on both verbs (test-plan Risk #4)
-- [x] 3.5 Pre-existing suites still green, including all holiday-balance route tests
-- [x] 3.6 Build succeeds: `npm run build`
-- [x] 3.7 A second consecutive `npm run test:run` is green (no orphaned auth users)
-- [x] 3.8 `src/tests/api/employees/password.test.ts` passes in full, including a real sign-in with the reset password
+- [x] 3.1 Lint passes: `npm run lint` — 7119982
+- [x] 3.2 Type checking passes: `npx astro check` — 7119982
+- [x] 3.3 `src/tests/api/employees/email.test.ts` passes in full: `npm run test:run` — 7119982
+- [x] 3.4 Regular-employee-gets-403 case passes on both verbs (test-plan Risk #4) — 7119982
+- [x] 3.5 Pre-existing suites still green, including all holiday-balance route tests — 7119982
+- [x] 3.6 Build succeeds: `npm run build` — 7119982
+- [x] 3.7 A second consecutive `npm run test:run` is green (no orphaned auth users) — 7119982
+- [x] 3.8 `src/tests/api/employees/password.test.ts` passes in full, including a real sign-in with the reset password — 7119982
 
 #### Manual
 
@@ -533,12 +533,12 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Automated
 
-- [ ] 4.1 Lint passes: `npm run lint`
-- [ ] 4.2 Type checking passes: `npx astro check`
-- [ ] 4.3 Existing suite still green: `npm run test:run`
-- [ ] 4.4 Build succeeds: `npm run build`
-- [ ] 4.5 E2E suite still passes: `npm run test:e2e` (the `getByLabel("Hasło", { exact: true })` locator still resolves uniquely)
-- [ ] 4.6 `Topbar` reads `Astro.locals.userRole`; no `role` prop remains on the `dashboard.astro` mount
+- [x] 4.1 Lint passes: `npm run lint`
+- [x] 4.2 Type checking passes: `npx astro check`
+- [x] 4.3 Existing suite still green: `npm run test:run`
+- [x] 4.4 Build succeeds: `npm run build`
+- [x] 4.5 E2E suite still passes: `npx playwright test` (the `getByLabel("Hasło", { exact: true })` locator still resolves uniquely) — 6/6 green, but note this suite targets the *deployed* app (`playwright.config.ts:23`), so it must be re-run after deploying Phase 4 for the locator check to actually exercise the new dialogs
+- [x] 4.6 `Topbar` reads `Astro.locals.userRole`; no `role` prop remains on the `dashboard.astro` mount
 
 #### Manual
 

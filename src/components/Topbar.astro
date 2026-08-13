@@ -1,9 +1,12 @@
 ---
-interface Props {
-  role?: "employee" | "moderator";
-}
-const { user } = Astro.locals;
-const { role } = Astro.props;
+import { AccountMenu } from "@/components/account/AccountMenu";
+
+// `role` used to arrive as a prop from dashboard.astro while middleware.ts:31 already computed
+// `locals.userRole` on every request and nothing read it. That is exactly the case
+// context/foundation/lessons.md was written about: this component already does one
+// Astro.locals lookup (`user`), so the related lookup belongs here too — a prop would silently
+// drop the moderator badge the first time the bar is mounted on a new page.
+const { user, userRole } = Astro.locals;
 ---
 
 <div class="bg-primary text-primary-foreground flex h-14 items-center justify-between px-8 text-sm">
@@ -11,8 +14,8 @@ const { role } = Astro.props;
     user ? (
       <>
         <div class="flex items-center gap-3">
-          <span>{user.email}</span>
-          {role === "moderator" && (
+          <AccountMenu client:load email={user.email ?? ""} />
+          {userRole === "moderator" && (
             <span class="bg-accent text-accent-foreground rounded-full px-2.5 py-[3px] text-[11px] font-bold tracking-[0.06em] uppercase">
               Moderator
             </span>

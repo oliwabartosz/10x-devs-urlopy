@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { KeyRound, Mail, Users } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
@@ -142,27 +142,37 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
                       >
                         Edytuj
                       </Button>
-                      {/* Short labels deliberately: the sheet is 560 px and this row now
-                          carries four actions. Every viewer of this sheet is a moderator
-                          (dashboard.astro gates the whole mount), so no per-button role
-                          check is needed and no control here is dead. */}
+                      {/* Icon-only deliberately: the sheet is 560 px and this row carries
+                          four actions, which as text labels crowded the name out. The two
+                          destructive-adjacent verbs (Edytuj, Dezaktywuj) keep their words;
+                          these two credential actions carry `aria-label` + `title` so they
+                          are named for assistive tech and on hover.
+                          Every viewer of this sheet is a moderator (dashboard.astro gates
+                          the whole mount), so no per-button role check is needed and no
+                          control here is dead. */}
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        aria-label={`Zmień e-mail — ${emp.first_name} ${emp.last_name}`}
+                        title="Zmień e-mail"
+                        className="size-8"
                         onClick={() => {
                           setEmailTarget(emp);
                         }}
                       >
-                        E-mail
+                        <Mail className="size-4" />
                       </Button>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        aria-label={`Zmień hasło — ${emp.first_name} ${emp.last_name}`}
+                        title="Zmień hasło"
+                        className="size-8"
                         onClick={() => {
                           setPasswordTarget(emp);
                         }}
                       >
-                        Hasło
+                        <KeyRound className="size-4" />
                       </Button>
                       {emp.id !== currentEmployee.id && (
                         <Button
