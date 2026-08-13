@@ -8,6 +8,7 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { extractPgErrorCode } from "@/lib/db-errors";
+import { isProtectedAdmin } from "@/lib/employees";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
 
@@ -154,10 +155,10 @@ export const POST: APIRoute = async (context) => {
     caller.role === "moderator"
       ? eq(employees.id, employee_id)
       : and(eq(employees.id, employee_id), isNull(employees.deleted_at));
-  let targetRow: { id: string } | undefined;
+  let targetRow: { id: string; is_system: boolean } | undefined;
   try {
     targetRow = await db
-      .select({ id: employees.id })
+      .select({ id: employees.id, is_system: employees.is_system })
       .from(employees)
       .where(targetCond)
       .then((r) => r[0]);
@@ -167,6 +168,11 @@ export const POST: APIRoute = async (context) => {
   }
   if (!targetRow) {
     return json({ error: "Pracownik nie został znaleziony." }, 404);
+  }
+  // The technical admin is immutable through every API path (RLS is bypassed on the
+  // service-role connection). This route was the last mutation path missing the guard.
+  if (isProtectedAdmin(targetRow)) {
+    return json({ error: "Nie można modyfikować tego konta." }, 403);
   }
 
   // Korekta is moderator-only, enforced by omitting the column rather than by rejecting the

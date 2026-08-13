@@ -20,6 +20,13 @@ export default defineConfig({
     // not by network latency.
     testTimeout: 60_000,
     hookTimeout: 60_000,
+    // Supabase's session pooler allows 15 clients. Every route-level suite holds a test pool
+    // and every handler invocation opens another (see the note in src/tests/helpers/astro-env.ts),
+    // so running suite files in parallel exhausts the budget and requests come back as 503
+    // "Database error" ((EMAXCONNSESSION) max clients reached) — indistinguishable from a real
+    // route defect, and dependent on how many suites happen to exist. Serialize the files: these
+    // suites are network-bound, so the wall-clock cost is small next to the false failures.
+    fileParallelism: false,
     coverage: {
       provider: "v8",
     },
