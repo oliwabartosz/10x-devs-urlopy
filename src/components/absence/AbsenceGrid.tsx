@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import type { Employee, Absence, AbsenceType } from "@/types";
 import { AbsenceFormDialog } from "./AbsenceFormDialog";
 import {
@@ -16,6 +16,15 @@ import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { initialsOf } from "@/lib/initials";
 import { rawTimeRange, cellTimeRange } from "@/lib/absence-grid-cell";
+import {
+  dateKey,
+  expandSpanToWeekdays,
+  isCellSelected,
+  isRangeGesture,
+  partitionRange,
+  selectionSpan,
+} from "@/lib/absence-range";
+import type { DragSelection, OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
 import { cn } from "@/lib/utils";
 
 interface AbsenceGridProps {
@@ -95,35 +104,91 @@ export default function AbsenceGrid({
     };
   }, []);
 
-  const [dialogState, setDialogState] = useState<{
-    day: Date;
-    absence: Absence | null;
-    targetEmployee: Employee;
-  } | null>(null);
+  type DialogState =
+    | { kind: "single"; day: Date; absence: Absence | null; targetEmployee: Employee }
+    | { kind: "range"; rangeDays: RangeDay[]; occupiedDays: OccupiedRangeDay[]; targetEmployee: Employee };
+
+  const [dialogState, setDialogState] = useState<DialogState | null>(null);
+
+  // The drag in progress, or null when idle. Holds the anchored column plus the two ends in the
+  // order they happened; every question asked of it goes to @/lib/absence-range, which is where
+  // this gesture's arithmetic can actually be tested.
+  const [drag, setDrag] = useState<DragSelection | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const days = getDaysInMonth(year, month);
+  // Everything below is memoized because a drag re-renders this component on every `mouseenter`,
+  // and all of it used to be rebuilt per render — three Maps and two Intl.DateTimeFormat
+  // instances. The frequency is bounded by row crossings rather than pixels (a full-month drag is
+  // ~31 events, not thousands), which is why this is the proportionate fix and per-cell React.memo
+  // is not part of this change.
+  const days = useMemo(() => getDaysInMonth(year, month), [year, month]);
 
-  const absenceMap = new Map<string, Absence>();
-  for (const absence of absences) {
-    absenceMap.set(`${absence.employee_id}_${absence.date}`, absence);
-  }
+  const absenceMap = useMemo(() => {
+    const map = new Map<string, Absence>();
+    for (const absence of absences) {
+      map.set(`${absence.employee_id}_${absence.date}`, absence);
+    }
+    return map;
+  }, [absences]);
 
-  const absenceTypeMap = new Map<number, AbsenceType>();
-  for (const type of absenceTypes) {
-    absenceTypeMap.set(type.id, type);
-  }
+  const absenceTypeMap = useMemo(() => {
+    const map = new Map<number, AbsenceType>();
+    for (const type of absenceTypes) {
+      map.set(type.id, type);
+    }
+    return map;
+  }, [absenceTypes]);
 
   // Substitute names come off the already-filtered employees prop, never a fresh query,
   // so the is_system admin stays invisible (context/changes/admin-bootstrap/plan.md).
-  const employeeNameMap = new Map<string, string>();
-  for (const emp of employees) {
-    employeeNameMap.set(emp.id, `${emp.first_name} ${emp.last_name}`);
-  }
+  const employeeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const emp of employees) {
+      map.set(emp.id, `${emp.first_name} ${emp.last_name}`);
+    }
+    return map;
+  }, [employees]);
 
-  const weekdayFmt = new Intl.DateTimeFormat("pl-PL", { weekday: "short" });
-  const dateFmt = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+  const weekdayFmt = useMemo(() => new Intl.DateTimeFormat("pl-PL", { weekday: "short" }), []);
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" }),
+    [],
+  );
+
+  // Commit on a **window**-level mouseup, not on the cell. A release over the legend, the page
+  // margin or another column must still commit — otherwise the drag is stranded and its highlight
+  // follows the cursor until the next click. Registered only while a drag is live, so the idle
+  // grid carries no listener; re-registering per `mouseenter` is one cheap swap per row crossed.
+  useEffect(() => {
+    if (!drag) return;
+
+    const handleMouseUp = () => {
+      setDrag(null);
+
+      // One distinct day is not a range: do nothing and let the browser's own `click` reach the
+      // cell's existing onClick, so single-cell click-to-add is untouched by this gesture.
+      if (!isRangeGesture(drag)) return;
+
+      const targetEmployee = orderedEmployees.find((e) => e.id === drag.employeeId);
+      if (!targetEmployee) return;
+
+      const dates = expandSpanToWeekdays(days, selectionSpan(drag));
+      if (dates.length === 0) return;
+
+      const rangeDays: RangeDay[] = dates.map((date) => ({ date, key: dateKey(date) }));
+      // The confirmation's source of truth, computed from the absences already rendered — no
+      // pre-flight request is needed to know which days the range is about to replace.
+      const { occupied } = partitionRange(dates, (key) => absenceMap.get(`${drag.employeeId}_${key}`));
+
+      setDialogState({ kind: "range", rangeDays, occupiedDays: occupied, targetEmployee });
+    };
+
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [drag, days, absenceMap, orderedEmployees]);
 
   function buildTooltip(emp: Employee, date: Date, type: AbsenceType, absence: Absence): string {
     const substituteName = absence.substitute_employee_id
@@ -239,7 +304,12 @@ export default function AbsenceGrid({
                 </span>
               ))}
             </div>
-            <span className="text-muted-foreground text-xs">Kliknij komórkę, aby dodać.</span>
+            {/* Both verbs stated. The second half is the prototype's own hint
+                (10xUrlopy.dc.html:101), deliberately stripped by the predecessor change pending
+                this one (huge-ui-ux-improvement/plan.md:498) and restored here with the gesture. */}
+            <span className="text-muted-foreground text-xs">
+              Kliknij komórkę, aby dodać. Przeciągnij, aby zaznaczyć zakres dni.
+            </span>
           </div>
         )}
 
@@ -251,8 +321,13 @@ export default function AbsenceGrid({
               behaviour: without it ten columns would silently compress below 120px instead of
               overflowing into the wrapper's scroll. `w-full` on top restores the stretch-to-fill
               when the team is small. */}
+          {/* `select-none` because a mousedown-drag across rows otherwise selects the day numbers
+              and weekday labels as text, which fights the range highlight visually and leaves a
+              stray selection behind on release. On the table rather than per cell: it is one rule
+              about the whole grid, and it covers the header names a column drag sweeps over too.
+              The prototype does the same per cell (10xUrlopy.dc.html:818). */}
           <table
-            className="w-full table-fixed border-collapse text-sm"
+            className="w-full table-fixed border-collapse text-sm select-none"
             style={{ minWidth: `${(132 + orderedEmployees.length * 120).toString()}px` }}
           >
             <thead>
@@ -280,7 +355,7 @@ export default function AbsenceGrid({
               </tr>
             </thead>
             <tbody>
-              {days.map((date) => {
+              {days.map((date, dayIndex) => {
                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                 const dateStr = `${date.getFullYear().toString()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
@@ -330,19 +405,65 @@ export default function AbsenceGrid({
                               .join(", ")
                           : "";
 
+                      // Selection never lights up a cell a range could not write. `clickable`
+                      // already excludes weekends, other people's columns and deactivated
+                      // employees, so gating the highlight on it is the same promise the hover
+                      // tint makes: no affordance a cell cannot honour.
+                      const selected = clickable && isCellSelected(drag, emp.id, dayIndex);
+
                       return (
                         <td
                           key={emp.id}
+                          // The repo's first data-testid. Cells carry no accessible name and no
+                          // text but a pale `+`, so "day 8 was written and day 9 was skipped" —
+                          // this feature's core claim — is otherwise not assertable at all.
+                          // Documented in tests/e2e/e2e-rules.md, which permits testids exactly
+                          // where no accessible name exists.
+                          data-testid={`absence-cell-${emp.id}-${dateStr}`}
                           // Hover only where a click does something — weekends are excluded by
                           // `clickable`, so they never gain an affordance they cannot honour.
                           className={cn(
                             "border-line-strong h-[34px] border-r border-b p-[3px]",
                             clickable ? "cursor-pointer hover:bg-[#eef3f8]" : "cursor-default",
+                            // The prototype's fill plus inset ring (10xUrlopy.dc.html:816-817).
+                            // The navy comes from the --primary token rather than the literal
+                            // #072143 the prototype hard-codes; the fill has no token of its own,
+                            // so it stays a literal like the neighbouring hover tint.
+                            selected && "ring-primary bg-[#d5ebf5] ring-2 ring-inset",
                           )}
+                          // Handlers are withheld rather than no-op'd where a range cannot be
+                          // drawn, following this file's existing `onClick={clickable ? … :
+                          // undefined}` form — a weekend cell is neither an anchor nor an
+                          // extension target because it has nothing to extend with.
+                          onMouseDown={
+                            clickable
+                              ? () => {
+                                  setDrag({ employeeId: emp.id, anchorIndex: dayIndex, currentIndex: dayIndex });
+                                }
+                              : undefined
+                          }
+                          onMouseEnter={
+                            clickable
+                              ? () => {
+                                  // Only within the anchored column: this is what stops a
+                                  // horizontal drag spreading into a colleague's days.
+                                  setDrag((current) =>
+                                    current?.employeeId === emp.id && current.currentIndex !== dayIndex
+                                      ? { ...current, currentIndex: dayIndex }
+                                      : current,
+                                  );
+                                }
+                              : undefined
+                          }
                           onClick={
                             clickable
                               ? () => {
-                                  setDialogState({ day: date, absence: absence ?? null, targetEmployee: emp });
+                                  setDialogState({
+                                    kind: "single",
+                                    day: date,
+                                    absence: absence ?? null,
+                                    targetEmployee: emp,
+                                  });
                                 }
                               : undefined
                           }
@@ -402,7 +523,10 @@ export default function AbsenceGrid({
           ) : null}
         </DragOverlay>
 
-        {dialogState && (
+        {/* The `key` forces a fresh mount per selection so a second dialog never inherits the
+            first one's form state. A range keys off its own span for the same reason — without it
+            two different ranges in one column would reuse one mounted form. */}
+        {dialogState?.kind === "single" && (
           <AbsenceFormDialog
             key={`${dialogState.day.toLocaleDateString("sv")}_${dialogState.absence?.id ?? "new"}`}
             open
@@ -411,6 +535,22 @@ export default function AbsenceGrid({
             }}
             day={dialogState.day}
             existingAbsence={dialogState.absence}
+            absenceTypes={absenceTypes}
+            employees={employees}
+            currentEmployee={currentEmployee}
+            targetEmployee={dialogState.targetEmployee}
+          />
+        )}
+        {dialogState?.kind === "range" && (
+          <AbsenceFormDialog
+            key={`range_${dialogState.targetEmployee.id}_${dialogState.rangeDays[0].key}_${dialogState.rangeDays[dialogState.rangeDays.length - 1].key}`}
+            open
+            onOpenChange={(open) => {
+              if (!open) setDialogState(null);
+            }}
+            mode="range"
+            rangeDays={dialogState.rangeDays}
+            occupiedDays={dialogState.occupiedDays}
             absenceTypes={absenceTypes}
             employees={employees}
             currentEmployee={currentEmployee}
