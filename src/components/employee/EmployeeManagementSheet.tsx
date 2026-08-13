@@ -5,6 +5,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
+import { ChangeEmailDialog } from "./ChangeEmailDialog";
+import { ResetPasswordDialog } from "./ResetPasswordDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
@@ -70,6 +72,8 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
+  const [emailTarget, setEmailTarget] = useState<Employee | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
   const activeEmployees = employees.filter((e) => !e.deleted_at);
@@ -138,6 +142,28 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
                       >
                         Edytuj
                       </Button>
+                      {/* Short labels deliberately: the sheet is 560 px and this row now
+                          carries four actions. Every viewer of this sheet is a moderator
+                          (dashboard.astro gates the whole mount), so no per-button role
+                          check is needed and no control here is dead. */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEmailTarget(emp);
+                        }}
+                      >
+                        E-mail
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setPasswordTarget(emp);
+                        }}
+                      >
+                        Hasło
+                      </Button>
                       {emp.id !== currentEmployee.id && (
                         <Button
                           size="sm"
@@ -187,6 +213,26 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
           employee={editTarget}
           year={balanceYear}
           currentRole={currentEmployee.role}
+        />
+      )}
+      {emailTarget && (
+        <ChangeEmailDialog
+          key={emailTarget.id}
+          open={!!emailTarget}
+          onOpenChange={(o) => {
+            if (!o) setEmailTarget(null);
+          }}
+          employee={emailTarget}
+        />
+      )}
+      {passwordTarget && (
+        <ResetPasswordDialog
+          key={passwordTarget.id}
+          open={!!passwordTarget}
+          onOpenChange={(o) => {
+            if (!o) setPasswordTarget(null);
+          }}
+          employee={passwordTarget}
         />
       )}
       {deleteTarget && (

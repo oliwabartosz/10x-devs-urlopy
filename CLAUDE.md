@@ -72,7 +72,13 @@ Set production secrets (run once after the Worker exists):
 ```bash
 npx wrangler secret put SUPABASE_URL
 npx wrangler secret put SUPABASE_KEY
+npx wrangler secret put SUPABASE_SERVICE_KEY
 ```
+
+`SUPABASE_SERVICE_KEY` is declared `optional: true` in `astro.config.mjs`, so a missing value fails at
+runtime rather than at build time: every route that calls `createAdminClient()` returns 503
+`"Admin client is not configured"`. That covers employee creation and the `employees/[id]/email`
+and `employees/[id]/password` sub-resources. Verify with `npx wrangler secret list --name urlopy`.
 
 **Rollback** — use the Cloudflare dashboard:
 `dash.cloudflare.com` → Workers & Pages → urlopy → Deployments → three-dot menu → "Rollback to this deployment"

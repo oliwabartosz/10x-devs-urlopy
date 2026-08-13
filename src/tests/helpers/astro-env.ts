@@ -19,3 +19,7 @@ const directUrl = process.env.DATABASE_URL_DIRECT ?? "";
 export const DATABASE_URL = directUrl ? `${directUrl}${directUrl.includes("?") ? "&" : "?"}max=1&idle_timeout=1` : "";
 export const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 export const SUPABASE_KEY = process.env.SUPABASE_KEY ?? "";
+// Without this, any route test importing a handler that calls `createAdminClient()` gets
+// `undefined` here, hence a null client, hence a 503 "Admin client is not configured" that
+// reads as a real defect rather than a missing stub export.
+export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";

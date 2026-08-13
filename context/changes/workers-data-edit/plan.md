@@ -81,7 +81,7 @@ Verification: the automated and manual criteria listed per phase below.
 - **No confirmation e-mail to the worker on an address change**, and no notification. `GOTRUE_MAILER_NOTIFICATIONS_EMAIL_CHANGED_ENABLED` defaults to `false`; leave it.
 - **No session revocation on e-mail change.** The worker's cookie session keeps working; the JWT's `email` claim goes stale until refresh. (Password change *does* revoke others — different operation, different answer.)
 - **No self-service account creation, no password *reset* by e-mail link.** The signup surface was deleted on purpose (`admin-bootstrap/plan.md:221`); do not reintroduce it. This is password *change* by an already-authenticated user only.
-- **No moderator-initiated password reset for a worker.** Not requested.
+- ~~**No moderator-initiated password reset for a worker.** Not requested.~~ **Reversed mid-implementation (2026-08-13), after Phase 2 landed.** It was subsequently requested — *"Moderator could also change the password if user forgets"* — and is now Phase 3 item 6. The reversal is cheap to build (the same service-role client, the same `[id]` sub-resource, the same guard order as the e-mail write) but it is a materially larger authority grant than the e-mail change, so it is recorded here rather than folded in silently. The consequence, stated with eyes open and compounding the no-audit-trail decision above: **a moderator can set any worker's password, thereby gaining full access to that worker's account, leaving no record of who did it or when.** The worker's remedy is Phase 4's self-service change — which is an argument for keeping Phase 4 in scope, not dropping it now that resets exist. The alternative of a server-generated one-time password (moderator relays it, never chooses it) was offered and declined.
 - **No `dropdown-menu`, no `alert-dialog`, no new shadcn primitives.** Work within `button`, `dialog`, `input`, `label`, `popover`, `select`, `sheet`, `sonner`, `tooltip`.
 - **No change to `window.location.reload()` after mutations.** It is a recorded project-wide decision (`huge-ui-ux-improvement/plan.md:105`). Its cost is acknowledged under Critical Implementation Details.
 - **No shared auth-guard helper extraction.** The ~25-line block is duplicated across five routes; refactoring it is a separate change.
@@ -223,11 +223,13 @@ The two-outcome message is user-facing Polish and must state what to do next, e.
 
 ---
 
-## Phase 3: Moderator reads and changes a worker's login e-mail
+## Phase 3: Moderator reads and changes a worker's login e-mail and password
 
 ### Overview
 
 Build the read path that does not exist, then the write. New sub-resource route `src/pages/api/employees/[id]/email.ts` with `GET` and `PATCH`, both service-role. A separate `ChangeEmailDialog` triggered from the sheet row. First route-level tests for the employee endpoint family.
+
+Item 6 (password reset) was **added mid-implementation** — see the reversed entry under *What We're NOT Doing*. It is a second sub-resource, `[id]/password.ts`, sharing item 2's guard order verbatim.
 
 ### Prerequisites
 
@@ -281,6 +283,22 @@ Note the semantics this relies on: `admin.updateUserById` writes `users.email` d
 
 **Contract**: Cases — unauthenticated → 401; regular employee caller → 403 on both verbs (**this is Risk #4**); moderator `GET` returns the target's real address; moderator `PATCH` changes it, verified by reading it back through `GET`; `PATCH` with a malformed address → 400; `PATCH` to an address already in use → 409 with the Polish message; `PATCH` on an `is_system` target → 403; `PATCH` on a soft-deleted target → 409; `GET`/`PATCH` on a non-existent uuid → 404; a non-uuid id → 400. Moderator fixtures follow `korekta-gate.test.ts:66-67` (`UPDATE employees SET role = 'moderator'`). Every created auth user must go through `teardownTestEmployee` — these tests mutate real Supabase Auth records.
 
+#### 6. Password-reset route, dialog and sheet action
+
+**Files**: `src/pages/api/employees/[id]/password.ts` (new), `src/components/employee/ResetPasswordDialog.tsx` (new), `src/components/employee/EmployeeManagementSheet.tsx`, `src/tests/api/employees/password.test.ts` (new)
+
+**Intent**: Let a moderator set a worker's password when that worker has forgotten it. Added mid-implementation; the reversal it depends on is recorded under *What We're NOT Doing*.
+
+**Contract**: `PATCH` only, on a second sub-resource beside `email.ts` rather than a verb on it — the two are independent operations and a moderator resetting a password must not have to restate an address. Guard order is item 2's, verbatim and in the same sequence: 401 → caller lookup (503 / 403) → `caller.role !== "moderator"` → 403 `"Forbidden"` → `z.uuid()` on `params.id` → 400 → target lookup → 404 → `isProtectedAdmin` → 403 `"Nie można modyfikować tego konta."` → `deleted_at !== null` → 409 `"Cannot update a deactivated employee"` → `createAdminClient()` null → 503.
+
+Body `{ password: z.string().min(8) }`, the same floor as `EmployeeCreateSchema` (`employees/index.ts:76`) and as Phase 4's self-service route — **not** the 6 in `supabase/config.toml:175`. Malformed JSON → 400 `"Invalid JSON body"`; schema failure → 400 with `parsed.error.issues[0]?.message`. Call `adminClient.auth.admin.updateUserById(user_id, { password })`. Any auth error → 500 `"Nie udało się zmienić hasła."`; success → 200 `{ success: true }`. **Never echo the password back.** `Sentry.captureException` with `tags: { route: "PATCH /api/employees/:id/password" }` — and no password in the Sentry payload.
+
+**No session revocation.** Phase 4's self-service change signs out the user's *other* sessions because the actor is the account owner. Here the actor is not; revoking would sign out the worker mid-work with no explanation, and the forgotten-password case means they have no live session to evict anyway. Stated so it does not read as an oversight.
+
+The dialog takes `{ open, onOpenChange, employee }`, holds two `type="password"` inputs (**"Nowe hasło"**, **"Powtórz nowe hasło"** — never a bare `"Hasło"`, per the locator hazard in Phase 4 item 2), validates non-empty + matching + ≥ 8 client-side, and on success shows a toast telling the moderator to pass the password on. **No `window.location.reload()`** — nothing rendered on the page depends on it. Sheet action: a `ghost` Button labelled **"Hasło"** on active rows only, with `emailTarget`-style state and a `key` remount, making three actions plus Edytuj on an active row — re-check the 560 px layout.
+
+Tests mirror `email.test.ts`: unauthenticated → 401; regular employee → 403 (Risk #4 again); moderator sets a password → 200 and the worker can sign in with it (assert by calling `signInWithPassword` through a fresh anon client); too-short password → 400; `is_system` target → 403; soft-deleted target → 409; non-existent uuid → 404; non-uuid → 400.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -288,6 +306,7 @@ Note the semantics this relies on: `admin.updateUserById` writes `users.email` d
 - Lint passes: `npm run lint`
 - Type checking passes: `npx astro check`
 - New `src/tests/api/employees/email.test.ts` passes in full: `npm run test:run`
+- New `src/tests/api/employees/password.test.ts` passes in full, including a real sign-in with the reset password
 - The regular-employee-gets-403 case passes on both verbs (test-plan Risk #4)
 - Pre-existing suites still green, including all holiday-balance route tests
 - Build succeeds: `npm run build`
@@ -300,8 +319,11 @@ Note the semantics this relies on: `admin.updateUserById` writes `users.email` d
 - Changing it succeeds; the worker can sign in with the new address and cannot with the old one
 - The worker's *existing* browser session keeps working after the change (no forced logout)
 - Attempting an address already belonging to another account shows the Polish duplicate message, and the original address is unchanged
-- The 560 px sheet row still lays out correctly with three actions at the narrowest supported width
-- A regular employee (no moderator role) sees no sheet at all, and a direct `PATCH` from the browser console returns 403
+- The 560 px sheet row still lays out correctly with four actions (Edytuj / E-mail / Hasło / Dezaktywuj) at the narrowest supported width
+- A regular employee (no moderator role) sees no sheet at all, and a direct `PATCH` from the browser console returns 403 on both sub-resources
+- The Hasło dialog sets a worker's password; that worker signs in with the new one and not the old
+- A password shorter than 8 characters is refused, and mismatched repeats are caught client-side
+- Resetting a worker's password does not sign that worker out of a live session
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human before proceeding.
 
@@ -464,44 +486,48 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 Type checking passes: `npx astro check`
-- [x] 2.3 Existing suite still green: `npm run test:run`
-- [x] 2.4 Build succeeds: `npm run build`
+- [x] 2.1 Lint passes: `npm run lint` — 215984a
+- [x] 2.2 Type checking passes: `npx astro check` — 215984a
+- [x] 2.3 Existing suite still green: `npm run test:run` — 215984a
+- [x] 2.4 Build succeeds: `npm run build` — 215984a
 
 #### Manual
 
-- [x] 2.5 Edytuj on another worker shows that worker's balance, not the moderator's own
-- [x] 2.6 Name-only save leaves the balance unchanged
-- [x] 2.7 Balance-only save leaves the name unchanged
-- [x] 2.8 Saving both writes both
-- [x] 2.9 Moderator-entered Korekta persists
-- [x] 2.10 Worker with no balance record shows zeros; saving creates the row
-- [x] 2.11 An invalid save (last-moderator demotion) shows the 409 and leaves the balance untouched
-- [x] 2.12 Loading state is visible and does not flash a half-empty form
-- [x] 2.13 Editing one's own row through the sheet agrees with the dashboard card
+- [x] 2.5 Edytuj on another worker shows that worker's balance, not the moderator's own — 215984a
+- [x] 2.6 Name-only save leaves the balance unchanged — 215984a
+- [x] 2.7 Balance-only save leaves the name unchanged — 215984a
+- [x] 2.8 Saving both writes both — 215984a
+- [x] 2.9 Moderator-entered Korekta persists — 215984a
+- [x] 2.10 Worker with no balance record shows zeros; saving creates the row — 215984a
+- [x] 2.11 An invalid save (last-moderator demotion) shows the 409 and leaves the balance untouched — 215984a
+- [x] 2.12 Loading state is visible and does not flash a half-empty form — 215984a
+- [x] 2.13 Editing one's own row through the sheet agrees with the dashboard card — 215984a
 
-### Phase 3: Moderator reads and changes a worker's login e-mail
+### Phase 3: Moderator reads and changes a worker's login e-mail and password
 
 #### Automated
 
-- [ ] 3.1 Lint passes: `npm run lint`
-- [ ] 3.2 Type checking passes: `npx astro check`
-- [ ] 3.3 `src/tests/api/employees/email.test.ts` passes in full: `npm run test:run`
-- [ ] 3.4 Regular-employee-gets-403 case passes on both verbs (test-plan Risk #4)
-- [ ] 3.5 Pre-existing suites still green, including all holiday-balance route tests
-- [ ] 3.6 Build succeeds: `npm run build`
-- [ ] 3.7 A second consecutive `npm run test:run` is green (no orphaned auth users)
+- [x] 3.1 Lint passes: `npm run lint`
+- [x] 3.2 Type checking passes: `npx astro check`
+- [x] 3.3 `src/tests/api/employees/email.test.ts` passes in full: `npm run test:run`
+- [x] 3.4 Regular-employee-gets-403 case passes on both verbs (test-plan Risk #4)
+- [x] 3.5 Pre-existing suites still green, including all holiday-balance route tests
+- [x] 3.6 Build succeeds: `npm run build`
+- [x] 3.7 A second consecutive `npm run test:run` is green (no orphaned auth users)
+- [x] 3.8 `src/tests/api/employees/password.test.ts` passes in full, including a real sign-in with the reset password
 
 #### Manual
 
-- [ ] 3.8 `SUPABASE_SERVICE_KEY` confirmed present on the production Worker
-- [ ] 3.9 E-mail dialog shows the worker's actual current address
-- [ ] 3.10 Changed address works for sign-in; the old one does not
-- [ ] 3.11 The worker's existing session keeps working after the change
-- [ ] 3.12 Duplicate address shows the Polish 409 message; the original address is unchanged
-- [ ] 3.13 The 560 px sheet row lays out correctly with three actions
-- [ ] 3.14 A regular employee gets 403 from a direct `PATCH` and sees no sheet
+- [ ] 3.9 `SUPABASE_SERVICE_KEY` confirmed present on the production Worker
+- [ ] 3.10 E-mail dialog shows the worker's actual current address
+- [ ] 3.11 Changed address works for sign-in; the old one does not
+- [ ] 3.12 The worker's existing session keeps working after the change
+- [ ] 3.13 Duplicate address shows the Polish 409 message; the original address is unchanged
+- [ ] 3.14 The 560 px sheet row lays out correctly with four actions
+- [ ] 3.15 A regular employee gets 403 from a direct `PATCH` on both sub-resources and sees no sheet
+- [ ] 3.16 The Hasło dialog resets a worker's password; that worker signs in with the new one, not the old
+- [ ] 3.17 A password under 8 characters is refused; mismatched repeats are caught client-side
+- [ ] 3.18 Resetting a worker's password does not sign that worker out of a live session
 
 ### Phase 4: Worker changes their own password from the top bar
 
