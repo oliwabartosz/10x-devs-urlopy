@@ -14,6 +14,9 @@ import type { Employee } from "@/types";
 interface EmployeeManagementSheetProps {
   employees: Employee[];
   currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
+  /** The year the edit dialog's balance section reads and writes — pinned to the current
+   *  calendar year by the page, deliberately independent of the browsed month. */
+  balanceYear: number;
 }
 
 function RoleBadge({ role }: { role: "employee" | "moderator" }) {
@@ -63,7 +66,7 @@ function EmployeeRow({
   );
 }
 
-export function EmployeeManagementSheet({ employees, currentEmployee }: EmployeeManagementSheetProps) {
+export function EmployeeManagementSheet({ employees, currentEmployee, balanceYear }: EmployeeManagementSheetProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
@@ -182,6 +185,8 @@ export function EmployeeManagementSheet({ employees, currentEmployee }: Employee
             if (!o) setEditTarget(null);
           }}
           employee={editTarget}
+          year={balanceYear}
+          currentRole={currentEmployee.role}
         />
       )}
       {deleteTarget && (

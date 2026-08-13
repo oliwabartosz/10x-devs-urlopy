@@ -447,39 +447,39 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Type checking passes: `npx astro check`
-- [x] 1.3 Full unit + route suite passes: `npm run test:run`
-- [x] 1.4 New delete-gate cases pass (employee cannot delete another's balance; moderator can)
-- [x] 1.5 New `is_system` cases pass on both `POST` and `DELETE`
-- [x] 1.6 All 8 pre-existing `korekta-gate.test.ts` cases still pass
-- [x] 1.7 Build succeeds: `npm run build`
+- [x] 1.1 Lint passes: `npm run lint` — 322a5fa
+- [x] 1.2 Type checking passes: `npx astro check` — 322a5fa
+- [x] 1.3 Full unit + route suite passes: `npm run test:run` — 322a5fa
+- [x] 1.4 New delete-gate cases pass (employee cannot delete another's balance; moderator can) — 322a5fa
+- [x] 1.5 New `is_system` cases pass on both `POST` and `DELETE` — 322a5fa
+- [x] 1.6 All 8 pre-existing `korekta-gate.test.ts` cases still pass — 322a5fa
+- [x] 1.7 Build succeeds: `npm run build` — 322a5fa
 
 #### Manual
 
-- [x] 1.8 Own-balance Usuń still works for a regular employee on the deployed app
-- [x] 1.9 No visible behaviour change for a moderator
+- [x] 1.8 Own-balance Usuń still works for a regular employee on the deployed app — 322a5fa
+- [x] 1.9 No visible behaviour change for a moderator — 322a5fa
 
 ### Phase 2: Moderator edits a worker's holiday balance
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 Type checking passes: `npx astro check`
-- [ ] 2.3 Existing suite still green: `npm run test:run`
-- [ ] 2.4 Build succeeds: `npm run build`
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 Type checking passes: `npx astro check`
+- [x] 2.3 Existing suite still green: `npm run test:run`
+- [x] 2.4 Build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 Edytuj on another worker shows that worker's balance, not the moderator's own
-- [ ] 2.6 Name-only save leaves the balance unchanged
-- [ ] 2.7 Balance-only save leaves the name unchanged
-- [ ] 2.8 Saving both writes both
-- [ ] 2.9 Moderator-entered Korekta persists
-- [ ] 2.10 Worker with no balance record shows zeros; saving creates the row
-- [ ] 2.11 An invalid save (last-moderator demotion) shows the 409 and leaves the balance untouched
-- [ ] 2.12 Loading state is visible and does not flash a half-empty form
-- [ ] 2.13 Editing one's own row through the sheet agrees with the dashboard card
+- [x] 2.5 Edytuj on another worker shows that worker's balance, not the moderator's own
+- [x] 2.6 Name-only save leaves the balance unchanged
+- [x] 2.7 Balance-only save leaves the name unchanged
+- [x] 2.8 Saving both writes both
+- [x] 2.9 Moderator-entered Korekta persists
+- [x] 2.10 Worker with no balance record shows zeros; saving creates the row
+- [x] 2.11 An invalid save (last-moderator demotion) shows the 409 and leaves the balance untouched
+- [x] 2.12 Loading state is visible and does not flash a half-empty form
+- [x] 2.13 Editing one's own row through the sheet agrees with the dashboard card
 
 ### Phase 3: Moderator reads and changes a worker's login e-mail
 

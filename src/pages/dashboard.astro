@@ -215,7 +215,12 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
     <div class="border-line flex h-15 items-center gap-3 border-b bg-white px-8">
       {
         currentEmployee?.role === "moderator" && (
-          <EmployeeManagementSheet client:load employees={allEmployees} currentEmployee={currentEmployee} />
+          <EmployeeManagementSheet
+            client:load
+            employees={allEmployees}
+            currentEmployee={currentEmployee}
+            balanceYear={balanceYear}
+          />
         )
       }
     </div>
