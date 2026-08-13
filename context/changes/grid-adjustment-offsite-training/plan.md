@@ -487,7 +487,7 @@ No absence rows are read or written by this change.
 
 - [x] 3.1 Linting and type checking pass: `npm run lint` — 6bd2f3d
 - [x] 3.2 Production build succeeds: `npm run build` — 6bd2f3d
-- [ ] 3.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 157/157); `e2e` targets the deployed Worker, so it can only run after this lands on `main`
+- [x] 3.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 157/157); `e2e` 5/5 green on 2026-08-13 against the deployed Worker at 07049c0, the first build carrying Phases 3 and 4
 
 #### Manual
 
@@ -503,7 +503,7 @@ No absence rows are read or written by this change.
 
 - [x] 4.1 Linting and type checking pass: `npm run lint` — 4d9b2c5
 - [x] 4.2 Production build succeeds: `npm run build` — 4d9b2c5
-- [ ] 4.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 161/161); `e2e` targets the deployed Worker, so it can only run after this lands on `main`, together with 3.3
+- [x] 4.3 Existing suites still green: `npm run test:run` and `npm run e2e` — `test:run` green (17 files, 161/161); `e2e` 5/5 green on 2026-08-13 against the deployed Worker at 07049c0, closed by the same run as 3.3
 
 #### Manual
 

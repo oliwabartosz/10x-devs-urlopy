@@ -20,7 +20,17 @@ bound the table structurally (option D), which is the only lever that also bound
 originally requested three-line wrap (option C) and a DB rename (option E) were both rejected — see
 `research.md` follow-up section. The change-id stays `grid-adjustment-offsite-training`.
 
-### Open criterion after Phase 3 (2026-08-12)
+### Resolved 2026-08-13 — 3.3 and 4.3 both closed
+
+Phase 4 landed in `4d9b2c5` (sha recorded in `07049c0`) and `main` was pushed, deploying
+`07049c0` to the Worker. `npm run e2e` then ran against that deployment — 5/5 green — which is
+the first run that exercises a build carrying Phases 3 and 4, so it closes both 3.3 and 4.3 as
+planned below. The Phase 1 icon migration needed no action: production already stored `🏃`
+(`length = 1`), and all seven types verified as single-codepoint, re-confirming 1.3 against prod.
+
+All plan criteria are now satisfied; the change is ready to archive.
+
+### Open criterion after Phase 3 (2026-08-12) — superseded by the note above
 
 Criterion 3.3 is half-satisfied and deliberately left `- [ ]`. Its `npm run test:run` arm is green
 (17 files, 157/157); its `npm run e2e` arm has not run. `playwright.config.ts:24` resolves
