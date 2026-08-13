@@ -533,12 +533,12 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Automated
 
-- [x] 4.1 Lint passes: `npm run lint`
-- [x] 4.2 Type checking passes: `npx astro check`
-- [x] 4.3 Existing suite still green: `npm run test:run`
-- [x] 4.4 Build succeeds: `npm run build`
-- [x] 4.5 E2E suite still passes: `npx playwright test` (the `getByLabel("Hasło", { exact: true })` locator still resolves uniquely) — 6/6 green, but note this suite targets the *deployed* app (`playwright.config.ts:23`), so it must be re-run after deploying Phase 4 for the locator check to actually exercise the new dialogs
-- [x] 4.6 `Topbar` reads `Astro.locals.userRole`; no `role` prop remains on the `dashboard.astro` mount
+- [x] 4.1 Lint passes: `npm run lint` — a14abe3
+- [x] 4.2 Type checking passes: `npx astro check` — a14abe3
+- [x] 4.3 Existing suite still green: `npm run test:run` — a14abe3
+- [x] 4.4 Build succeeds: `npm run build` — a14abe3
+- [x] 4.5 E2E suite still passes: `npx playwright test` (the `getByLabel("Hasło", { exact: true })` locator still resolves uniquely) — 6/6 green, but note this suite targets the *deployed* app (`playwright.config.ts:23`), so it must be re-run after deploying Phase 4 for the locator check to actually exercise the new dialogs — a14abe3
+- [x] 4.6 `Topbar` reads `Astro.locals.userRole`; no `role` prop remains on the `dashboard.astro` mount — a14abe3
 
 #### Manual
 
