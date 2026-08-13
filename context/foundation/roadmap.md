@@ -415,12 +415,11 @@ dokument: `context/foundation/test-plan.md`.
 
 ## Backlog Handoff
 
-Rozliczone zostały wszystkie pozycje do S-19 włącznie; poniżej tylko to, co realnie czeka
+Rozliczone zostały wszystkie pozycje do S-20 włącznie; poniżej tylko to, co realnie czeka
 na pracę. Pełna historia zamkniętych pozycji jest w sekcji **Done** i w `context/archive/`.
 
 | Roadmap ID | Change ID                        | Sugerowany tytuł issue                                                 | Gotowy na `/10x-plan` | Uwagi                                                             |
 | ---------- | -------------------------------- | ---------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| S-20       | grid-adjustment-offsite-training | [Urlopy] Siatka: `table-fixed` + komórka bez nazwy typu                | in progress           | Plan zatwierdzony, 6/28 wierszy Progress — kontynuuj `/10x-implement` |
 | S-21       | grid-multicheck                  | [Urlopy] Zaznaczanie wielu dni przeciągnięciem po siatce               | yes                   | `research.md` gotowy; uruchom `/10x-plan grid-multicheck`         |
 | S-22       | workers-data-edit                | [Urlopy] Moderator edytuje e-mail i wymiar urlopu; pracownik zmienia hasło | yes               | `research.md` gotowy; uruchom `/10x-plan workers-data-edit`       |
 | —          | code-review-evals                | [Tooling] promptfoo — ewaluacja agenta code-review                     | done                  | Zaimplementowane, czeka na impl-review przed archiwizacją          |
