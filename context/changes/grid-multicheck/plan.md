@@ -735,13 +735,13 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [ ] 2.1 New unit tests pass: `npm run test:run`
-- [ ] 2.2 Type checking and linting pass: `npm run lint`
-- [ ] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 New unit tests pass: `npm run test:run` — 19 files, 214/214; the new suite is 36 tests
+- [x] 2.2 Type checking and linting pass: `npm run lint` — 0 errors; `astro check` 0 errors
+- [x] 2.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.4 The module imports nothing from `react` or `@/db`
+- [x] 2.4 The module imports nothing from `react` or `@/db` — one `import type { Absence } from "@/types"`, matching `absence-grid-cell.ts`
 
 ### Phase 3: Bulk write endpoint
 
