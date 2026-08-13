@@ -722,14 +722,14 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [x] 1.1 `git status --short src/components/absence/AbsenceGrid.tsx` reports no modification — clean once the prerequisite's review-fix batch landed at `643eb49` — c35fd1c
-- [x] 1.2 Existing suite green: `npm run test:run` — 18 files, 178/178 — c35fd1c
-- [x] 1.3 Linting passes: `npm run lint` — 0 errors — c35fd1c
+- [x] 1.1 `git status --short src/components/absence/AbsenceGrid.tsx` reports no modification — clean once the prerequisite's review-fix batch landed at `643eb49` — 20661df
+- [x] 1.2 Existing suite green: `npm run test:run` — 18 files, 178/178 — 20661df
+- [x] 1.3 Linting passes: `npm run lint` — 0 errors — 20661df
 
 #### Manual
 
-- [x] 1.4 `grid-adjustment-offsite-training/plan.md` Progress rows 2.1 through 4.9 are all checked — c35fd1c
-- [x] 1.5 The grid renders with bounded, equal-width columns and icon-only full-day cells — c35fd1c
+- [x] 1.4 `grid-adjustment-offsite-training/plan.md` Progress rows 2.1 through 4.9 are all checked — 20661df
+- [x] 1.5 The grid renders with bounded, equal-width columns and icon-only full-day cells — 20661df
 
 ### Phase 2: Pure range module
 
