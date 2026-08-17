@@ -1,10 +1,10 @@
 ---
 change_id: radial-timepicker-ux
 title: Radial timepicker UX
-status: impl_reviewed
+status: archived
 created: 2026-08-11
-updated: 2026-08-12
-archived_at: null
+updated: 2026-08-17
+archived_at: 2026-08-17T10:25:41Z
 ---
 
 ## Notes
