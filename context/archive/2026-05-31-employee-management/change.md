@@ -2,9 +2,10 @@
 change_id: employee-management
 roadmap_id: S-04
 title: "Zarządzanie pracownikami przez moderatora"
-status: implemented
+status: archived
 created: 2026-05-31
-updated: 2026-05-31
+updated: 2026-08-17
+archived_at: 2026-08-17T10:25:41Z
 prd_refs:
   - FR-007
 prerequisites:
