@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-08-13
+updated: 2026-08-17
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -453,7 +453,7 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **S-01: pracownik wybiera miesiąc, widzi siatkę miesięczną (dni × pracownicy, kolory wg typu) i dodaje/edytuje/usuwa własny wpis nieobecności — północna gwiazda produktu.** — Implemented + impl-reviewed 2026-05-29, archived 2026-08-12 → `context/archive/2026-05-28-monthly-grid-own-absence/`. Reports: `reviews/impl-review.md`, `reviews/impl-review-phase-2.md`, `reviews/impl-review-phase-3.md`, `reviews/plan-review.md`. Lesson: —.
 - **S-02: pracownik może zobaczyć tabelę szczegółów nieobecności za dany miesiąc (typ, osoba, zastępca, godziny, komentarz, data wpisu) oraz statystyki nieobecności miesięczne i roczne.** — Archived 2026-05-30 → `context/archive/2026-05-30-details-and-stats/`. Lesson: —.
 - **S-03: moderator może dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników w siatce miesięcznej (te same widoki co pracownik, lecz bez ograniczeń własnościowych).** — Implemented 2026-05-31, archived 2026-08-12 → `context/archive/2026-05-31-moderator-absence-management/`. Lesson: prop threading vs. self-contained component lookup (see `context/foundation/lessons.md`).
-- **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01 → `context/changes/details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
+- **S-06: zakładka Szczegóły pokazuje osobne karty Dzisiaj / Miesięcznie / Rocznie** — Implemented 2026-06-01, archived 2026-08-17 → `context/archive/2026-06-01-details-subcards/`. Extends GET /api/absences with date-range mode; AbsenceDetailsSubcards island with AbortController lazy-fetch pattern; className + emptyLabel props added to AbsenceDetailsTable.
 - **S-07: (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie** — Implemented 2026-06-09, archived 2026-08-12 → `context/archive/2026-06-08-employee-grid-order/`. display_order column + seeding migration, PATCH /api/employees/order (UNNEST bulk update), dashboard orderBy with active-first CASE expression, @dnd-kit DnD with two SortableContexts + DragOverlay, self-first sort.
 - **S-08: (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników** — Archived 2026-06-03 → `context/archive/2026-06-03-deactivated-employee-grid/`. Lesson: —.
 - **S-05: wszystkie zapytania do bazy danych używają Drizzle ORM zamiast klienta Supabase JS — typesafe queries, schemat bazy zdefiniowany w kodzie, migracje zarządzane przez Drizzle Kit.** — Implemented, archived 2026-08-12 → `context/archive/2026-06-01-drizzle-migration/`. Note: `createAdminClient()` (Supabase JS) retained for auth admin operations; only app table queries migrated to Drizzle.
