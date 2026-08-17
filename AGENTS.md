@@ -6,7 +6,8 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 
 - Do not write to `context/archive/`; archived changes are immutable.
 - Do not edit generated or ignored output: `.astro/`, `dist/`, `.wrangler/`, or `node_modules/`.
-- Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. There is no Playwright/E2E setup — do not invent commands beyond these.
+- Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. Browser-level tests run on Playwright: `npm run e2e` (`playwright.config.ts`). Do not invent commands beyond these.
+- **`npm run e2e` runs against the deployed app**, not a local server — `playwright.config.ts` defaults `baseURL` to the production Worker and `wrangler dev` cannot reach Supabase. So an E2E run writes to the **production** database and must clean up after itself; read `tests/e2e/e2e-rules.md` before writing one. Override the target with `BASE_URL`.
 - The DB integration suites under `src/tests/` hit a **real** database and self-skip unless `DATABASE_URL_DIRECT` is set (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` are also needed for the auth-user fixtures). A green run with those unset means *skipped*, not *passed* — check the reported test count before claiming coverage.
 
 ## Commands

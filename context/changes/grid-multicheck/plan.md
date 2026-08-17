@@ -802,12 +802,12 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [ ] 6.1 New E2E spec passes against a deployed target: `npm run e2e`
-- [ ] 6.2 Existing E2E specs still pass: `npm run e2e`
-- [ ] 6.3 Linting passes: `npm run lint`
+- [x] 6.1 New E2E spec passes against a deployed target: `npm run e2e` — 3/3 incl. setup
+- [x] 6.2 Existing E2E specs still pass: `npm run e2e` — 8/8 repo-wide
+- [x] 6.3 Linting passes: `npm run lint` — 0 errors
 
 #### Manual
 
-- [ ] 6.4 The new spec passes on a re-run without flaking
-- [ ] 6.5 `e2e-rules.md` states the testid scheme precisely enough to follow without reading the component
-- [ ] 6.6 `AGENTS.md:9` no longer denies the E2E setup exists
+- [x] 6.4 The new spec passes on a re-run without flaking — 3 consecutive green runs
+- [x] 6.5 `e2e-rules.md` states the testid scheme precisely enough to follow without reading the component
+- [x] 6.6 `AGENTS.md:9` no longer denies the E2E setup exists

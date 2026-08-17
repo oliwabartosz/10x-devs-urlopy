@@ -78,6 +78,29 @@ click-then-assert over trusting `networkidle` alone.
   — see "Waiting for island hydration". A click that lands early is silently swallowed and shows
   up later as a dialog that never opened; this has been observed intermittently. Prefer wrapping
   the click and the `expect(dialog).toBeVisible()` in a single `toPass()`.
+- **A specific grid cell**: `getByTestId(\`absence-cell-${employeeId}-${date}\`)`, where `date` is
+  `YYYY-MM-DD`. This is the repo's only `data-testid` and the only way to address one cell: cells
+  carry no accessible name and no stable text, so `getByText("+")` above cannot distinguish one
+  empty day from another. Two consequences worth knowing:
+  - The id encodes the employee, so `getByTestId(new RegExp(\`^absence-cell-.*-${date}$\`)).first()`
+    recovers the signed-in user's own employee id — `AbsenceGrid` renders their column first
+    (`selfFirst`), and no endpoint reports "who am I" as an employee row.
+  - Drag a range by naming two cells and using `hover()` / `mouse.down()` / `mouse.up()`, never
+    pixel coordinates. Playwright derives every point from the located element.
+- **Dialog headings distinguish the three modes** and `exact` matters: `"Dodaj nieobecność"`
+  (single, new), `"Edytuj nieobecność"` (single, existing), `"Dodaj nieobecność na zakres dni"`
+  (range). Without `exact: true` the first matches the third.
+- **The overwrite confirmation** lists one `role="listitem"` per affected day, each naming the day
+  and the type it currently holds. Scope to the row — `getByRole("listitem").filter({ hasText: … })`
+  — rather than asserting the two strings independently: both also appear elsewhere in the same
+  dialog (the day inside the range summary `"5–8 marca · 2 dni robocze"`, the type on the form's
+  own radio behind the confirmation), so loose text checks pass for the wrong reason.
+- **State-changing `page.request.*` calls need an `Origin` header.** Astro's
+  `security.checkOrigin` rejects a `POST`/`PATCH`/`DELETE` whose `Origin` does not match the site
+  with 403 *"Cross-site DELETE form submissions are forbidden"*; `page.request.*` sends none,
+  unlike a real browser fetch. Pass `{ headers: { Origin: process.env.BASE_URL ?? <deployed URL> } }`
+  **and assert the status** — an API cleanup that fails silently leaves rows in the production
+  database, since this suite runs against the deployed app.
 - Form dialog: `getByRole("dialog")` scoped to `getByRole("heading", { name: … })`.
 - Tab navigation: `getByRole("link", { name: "Siatka" })` — reliable dashboard-loaded signal.
 - Signin form (`LoginCardForm.tsx`): `getByLabel("Użytkownik / ID")` for email,

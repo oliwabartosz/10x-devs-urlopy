@@ -26,6 +26,10 @@ const MONTH_TO = "2027-03-31";
 
 const RANGE_HEADING = "Dodaj nieobecność na zakres dni";
 
+// Mirrors playwright.config.ts's baseURL. Needed on state-changing `page.request.*` calls — see
+// `deleteOwnAbsences`.
+const ORIGIN = process.env.BASE_URL ?? "https://urlopy.oliwa-bartosz.workers.dev";
+
 interface AbsenceRow {
   id: string;
   employee_id: string;
@@ -43,9 +47,20 @@ async function listOwnAbsences(page: Page, employeeId: string): Promise<AbsenceR
   return (await listAbsences(page)).filter((row) => row.employee_id === employeeId);
 }
 
+/**
+ * `Origin` is required, and the response status must be asserted.
+ *
+ * Astro's `security.checkOrigin` rejects a state-changing request whose `Origin` does not match
+ * the site with 403 "Cross-site DELETE form submissions are forbidden". `page.request.*` sends
+ * none, unlike a real browser fetch. Without the header every delete here failed silently, the
+ * month never emptied, and — because this suite runs against the deployed app — each run left
+ * rows behind in the production database. Asserting the status is what stops that recurring:
+ * a cleanup that cannot fail loudly is a cleanup that eventually stops running.
+ */
 async function deleteOwnAbsences(page: Page, employeeId: string) {
   for (const row of await listOwnAbsences(page, employeeId)) {
-    await page.request.delete(`/api/absences/${row.id}`);
+    const res = await page.request.delete(`/api/absences/${row.id}`, { headers: { Origin: ORIGIN } });
+    expect(res.status(), `cleanup DELETE of ${row.date} must succeed or the month stays dirty`).toBe(204);
   }
 }
 
@@ -164,8 +179,14 @@ test("a range crossing an entry confirms before overwriting, and Anuluj writes n
   // alone would not tell the user what an overwrite destroys.
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Czy na pewno chcesz nadpisać 1 istniejący wpis?")).toBeVisible();
-  await expect(dialog.getByText("8 marca")).toBeVisible();
-  await expect(dialog.getByText("choroba")).toBeVisible();
+  // Scoped to the one list row rather than asserted as two independent texts. Both strings appear
+  // twice in this dialog — "8 marca" also inside the range summary "5–8 marca · 2 dni robocze",
+  // and "choroba" also on the form's own type radio behind the confirmation. Asserting that a
+  // *single row* names both the day and the type it currently holds is the actual claim; two
+  // loose text checks would pass even if the row named the wrong day's type.
+  const overwriteRow = dialog.getByRole("listitem").filter({ hasText: "8 marca" });
+  await expect(overwriteRow).toHaveCount(1);
+  await expect(overwriteRow.getByText("choroba", { exact: true })).toBeVisible();
 
   // „Anuluj" on the confirmation steps back to the form rather than closing, and writes nothing.
   await dialog.getByRole("button", { name: "Anuluj" }).click();
