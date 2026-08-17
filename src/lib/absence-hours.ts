@@ -31,6 +31,11 @@ export const MIN_START_TIME = toTimeString(MIN_START_MINUTES);
 export type ClampAbsenceHoursResult =
   | { ok: true; startTime: string; endTime: string }
   /**
+   * `end-before-start`: the range was already disordered on arrival, before any clamping —
+   * nothing to do with the floor. Unreachable from POST and bulk, whose refines check
+   * `end > start` unconditionally; PATCH can reach it, because its refine short-circuits
+   * when the body omits `is_full_day`, so a body patching one time against a stored other
+   * end arrives unchecked.
    * `end-before-floor`: flooring the start left `end <= start`, which no clamp can repair
    * and `absences_time_check` forbids. Reaching it requires `start < MIN_START_TIME &&
    * end <= MIN_START_TIME`, so a message may honestly name MIN_START_TIME as the boundary.
@@ -38,7 +43,31 @@ export type ClampAbsenceHoursResult =
    * (TimeSchema) and from `<input type="time">`; present so bad input can never be
    * silently arithmetic'd into a plausible-looking wrong range.
    */
-  | { ok: false; reason: "end-before-floor" | "invalid-time" };
+  | { ok: false; reason: ClampRejectionReason };
+
+export type ClampRejectionReason = "end-before-start" | "end-before-floor" | "invalid-time";
+
+/**
+ * The caller-facing message for a rejection, in Polish to match every other API error string.
+ *
+ * Lives here rather than in each route for the same reason `PARTIAL_DAY_TYPE_NAMES` lives in
+ * `@/lib/absence-types`: the message states the rule, the rule is stated once, and the three
+ * write paths (`POST /api/absences`, `PATCH /api/absences/:id`, `POST /api/absences/bulk`)
+ * cannot drift apart by hand.
+ */
+export function clampRejectionMessage(reason: ClampRejectionReason): string {
+  switch (reason) {
+    case "end-before-start":
+      return "Zakończenie musi być późniejsze niż rozpoczęcie.";
+    case "end-before-floor":
+      // Deliberately distinct from the full-day combination message — it names the rule that
+      // was actually broken. Safe to name MIN_START_TIME: this reason is reachable only when
+      // the start was below it (see the guarantee on `end-before-start` above).
+      return `Wpis godzinowy zaczyna się najwcześniej o ${MIN_START_TIME}, więc musi kończyć się później niż ${MIN_START_TIME}.`;
+    case "invalid-time":
+      return "Nieprawidłowy format godziny.";
+  }
+}
 
 /**
  * Correct a partial-day range so it starts no earlier than {@link MIN_START_TIME} and runs
@@ -61,11 +90,16 @@ export function clampAbsenceHours(startTime: string, endTime: string): ClampAbse
   const end = toMinutes(endTime);
   if (start === null || end === null) return { ok: false, reason: "invalid-time" };
 
+  // A precondition, not a clamp: a range already disordered on arrival has nothing to do with
+  // the floor. Testing it here is what keeps `end-before-floor` below provably scoped to
+  // `start < MIN_START_TIME`, so its message may honestly name that boundary.
+  if (end <= start) return { ok: false, reason: "end-before-start" };
+
   const flooredStart = Math.max(start, MIN_START_MINUTES);
 
   // Between the two clamps on purpose: a range only becomes unclampable *because* the start
-  // was floored. When `start >= MIN_START_TIME`, `flooredStart === start` and the callers'
-  // existing `end > start` check already makes this branch unreachable.
+  // was floored. With `end > start` already established above, reaching this line requires
+  // `start < MIN_START_TIME` — when `start >= MIN_START_TIME`, `flooredStart === start`.
   if (end <= flooredStart) return { ok: false, reason: "end-before-floor" };
 
   const cappedEnd = Math.min(end, flooredStart + MAX_DURATION_MINUTES);

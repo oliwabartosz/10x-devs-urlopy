@@ -1,6 +1,6 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import type { APIContext } from "astro";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { absences, absence_types, employees } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
@@ -113,7 +113,13 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
       "Dla całego dnia",
     );
 
-    const rows = await db.select().from(absences).where(eq(absences.employee_id, testEmployeeId));
+    // Scoped to this test's own date, not to every row the employee has: a bare employee_id
+    // filter would make this assertion fail whenever a test above it leaves a row behind, and
+    // report the failure as if this POST had inserted one.
+    const rows = await db
+      .select()
+      .from(absences)
+      .where(and(eq(absences.employee_id, testEmployeeId), eq(absences.date, "2026-04-03")));
     expect(rows, "rejected POST must not have inserted a row").toHaveLength(0);
   });
 
@@ -187,6 +193,25 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     await db.delete(absences).where(eq(absences.id, id));
   });
 
+  it("PATCH naming only one time reports the ordering rule, not the floor", async () => {
+    const id = await insertRow("2026-04-11", "09:00", "11:00");
+
+    // `AbsenceUpdateSchemaRefined` short-circuits on `is_full_day === undefined`, so this body
+    // never meets an `end > start` check and arrives at the clamp as 20:00–11:00:00. The floor
+    // was never involved, and the error must not claim it was.
+    const res = await patchRequest(id, { start_time: "20:00" });
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error, "must not blame the floor for a range that never went near it").not.toContain(MIN_START_TIME);
+    expect(body.error).toContain("późniejsze niż rozpoczęcie");
+
+    const [after] = await db.select({ start_time: absences.start_time }).from(absences).where(eq(absences.id, id));
+    expect(after.start_time, "rejected PATCH must not have applied the start").toBe("09:00:00");
+
+    await db.delete(absences).where(eq(absences.id, id));
+  });
+
   it("PATCH of an unrelated field leaves an in-bounds range untouched", async () => {
     const id = await insertRow("2026-04-09", "16:27", "17:27");
 
@@ -197,6 +222,28 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(body.comment).toBe("bez zmian godzin");
     expect(body.start_time).toBe("16:27:00");
     expect(body.end_time).toBe("17:27:00");
+
+    await db.delete(absences).where(eq(absences.id, id));
+  });
+
+  it("PATCH of an unrelated field on an unclampable legacy row still lands", async () => {
+    // 01:22–03:22 is one of the rows the purge migration removed: it ends before the floor, so
+    // no clamp can repair it. A body that patches neither time must not be blocked by it, or
+    // the row's comment, substitute and date become unreachable in any environment that still
+    // holds such a row. The stored range is left exactly as it was.
+    const id = await insertRow("2026-04-12", "01:22", "03:22");
+
+    const res = await patchRequest(id, { comment: "stary wpis, komentarz dodany" });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { comment: string; start_time: string; end_time: string };
+    expect(body.comment).toBe("stary wpis, komentarz dodany");
+    expect(body.start_time, "an unclampable stored range must be left alone, not rewritten").toBe("01:22:00");
+    expect(body.end_time).toBe("03:22:00");
+
+    // Supplying a time the caller could have corrected still rejects.
+    const rejected = await patchRequest(id, { start_time: "01:00", end_time: "03:00" });
+    expect(rejected.status).toBe(400);
 
     await db.delete(absences).where(eq(absences.id, id));
   });

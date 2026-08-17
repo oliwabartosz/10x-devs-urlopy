@@ -38,6 +38,17 @@ describe("clampAbsenceHours", () => {
     expect(clampAbsenceHours("01:00", "06:00")).toEqual({ ok: false, reason: "end-before-floor" });
   });
 
+  it("distinguishes a range disordered on arrival from one the floor broke", () => {
+    // Both are unclampable, but only the second has anything to do with MIN_START_TIME, and the
+    // routes turn the reason into the message the caller reads. PATCH is the path that reaches
+    // the first: its refine short-circuits when the body omits `is_full_day`.
+    expect(clampAbsenceHours("20:00", "11:00")).toEqual({ ok: false, reason: "end-before-start" });
+    expect(clampAbsenceHours("09:00", "09:00")).toEqual({ ok: false, reason: "end-before-start" });
+    expect(clampAbsenceHours("20:00", "11:00:00")).toEqual({ ok: false, reason: "end-before-start" });
+    // Still end-before-floor: this one is in order on arrival and only breaks once floored.
+    expect(clampAbsenceHours("01:00", "03:00")).toEqual({ ok: false, reason: "end-before-floor" });
+  });
+
   it("needs no special case for a late start", () => {
     // start + 8 h would be 04:00 next day; end is already earlier, so nothing is capped.
     expect(clampAbsenceHours("20:00", "23:00")).toEqual({ ok: true, startTime: "20:00", endTime: "23:00" });

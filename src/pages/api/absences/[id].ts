@@ -11,11 +11,7 @@ import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
-import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
-
-// Kept in step with the same message in `index.ts` — a clamp rejection is the same rule
-// broken whichever route it arrives through.
-const END_BEFORE_FLOOR_ERROR = `Wpis godzinowy zaczyna się najwcześniej o ${MIN_START_TIME}, więc musi kończyć się później niż ${MIN_START_TIME}.`;
+import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -145,19 +141,27 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
-  // Same domain rule as POST, applied to the *effective* range. The clamped values are merged
-  // back into `parsed.data` so they reach the UPDATE's `set` even for a column the body
-  // omitted — a body patching only `end_time` still corrects a stored out-of-window start.
+  // Same domain rule as POST, applied to the *effective* range.
   if (!effectiveIsFullDay && effectiveStartTime !== null && effectiveEndTime !== null) {
     const clamped = clampAbsenceHours(effectiveStartTime, effectiveEndTime);
     if (!clamped.ok) {
-      return json(
-        { error: clamped.reason === "end-before-floor" ? END_BEFORE_FLOOR_ERROR : "Nieprawidłowy format godziny." },
-        400,
-      );
+      // Rejecting is only meaningful when the caller supplied a time it can correct. When the
+      // body patches neither, an unclampable range is pre-existing stored data — a legacy row
+      // written before this rule, whose end sits at or before MIN_START_TIME so no floor can
+      // repair it. Blocking here would put the row's comment, substitute and date permanently
+      // out of reach of the API, which is the opposite of this change's premise that clamping
+      // corrects rather than locks out. Leave the stored range as it is and let the rest of
+      // the patch land; the CAS pins below still hold both columns to their read values.
+      if (!omitted.start_time || !omitted.end_time) {
+        return json({ error: clampRejectionMessage(clamped.reason) }, 400);
+      }
+    } else {
+      // The clamped values are merged back into `parsed.data` so they reach the UPDATE's `set`
+      // even for a column the body omitted — a body patching only `end_time` still corrects a
+      // stored out-of-window start.
+      parsed.data.start_time = clamped.startTime;
+      parsed.data.end_time = clamped.endTime;
     }
-    parsed.data.start_time = clamped.startTime;
-    parsed.data.end_time = clamped.endTime;
   }
 
   // The guard above judged the *effective* state, which for any field the body omitted was

@@ -11,7 +11,7 @@ import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
-import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
+import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
 
 // Writes N days of one absence in a single atomic statement, overwriting whatever those days
@@ -32,10 +32,6 @@ const json = (data: unknown, status: number) =>
     status,
     headers: { "Content-Type": "application/json" },
   });
-
-// Same message and same rule as the single-row route: flooring the start to MIN_START_TIME would
-// leave the end at or before it, which no clamp can repair.
-const END_BEFORE_FLOOR_ERROR = `Wpis godzinowy zaczyna się najwcześniej o ${MIN_START_TIME}, więc musi kończyć się później niż ${MIN_START_TIME}.`;
 
 /**
  * Ceiling on one request's date list.
@@ -185,10 +181,7 @@ export const POST: APIRoute = async (context) => {
   if (!sharedFields.is_full_day && sharedFields.start_time !== null && sharedFields.end_time !== null) {
     const clamped = clampAbsenceHours(sharedFields.start_time, sharedFields.end_time);
     if (!clamped.ok) {
-      return json(
-        { error: clamped.reason === "end-before-floor" ? END_BEFORE_FLOOR_ERROR : "Nieprawidłowy format godziny." },
-        400,
-      );
+      return json({ error: clampRejectionMessage(clamped.reason) }, 400);
     }
     sharedFields.start_time = clamped.startTime;
     sharedFields.end_time = clamped.endTime;
