@@ -1,9 +1,10 @@
 ---
 id: sentry-integration
 title: "S-12: Sentry SDK — error tracking dla Cloudflare Workers"
-status: implemented
+status: archived
 created: 2026-06-10
-updated: 2026-06-10
+updated: 2026-08-17
+archived_at: 2026-08-17T10:25:41Z
 roadmap_id: S-12
 prerequisites: []
 parallel_with: [dev-vars-rename, admin-bootstrap]
