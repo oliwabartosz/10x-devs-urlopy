@@ -781,9 +781,9 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Automated
 
-- [x] 5.1 Type checking and linting pass: `npm run lint` — 0 errors repo-wide; `astro check` 0 errors over 130 files
-- [x] 5.2 Production build succeeds: `npm run build`
-- [x] 5.3 Existing suites still green: `npm run test:run` — 21 files, 238/238
+- [x] 5.1 Type checking and linting pass: `npm run lint` — 0 errors repo-wide; `astro check` 0 errors over 130 files — 9dfd3db
+- [x] 5.2 Production build succeeds: `npm run build` — 9dfd3db
+- [x] 5.3 Existing suites still green: `npm run test:run` — 21 files, 238/238 — 9dfd3db
 
 #### Manual
 
