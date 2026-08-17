@@ -1,10 +1,10 @@
 ---
 change_id: dev-vars-rename
 title: Rename .dev.vars to .env.dev for consistency with .env convention
-status: implemented
+status: archived
 created: 2026-06-09
-updated: 2026-06-10
-archived_at: null
+updated: 2026-08-17
+archived_at: 2026-08-17T10:25:41Z
 ---
 
 ## Notes
