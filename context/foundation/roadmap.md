@@ -405,7 +405,7 @@ dokument: `context/foundation/test-plan.md`.
 | Change ID           | Czego dotyczy                                                                 | Status                              |
 | ------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
 | ci-cd-code-review   | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)          | archived 2026-07-06                 |
-| code-review-evals   | promptfoo jako harness ewaluacyjny dla agenta code-review                     | review pending                      |
+| code-review-evals   | promptfoo jako harness ewaluacyjny dla agenta code-review                     | archived 2026-08-17                 |
 | crud-integrity      | Bootstrap Vitest + testy integralności CRUD i 409 (test-plan §3, faza 1)      | archived 2026-08-12                 |
 | tool-loop-agent     | Agent z pętlą narzędziową (ćwiczenie M4)                                      | archived 2026-08-12                 |
 | team-status-digest  | Poranny digest statusu projektu — `scripts/team-digest.ts` (M5L1)             | archived 2026-08-12                 |
@@ -422,7 +422,7 @@ na pracę. Pełna historia zamkniętych pozycji jest w sekcji **Done** i w `cont
 | ---------- | -------------------------------- | ---------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
 | S-21       | grid-multicheck                  | [Urlopy] Zaznaczanie wielu dni przeciągnięciem po siatce               | yes                   | `research.md` gotowy; uruchom `/10x-plan grid-multicheck`         |
 | S-22       | workers-data-edit                | [Urlopy] Moderator edytuje e-mail i wymiar urlopu; pracownik zmienia hasło | yes               | `research.md` gotowy; uruchom `/10x-plan workers-data-edit`       |
-| —          | code-review-evals                | [Tooling] promptfoo — ewaluacja agenta code-review                     | done                  | Zaimplementowane, czeka na impl-review przed archiwizacją          |
+| —          | code-review-evals                | [Tooling] promptfoo — ewaluacja agenta code-review                     | done                  | Zarchiwizowane 2026-08-17 → `context/archive/2026-07-06-code-review-evals/` |
 
 ## Open Roadmap Questions
 
