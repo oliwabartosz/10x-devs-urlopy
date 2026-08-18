@@ -753,11 +753,11 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Manual
 
-- [ ] 3.4 A 3-date body writes 3 rows and returns them (deployed app)
-- [ ] 3.5 A body containing a Saturday returns 400 naming that date, and writes nothing
-- [ ] 3.6 A body crossing an existing entry overwrites it and reports it as overwritten
-- [ ] 3.7 A partial-day body on a non-training type returns 400
-- [ ] 3.8 A non-moderator sending another employee's `employee_id` writes to their own column
+- [x] 3.4 A 3-date body writes 3 rows and returns them (deployed app) — 201, `created_dates` 3 / `overwritten_dates` 0 — 0f4dae4
+- [x] 3.5 A body containing a Saturday returns 400 naming that date, and writes nothing — `Nieobecności nie można zapisać w weekend: 2026-09-05.`; the Friday and Monday in the same body read back absent — 0f4dae4
+- [x] 3.6 A body crossing an existing entry overwrites it and reports it as overwritten — 0f4dae4
+- [x] 3.7 A partial-day body on a non-training type returns 400 — `choroba` + `is_full_day: false` → 400 from the shared guard, naming both training types; confirmed against the deployed Worker — 0f4dae4
+- [x] 3.8 A non-moderator sending another employee's `employee_id` writes to their own column — verified from a **regular-employee** session (a moderator run proves the opposite branch): sent a colleague's id, all rows returned the caller's `employee_id`, 201 — 0f4dae4
 
 ### Phase 4: Range-capable dialog with overwrite confirmation
 
@@ -769,13 +769,13 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Manual
 
-- [ ] 4.4 Single-day click-to-add and click-to-edit are unchanged, including delete
-- [ ] 4.5 A range over empty days writes them all and reloads once, with no confirmation
-- [ ] 4.6 A range crossing an entry shows the confirmation naming that date, its type and its hours
-- [ ] 4.7 `Anuluj` on the confirmation returns to the filled form and writes nothing
-- [ ] 4.8 A range on a training type accepts one time window and applies it to every day
-- [ ] 4.9 Switching to a non-training type in range mode resets to full-day and clears the times
-- [ ] 4.10 The dial opens and sets both ends in range mode
+- [x] 4.4 Single-day click-to-add and click-to-edit are unchanged, including delete — `Dodaj`/`Edytuj nieobecność` titles, prefilled edit, delete button present in edit and absent in range mode — 124eb47
+- [x] 4.5 A range over empty days writes them all and reloads once, with no confirmation — 12–16 X 2026 dragged, form opened blank, wrote straight through — 124eb47
+- [x] 4.6 A range crossing an entry shows the confirmation naming that date, its type and its hours — crossed a `szkolenie w miejscu pracy` 08:00–12:00 entry; the list named the date, the type and the hours, footer read `Nadpisz i zapisz` — 124eb47
+- [x] 4.7 `Anuluj` on the confirmation returns to the filled form and writes nothing — selections intact on return (the form is hidden, not unmounted); the crossed entry kept its type and hours — 124eb47
+- [x] 4.8 A range on a training type accepts one time window and applies it to every day — one 08:00–12:00 window entered once, written to all five days — 124eb47
+- [x] 4.9 Switching to a non-training type in range mode resets to full-day and clears the times — re-selecting the training type brought back empty inputs, not the discarded values — 124eb47
+- [x] 4.10 The dial opens and sets both ends in range mode — one trigger for the whole range; both ends set from the dial and written to every day — 124eb47
 
 ### Phase 5: The drag gesture
 
@@ -787,16 +787,16 @@ one-by-one today, so reverting leaves no orphaned or unreadable data.
 
 #### Manual
 
-- [ ] 5.4 Dragging down and dragging up across the same days open the same range
-- [ ] 5.5 Weekends inside the drag are never highlighted and never written
-- [ ] 5.6 A single-cell press still opens the ordinary single-day dialog
-- [ ] 5.7 Releasing outside the grid still commits; the highlight never sticks
-- [ ] 5.8 Dragging horizontally does not extend into another employee's column
-- [ ] 5.9 No text selection of day numbers or weekday labels during a drag
-- [ ] 5.10 Column drag-to-reorder still works from the grip; a cell drag never reorders
-- [ ] 5.11 An employee dragging in another employee's column gets no selection
-- [ ] 5.12 A drag in a soft-deleted employee's column gets no selection
-- [ ] 5.13 A full-month drag stays visually smooth
+- [x] 5.4 Dragging down and dragging up across the same days open the same range — 9dfd3db
+- [x] 5.5 Weekends inside the drag are never highlighted and never written — 9dfd3db
+- [x] 5.6 A single-cell press still opens the ordinary single-day dialog — 9dfd3db
+- [x] 5.7 Releasing outside the grid still commits; the highlight never sticks — 9dfd3db
+- [x] 5.8 Dragging horizontally does not extend into another employee's column — 9dfd3db
+- [x] 5.9 No text selection of day numbers or weekday labels during a drag — 9dfd3db
+- [x] 5.10 Column drag-to-reorder still works from the grip; a cell drag never reorders — 9dfd3db
+- [x] 5.11 An employee dragging in another employee's column gets no selection — verified from a regular-employee session, not the moderator account — 9dfd3db
+- [x] 5.12 A drag in a soft-deleted employee's column gets no selection — 9dfd3db
+- [x] 5.13 A full-month drag stays visually smooth — 9dfd3db
 
 ### Phase 6: E2E coverage and rules documentation
 

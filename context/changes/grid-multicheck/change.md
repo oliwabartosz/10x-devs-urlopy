@@ -1,9 +1,9 @@
 ---
 change_id: grid-multicheck
 title: Drag-to-select absence grid cells, skipping non-clickable weekends
-status: implementing
+status: implemented
 created: 2026-08-12
-updated: 2026-08-13
+updated: 2026-08-18
 archived_at: null
 ---
 
