@@ -463,10 +463,10 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Automated
 
-- [x] 3.1 The new is_system suite passes: `npm run test:run`, 0 skipped
-- [x] 3.2 Full suite green across all three phases: `npm run test:run`
-- [x] 3.3 Type checking and linting pass: `npm run lint` and `npx astro check`
-- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 The new is_system suite passes: `npm run test:run`, 0 skipped — cd16483
+- [x] 3.2 Full suite green across all three phases: `npm run test:run` — cd16483
+- [x] 3.3 Type checking and linting pass: `npm run lint` and `npx astro check` — cd16483
+- [x] 3.4 Production build succeeds: `npm run build` — cd16483
 
 #### Manual
 
