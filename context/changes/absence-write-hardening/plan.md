@@ -450,9 +450,9 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Automated
 
-- [x] 2.1 The new bulk suite passes: `npm run test:run`
-- [x] 2.2 The suite genuinely ran rather than skipping: 0 skipped
-- [x] 2.3 Type checking and linting pass: `npm run lint` and `npx astro check`
+- [x] 2.1 The new bulk suite passes: `npm run test:run` — 9e1826c
+- [x] 2.2 The suite genuinely ran rather than skipping: 0 skipped — 9e1826c
+- [x] 2.3 Type checking and linting pass: `npm run lint` and `npx astro check` — 9e1826c
 
 #### Manual
 
@@ -463,10 +463,10 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Automated
 
-- [ ] 3.1 The new is_system suite passes: `npm run test:run`, 0 skipped
-- [ ] 3.2 Full suite green across all three phases: `npm run test:run`
-- [ ] 3.3 Type checking and linting pass: `npm run lint` and `npx astro check`
-- [ ] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 The new is_system suite passes: `npm run test:run`, 0 skipped
+- [x] 3.2 Full suite green across all three phases: `npm run test:run`
+- [x] 3.3 Type checking and linting pass: `npm run lint` and `npx astro check`
+- [x] 3.4 Production build succeeds: `npm run build`
 
 #### Manual
 
