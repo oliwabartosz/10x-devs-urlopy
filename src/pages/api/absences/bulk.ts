@@ -13,6 +13,7 @@ import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
+import type { AbsenceBulkCreateResult } from "@/types";
 
 // Writes N days of one absence in a single atomic statement, overwriting whatever those days
 // already held.
@@ -40,7 +41,7 @@ const json = (data: unknown, status: number) =>
  * single rendered month, so it cannot address more days than the longest month has. It exists so
  * one request cannot address an unbounded span.
  */
-export const MAX_BULK_DATES = 31;
+const MAX_BULK_DATES = 31;
 
 const AbsenceBulkCreateSchema = z
   .object({
@@ -235,7 +236,7 @@ export const POST: APIRoute = async (context) => {
         absences: rows,
         created_dates: dates.filter((d) => !overwritten.has(d)),
         overwritten_dates: dates.filter((d) => overwritten.has(d)),
-      },
+      } satisfies AbsenceBulkCreateResult,
       201,
     );
   } catch (err) {

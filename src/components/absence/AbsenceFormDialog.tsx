@@ -18,7 +18,7 @@ import { rawTimeRange } from "@/lib/absence-grid-cell";
 import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
-import type { Absence, AbsenceType, Employee } from "@/types";
+import type { Absence, AbsenceBulkCreateCommand, AbsenceType, Employee } from "@/types";
 
 /**
  * Accessible name of the single dial trigger. Named once because the E2E suite locates the button
@@ -121,6 +121,28 @@ interface AbsenceFormDialogRangeProps extends AbsenceFormDialogBaseProps {
  * `mode` is optional on the single arm so every existing single-day call site stays valid.
  */
 type AbsenceFormDialogProps = AbsenceFormDialogSingleProps | AbsenceFormDialogRangeProps;
+
+/**
+ * The days the server reports as overwritten that the confirmation never named.
+ *
+ * `occupiedDays` is computed from the grid as it was rendered, so it goes stale the moment anyone
+ * else writes into the range; `overwritten_dates` is what the write actually replaced. The
+ * difference is the set of entries destroyed without the user ever being shown them — the one
+ * case the client-side confirmation cannot catch on its own.
+ *
+ * A malformed or unreadable body yields `[]`: the write succeeded either way, and a broken report
+ * is not a reason to withhold the reload.
+ */
+async function unannouncedOverwrites(res: Response, announced: OccupiedRangeDay[]): Promise<string[]> {
+  try {
+    const body = (await res.json()) as { overwritten_dates?: unknown };
+    if (!Array.isArray(body.overwritten_dates)) return [];
+    const shown = new Set(announced.map((d) => d.key));
+    return body.overwritten_dates.filter((d): d is string => typeof d === "string" && !shown.has(d));
+  } catch {
+    return [];
+  }
+}
 
 export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   const { open, onOpenChange, absenceTypes, employees, currentEmployee, targetEmployee } = props;
@@ -338,6 +360,10 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   };
 
   const submitAbsence = async () => {
+    // `saveDisabled` already blocks a save with no type picked, so this never fires in practice.
+    // Stating it here is what lets the request bodies below be typed against the shared DTOs
+    // instead of carrying a `null` the API would reject anyway.
+    if (absenceTypeId === null) return;
     setIsSubmitting(true);
     const sharedFields = {
       absence_type_id: absenceTypeId,
@@ -358,7 +384,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
               employee_id: targetEmployee.id,
               dates: rangeDays.map((d) => d.key),
               ...sharedFields,
-            }),
+            } satisfies AbsenceBulkCreateCommand),
           })
         : existingAbsence
           ? await fetch(`/api/absences/${existingAbsence.id}`, {
@@ -372,6 +398,30 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
               body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields, date: dateStr }),
             });
       if (res.ok) {
+        // The confirmation named the days the grid knew were occupied when the page rendered; the
+        // server reports the days it actually replaced. A day in `overwritten_dates` that the
+        // confirmation never named means someone wrote into this range since the page loaded, and
+        // the overwrite destroyed an entry the user was never shown. The reload below would
+        // swallow a plain toast, so this one holds the refresh behind an acknowledgement.
+        const unannounced = isRange ? await unannouncedOverwrites(res, occupiedDays) : [];
+        if (unannounced.length > 0) {
+          const labels = unannounced
+            .map((key) => rangeDays.find((d) => d.key === key)?.date)
+            .map((date, i) => date?.toLocaleDateString("pl-PL", { day: "numeric", month: "long" }) ?? unannounced[i])
+            .join(", ");
+          toast.warning(`Nadpisano wpisy dodane w międzyczasie przez kogoś innego: ${labels}.`, {
+            duration: Infinity,
+            action: {
+              label: "Odśwież",
+              onClick: () => {
+                window.location.reload();
+              },
+            },
+          });
+          // Deliberately stays `isSubmitting`: the write already landed, so a second press must
+          // not repeat it. Acknowledging the toast is the only way forward.
+          return;
+        }
         window.location.reload();
       } else {
         const data = (await res.json()) as { error?: string };
@@ -409,7 +459,17 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* Escape and an overlay click are the two dismissals the disabled `Anuluj` buttons do not
+          cover. Left open, they let the dialog close while a write is in flight, so the user
+          believes they cancelled while N rows land. Held shut until the request settles. */}
+      <DialogContent
+        onEscapeKeyDown={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">
             {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}

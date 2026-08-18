@@ -184,9 +184,18 @@ export default function AbsenceGrid({
       setDialogState({ kind: "range", rangeDays, occupiedDays: occupied, targetEmployee });
     };
 
+    // Focus leaving the window means the release will land somewhere we will never hear about.
+    // Abandon rather than commit: a drag the user finished outside the page is not a range they
+    // asked to open a dialog for.
+    const handleBlur = () => {
+      setDrag(null);
+    };
+
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("blur", handleBlur);
     return () => {
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("blur", handleBlur);
     };
   }, [drag, days, absenceMap, orderedEmployees]);
 
@@ -437,14 +446,28 @@ export default function AbsenceGrid({
                           // extension target because it has nothing to extend with.
                           onMouseDown={
                             clickable
-                              ? () => {
+                              ? (event) => {
+                                  // Primary button only. `mouseup` fires for every button, so
+                                  // without this a right-button drag opens the range dialog behind
+                                  // the context menu, and the middle-button paste gesture opens it
+                                  // outright.
+                                  if (event.button !== 0) return;
                                   setDrag({ employeeId: emp.id, anchorIndex: dayIndex, currentIndex: dayIndex });
                                 }
                               : undefined
                           }
                           onMouseEnter={
                             clickable
-                              ? () => {
+                              ? (event) => {
+                                  // The button is no longer held, so the release happened somewhere
+                                  // this page never saw it — over browser chrome, another window,
+                                  // devtools. Mouse events have no implicit capture, so no `mouseup`
+                                  // is coming; without this the selection would keep following the
+                                  // cursor and the next unrelated click would commit it.
+                                  if (event.buttons === 0) {
+                                    setDrag(null);
+                                    return;
+                                  }
                                   // Only within the anchored column: this is what stops a
                                   // horizontal drag spreading into a colleague's days.
                                   setDrag((current) =>
