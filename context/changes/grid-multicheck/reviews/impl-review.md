@@ -243,23 +243,20 @@ Re-run after all edits, against the working tree:
 | `npm run build` | success |
 | `npm run e2e` | 8/8 |
 
-**Important caveat on that E2E run.** `playwright.config.ts` points `baseURL` at the deployed
-Worker, so the suite exercised **production — which does not contain these fixes**. It confirms the
-deployed app is still green; it does **not** verify F2 or F3.
+**Update (2026-08-18, after deploy `1a2451b`).** The table above was produced against a
+deployment that predated these fixes. The fixes were then committed, pushed, auto-deployed by CI
+(run `32135186522`, both jobs green), and `npm run e2e` was re-run against the deployment that
+carries them: **8/8 again**, including both range specs.
 
-Those two are the only fixes that change browser-level behaviour and remain **unverified in a
-browser**:
+That run does verify the fixes are **non-regressive** — F2's `buttons === 0` guard and F3's
+`button === 0` guard do not break the real-pointer drag the range specs perform, F1's
+response-reading path still writes and still confirms, and F7's dismissal lock does not interfere
+with the normal dialog flow.
 
-- **F2** relies on `MouseEvent.buttons === 1` being present on the event React derives `onMouseEnter`
-  from (delegated `mouseover`). Chromium does set it, and the E2E drag helper holds the primary
-  button down across the move, so the guard is expected to be transparent to the existing spec —
-  but expected is not observed.
-- **F3** relies on `event.button === 0` for a Playwright `mouse.down()`, which defaults to left.
+It does **not** verify their *positive* behaviour, because no test exercises those paths:
 
-Local verification is blocked by the documented `wrangler dev` limitation (workerd's TLS layer
-rejects Supabase's certificate, so the grid has no absence data to render). **Confirming F2/F3
-requires deploying to production and re-running `npm run e2e`** — not done here, as that is a
-deploy decision for the maintainer.
+- **F2** — releasing the button outside the document and confirming the selection is abandoned.
+- **F3** — a right- or middle-button drag doing nothing.
 
-The other five fixes are compile-time or non-gesture changes and are fully covered by the green
-lint / type-check / unit / build results above.
+Both are negative-path behaviours with no coverage; they were reasoned about, implemented, and
+proven harmless, but not proven effective. Worth a manual pass, or a spec in the follow-up change.
