@@ -13,6 +13,7 @@ import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
+import { resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
 
 const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
   new Response(JSON.stringify(data), {
@@ -166,10 +167,12 @@ export const POST: APIRoute = async (context) => {
 
   const db = createDb(DATABASE_URL);
 
-  let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
+  // `is_system` is selected for the write-target guard below: the technical admin is seeded as a
+  // moderator, so the caller's own row is one of the two ways an admin absence could be written.
+  let employeeRow: { id: string; role: "employee" | "moderator"; is_system: boolean } | undefined;
   try {
     employeeRow = await db
-      .select({ id: employees.id, role: employees.role })
+      .select({ id: employees.id, role: employees.role, is_system: employees.is_system })
       .from(employees)
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
@@ -194,25 +197,20 @@ export const POST: APIRoute = async (context) => {
   }
 
   const { employee_id: requestedEmployeeId, ...absenceData } = parsed.data;
-  let targetEmployeeId = employeeRow.id;
 
-  if (employeeRow.role === "moderator" && requestedEmployeeId) {
-    let targetRow: { id: string } | undefined;
-    try {
-      targetRow = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(and(eq(employees.id, requestedEmployeeId), isNull(employees.deleted_at)))
-        .then((r) => r[0]);
-    } catch (err) {
-      Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
-      return json({ error: "Błąd bazy danych." }, 503);
-    }
-    if (!targetRow) {
-      return json({ error: "Pracownik nie został znaleziony." }, 404);
-    }
-    targetEmployeeId = targetRow.id;
+  // Who this write lands on, and whether it is allowed to — resolution, the target's existence,
+  // the `is_system` invariant on both the target and the substitute, in one call shared with
+  // `absences/bulk.ts` so the two routes cannot drift apart again.
+  const writeTarget = await resolveAbsenceWriteTarget(
+    db,
+    employeeRow,
+    { employeeId: requestedEmployeeId, substituteEmployeeId: absenceData.substitute_employee_id },
+    "POST /api/absences",
+  );
+  if (writeTarget instanceof Response) {
+    return writeTarget;
   }
+  const { targetEmployeeId } = writeTarget;
 
   // Domain rule: partial-day (time-range) entries are allowed only for the training types
   // in PARTIAL_DAY_TYPE_NAMES; every other type is full-day only.
