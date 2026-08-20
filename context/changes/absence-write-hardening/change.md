@@ -1,9 +1,9 @@
 ---
 change_id: absence-write-hardening
 title: Close the is_system gap on both absence write paths and cover bulk.ts with route tests
-status: implementing
+status: impl_reviewed
 created: 2026-08-18
-updated: 2026-08-18
+updated: 2026-08-20
 archived_at: null
 ---
 
