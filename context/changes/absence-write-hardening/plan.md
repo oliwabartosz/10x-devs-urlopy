@@ -79,7 +79,10 @@ verified, each one directly responsible for a gap.
 - Every test fixture this needs already exists: moderator via `createTestEmployee` + role flip
   (`korekta-gate.test.ts:66-67`), `is_system` via a third employee + flag, **unflipped before
   teardown** (`is-system-guard.test.ts:50-74`, rationale at `delete.test.ts:63-64`)
-- May 2026 is an unclaimed test month with 21 weekdays; existing suites hold Jan/Feb/Mar/Apr
+- May 2026 is an unclaimed test month with 21 weekdays; existing suites hold Jan/Feb/Mar/Apr.
+  Unclaimed by *suites* — it does hold 13 real UI-entered rows on live accounts (verified
+  2026-08-20), which is harmless: `UNIQUE (employee_id, date)` is per employee and fixture rows sit
+  on freshly created employees
 - `vitest.config.ts` sets `fileParallelism: false` and 60 s timeouts — remote Supabase round trips
 
 ## What We're NOT Doing
@@ -295,7 +298,10 @@ Every rejection case asserts nothing was written, with the custom-message form t
 
 - Temporarily removing the weekday check from `bulk.ts` turns the weekday test red — the suite
   fails for the right reason, not incidentally
-- The suite leaves no rows behind: May 2026 is empty after a full run
+- The suite leaves no rows behind: the fixture-scoped row and employee counts
+  (`auth.users.email LIKE 'test-%@test.invalid'`) are unchanged by a full run. **Not** "May 2026 is
+  empty" — that month holds 13 real UI-entered rows on live accounts, so an empty-month assertion
+  would never pass. May is unclaimed by other *suites*, which is all the fixture dates require
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause
 here for manual confirmation from the human before proceeding.
@@ -441,10 +447,10 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Manual
 
-- [ ] 1.4 A moderator sending the admin's `employee_id` to `POST /api/absences` gets 403 and writes nothing
-- [ ] 1.5 The same request to `/api/absences/bulk` behaves identically
-- [ ] 1.6 A moderator writing an ordinary colleague's absence still succeeds, single-row and bulk
-- [ ] 1.7 A regular employee sending a colleague's `employee_id` still silently writes their own column
+- [x] 1.4 A moderator sending the admin's `employee_id` to `POST /api/absences` gets 403 and writes nothing — 403 in the browser, and 0 rows on `dc2e8b49-…` confirmed directly in the DB — 9f68743
+- [x] 1.5 The same request to `/api/absences/bulk` behaves identically — same status, same message — 9f68743
+- [x] 1.6 A moderator writing an ordinary colleague's absence still succeeds, single-row and bulk — 5 rows landed on the colleague over the same date range the admin was refused — 9f68743
+- [x] 1.7 A regular employee sending a colleague's `employee_id` still silently writes their own column — verified from a regular-employee session, not the moderator account — 9f68743
 
 ### Phase 2: Route-level coverage for bulk.ts
 
@@ -456,8 +462,8 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Manual
 
-- [ ] 2.4 Temporarily removing the weekday check turns the weekday test red
-- [ ] 2.5 The suite leaves no rows behind — May 2026 is empty after a full run
+- [x] 2.4 Temporarily removing the weekday check turns the weekday test red — `expected 201 to be 400` at `bulk.test.ts:134`, the status assertion, not an incidental failure — 9e1826c
+- [x] 2.5 The suite leaves no rows behind — fixture-scoped counts unchanged across a full run (18 absences / 5 employees, both pre-existing debris from 2026-08-10); May 2026 total also unchanged at 13 — 9e1826c
 
 ### Phase 3: is_system coverage on both routes, and the lesson
 
@@ -470,5 +476,5 @@ blocks. Nothing written under the guard is structurally different from what is w
 
 #### Manual
 
-- [ ] 3.5 Reverting Phase 1's guard turns every case in the new suite red
-- [ ] 3.6 `lessons.md` renders with the new section and its links resolve
+- [x] 3.5 Reverting Phase 1's guard turns every case in the new suite red — precisely: disabling the target gate reddens 4 (both entrances × both routes), disabling the substitute gate too reddens all 6 rejection cases. The 2 control cases stay green by design, so "every case" reads as "every case that asserts a refusal" — cd16483
+- [x] 3.6 `lessons.md` renders with the new section and its links resolve — both citations checked, and both quoted claims are verbatim at the cited lines — cd16483
