@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/cloudflare";
 import { eq, isNull, and } from "drizzle-orm";
+import { z } from "zod";
 import type { Db } from "@/db/index";
 import { employees } from "@/db/schema";
 import { isProtectedAdmin } from "@/lib/employees";
@@ -22,6 +23,14 @@ const json = (data: unknown, status: number) =>
     status,
     headers: { "Content-Type": "application/json" },
   });
+
+// Both current callers parse these ids with `z.uuid()` before handing them over, so this never
+// fires today. It is here because the module's whole purpose is that the *next* absence write path
+// cannot inherit a mistake: without it, a caller that forgot to validate gets PG 22P02 out of the
+// lookups below, which the catch blocks turn into 503 "Błąd bazy danych." — a caller error
+// reported to the user as a server outage. `employee-target-guard.ts:70-73` validates for the
+// same reason.
+const UUIDSchema = z.uuid();
 
 /** The already-resolved caller row. `is_system` is why both routes widen their caller select. */
 export interface AbsenceWriteCaller {
@@ -67,6 +76,9 @@ export async function resolveAbsenceWriteTarget(
   let target: { id: string; is_system: boolean } = { id: caller.id, is_system: caller.is_system };
 
   if (caller.role === "moderator" && requested.employeeId) {
+    if (!UUIDSchema.safeParse(requested.employeeId).success) {
+      return json({ error: "Nieprawidłowy identyfikator pracownika." }, 400);
+    }
     let targetRow: { id: string; is_system: boolean } | undefined;
     try {
       targetRow = await db
@@ -88,24 +100,54 @@ export async function resolveAbsenceWriteTarget(
     return json({ error: "Nie można modyfikować tego konta." }, 403);
   }
 
-  if (requested.substituteEmployeeId !== null) {
-    let substituteRow: { is_system: boolean } | undefined;
-    try {
-      // No `deleted_at` filter: a soft-deleted substitute is allowed (see the doc comment), so the
-      // only question this lookup answers is whether the row is the protected admin.
-      substituteRow = await db
-        .select({ is_system: employees.is_system })
-        .from(employees)
-        .where(eq(employees.id, requested.substituteEmployeeId))
-        .then((r) => r[0]);
-    } catch (err) {
-      Sentry.captureException(err, { tags: { route } });
-      return json({ error: "Błąd bazy danych." }, 503);
-    }
-    if (substituteRow && isProtectedAdmin(substituteRow)) {
-      return json({ error: "Nie można modyfikować tego konta." }, 403);
-    }
+  const substituteRefusal = await assertSubstituteAllowed(db, requested.substituteEmployeeId, route);
+  if (substituteRefusal) {
+    return substituteRefusal;
   }
 
   return { targetEmployeeId: target.id };
+}
+
+/**
+ * Gate 4 on its own, because `PATCH /api/absences/:id` needs it without the rest: it cannot
+ * retarget a row to another employee, so gates 1–3 have nothing to decide there, but it *can*
+ * set `substitute_employee_id` on an existing row and so reach the same forbidden state a POST
+ * would. Kept in this module rather than copied into the route — copying is what propagated the
+ * original gap.
+ *
+ * `null` or `undefined` means the field was not supplied (a PATCH may omit it, and clearing a
+ * substitute is always allowed), so no lookup is issued.
+ *
+ * @returns the `Response` to send when the substitute is the protected admin, otherwise `null`.
+ */
+export async function assertSubstituteAllowed(
+  db: Db,
+  substituteEmployeeId: string | null | undefined,
+  route: string,
+): Promise<Response | null> {
+  if (substituteEmployeeId === null || substituteEmployeeId === undefined) {
+    return null;
+  }
+  if (!UUIDSchema.safeParse(substituteEmployeeId).success) {
+    return json({ error: "Nieprawidłowy identyfikator zastępstwa." }, 400);
+  }
+
+  let substituteRow: { is_system: boolean } | undefined;
+  try {
+    // No `deleted_at` filter: a soft-deleted substitute is allowed (see the doc comment), so the
+    // only question this lookup answers is whether the row is the protected admin.
+    substituteRow = await db
+      .select({ is_system: employees.is_system })
+      .from(employees)
+      .where(eq(employees.id, substituteEmployeeId))
+      .then((r) => r[0]);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  if (substituteRow && isProtectedAdmin(substituteRow)) {
+    return json({ error: "Nie można modyfikować tego konta." }, 403);
+  }
+
+  return null;
 }

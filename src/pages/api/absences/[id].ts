@@ -12,6 +12,7 @@ import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
+import { assertSubstituteAllowed } from "@/lib/absence-write-target";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -113,6 +114,17 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!existing) return json({ error: "Nie znaleziono." }, 404);
+
+  // PATCH cannot retarget a row to another employee, so it cannot *create* an absence on the
+  // technical admin — but it can name the admin as a substitute on a row it is allowed to edit,
+  // which reaches the same forbidden state a POST would. Placed after the 404 above so a
+  // nonexistent id is never answered "forbidden".
+  const substituteRefusal = await assertSubstituteAllowed(
+    db,
+    parsed.data.substitute_employee_id,
+    "PATCH /api/absences/:id",
+  );
+  if (substituteRefusal) return substituteRefusal;
 
   // Captured before the clamp merges values into `parsed.data`: from here on, "the body
   // omitted this field" can no longer be read off `parsed.data`, and both the effective-value

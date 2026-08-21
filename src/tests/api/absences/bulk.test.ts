@@ -39,6 +39,17 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route le
   const MODERATOR_RUN = ["2026-05-14"];
   const REPORTING_RUN = ["2026-05-11", "2026-05-12", "2026-05-13"];
 
+  // One past the route's cap. `MAX_BULK_DATES` was made module-private in 1a2451b, so the boundary
+  // is asserted with a literal count rather than an import — this test drifts if the cap moves,
+  // which is the intended trade: a test that imports the constant proves only that zod was called.
+  const OVER_CAP_RUN = [
+    ...Array.from({ length: 31 }, (_, i) => `2026-07-${(i + 1).toString().padStart(2, "0")}`),
+    "2026-08-03",
+  ];
+
+  // OVER_CAP_RUN is folded in even though its test asserts a 400 and writes nothing: if the cap ever
+  // rises past 32, that body starts landing rows, and a cleanup that cannot reach them would leave
+  // them for the next test to trip over.
   const SUITE_DATES = [
     ...new Set([
       ...WEEKEND_RUN,
@@ -47,15 +58,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route le
       ...EMPLOYEE_GATE_RUN,
       ...MODERATOR_RUN,
       ...REPORTING_RUN,
+      ...OVER_CAP_RUN,
     ]),
-  ];
-
-  // One past the route's cap. `MAX_BULK_DATES` was made module-private in 1a2451b, so the boundary
-  // is asserted with a literal count rather than an import — this test drifts if the cap moves,
-  // which is the intended trade: a test that imports the constant proves only that zod was called.
-  const OVER_CAP_RUN = [
-    ...Array.from({ length: 31 }, (_, i) => `2026-07-${(i + 1).toString().padStart(2, "0")}`),
-    "2026-08-03",
   ];
 
   const authIdOf = async (id: string): Promise<string> =>
@@ -187,6 +191,10 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route le
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe("Invalid calendar date");
+    // The only rejection case here without the sibling "must not have inserted a row" assertion,
+    // and deliberately so: `storedFor` would have to bind 2026-02-31 as a `date` parameter, which
+    // Postgres refuses outright (22008, "date/time field value out of range") — the query errors
+    // before it can answer. That refusal is itself the proof no such row can exist.
   });
 
   // The privilege-escalation gate. A regular employee's employee_id is silently ignored rather than

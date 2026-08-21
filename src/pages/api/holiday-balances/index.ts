@@ -170,7 +170,10 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Pracownik nie został znaleziony." }, 404);
   }
   // The technical admin is immutable through every API path (RLS is bypassed on the
-  // service-role connection). This route was the last mutation path missing the guard.
+  // service-role connection), so this gate re-asserts it here. Deliberately no claim about
+  // which other paths do or do not carry it — an earlier "this was the last one" here and at
+  // is-system-guard.test.ts:10 was false when written, and the absences routes went unguarded
+  // for months behind it (context/foundation/lessons.md).
   if (isProtectedAdmin(targetRow)) {
     return json({ error: "Nie można modyfikować tego konta." }, 403);
   }

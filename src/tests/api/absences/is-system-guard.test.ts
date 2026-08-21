@@ -28,15 +28,35 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence writes — is_system 
   let employeeId!: string;
   let moderatorId!: string;
   let systemEmployeeId!: string;
+  let deletedEmployeeId!: string;
   let moderatorAuthId!: string;
   let systemAuthId!: string;
   let vacationTypeId!: number;
 
-  // May 2026, in a run distinct from bulk.test.ts's (which holds 05-01 through 05-14). One date per
+  // May 2026, in a run distinct from bulk.test.ts's (which holds 05-01 through 05-14), spilling into
+  // early June for the boundary cases because May's remaining weekdays ran out. One date per
   // (case, route) pair, all weekdays — the bulk route rejects weekends outright.
   const DATES = {
-    single: { target: "2026-05-18", self: "2026-05-20", substitute: "2026-05-22", control: "2026-05-26" },
-    bulk: { target: "2026-05-19", self: "2026-05-21", substitute: "2026-05-25", control: "2026-05-27" },
+    single: {
+      target: "2026-05-18",
+      self: "2026-05-20",
+      substitute: "2026-05-22",
+      control: "2026-05-26",
+      notFound: "2026-06-01",
+      deletedTarget: "2026-06-02",
+      missingSubstitute: "2026-06-03",
+      deletedSubstitute: "2026-06-04",
+    },
+    bulk: {
+      target: "2026-05-19",
+      self: "2026-05-21",
+      substitute: "2026-05-25",
+      control: "2026-05-27",
+      notFound: "2026-06-08",
+      deletedTarget: "2026-06-09",
+      missingSubstitute: "2026-06-10",
+      deletedSubstitute: "2026-06-11",
+    },
   };
   const SUITE_DATES = [...Object.values(DATES.single), ...Object.values(DATES.bulk)];
 
@@ -92,7 +112,12 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence writes — is_system 
     employeeId = await createTestEmployee(db);
     moderatorId = await createTestEmployee(db);
     systemEmployeeId = await createTestEmployee(db);
+    deletedEmployeeId = await createTestEmployee(db);
     await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
+    // Soft-deleted, not the admin: the two boundary cases below turn on the guard treating
+    // `deleted_at` differently for the target (filtered out → 404) and the substitute (not
+    // filtered → still allowed), which is the distinction the doc comment claims is deliberate.
+    await db.update(employees).set({ deleted_at: new Date() }).where(eq(employees.id, deletedEmployeeId));
     // `role: moderator` as well as the flag, mirroring how the real admin is seeded — that pairing
     // is exactly what makes the self-path entrance reachable.
     await db.update(employees).set({ role: "moderator", is_system: true }).where(eq(employees.id, systemEmployeeId));
@@ -109,7 +134,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence writes — is_system 
       .delete(absences)
       .where(
         and(
-          inArray(absences.employee_id, [employeeId, moderatorId, systemEmployeeId]),
+          inArray(absences.employee_id, [employeeId, moderatorId, systemEmployeeId, deletedEmployeeId]),
           inArray(absences.date, SUITE_DATES),
         ),
       );
@@ -122,6 +147,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence writes — is_system 
     await teardownTestEmployee(db, employeeId);
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
+    await teardownTestEmployee(db, deletedEmployeeId);
     await db.$client.end();
   });
 
@@ -177,6 +203,62 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence writes — is_system 
       const rows = await storedFor(employeeId, dates.control);
       expect(rows).toHaveLength(1);
       expect(rows[0].substitute_employee_id).toBe(moderatorId);
+    });
+
+    // The gate order the plan calls its first critical detail: 404 before 403. An id that matches no
+    // employee must answer "not found", never "forbidden" — swapping the two gates would leak the
+    // existence question, and this is the only case that would notice.
+    it("answers 404, not 403, for an employee_id that matches nothing", async () => {
+      const res = await write(moderatorAuthId, dates.notFound, { employee_id: crypto.randomUUID() });
+
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "Pracownik nie został znaleziony." });
+    });
+
+    // The target lookup filters on `deleted_at`, so a soft-deleted target is "not found" rather than
+    // forbidden — the same 404 as a nonexistent id, and deliberately not the 403 the admin gets.
+    it("answers 404 for a soft-deleted employee_id", async () => {
+      const res = await write(moderatorAuthId, dates.deletedTarget, { employee_id: deletedEmployeeId });
+
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "Pracownik nie został znaleziony." });
+      expect(
+        await storedFor(deletedEmployeeId, dates.deletedTarget),
+        "rejected POST must not have inserted a row",
+      ).toHaveLength(0);
+    });
+
+    // The carve-out that keeps the substitute gate from over-reaching: it asks only "is this the
+    // admin", never "does this exist". A nonexistent substitute must still fall through to the FK
+    // and surface as 422 — if the gate ever starts 404-ing or 403-ing here, it has grown a
+    // responsibility the routes already owned.
+    it("leaves a nonexistent substitute to the FK, answering 422 rather than refusing it", async () => {
+      const res = await write(moderatorAuthId, dates.missingSubstitute, {
+        employee_id: employeeId,
+        substitute_employee_id: crypto.randomUUID(),
+      });
+
+      expect(res.status).toBe(422);
+      expect(await res.json()).toEqual({ error: "Nie znaleziono pracownika na zastępstwo." });
+      expect(
+        await storedFor(employeeId, dates.missingSubstitute),
+        "rejected POST must not have inserted a row",
+      ).toHaveLength(0);
+    });
+
+    // The other half of that carve-out: unlike the target lookup, the substitute lookup carries no
+    // `deleted_at` filter on purpose — a soft-deleted substitute is plausible on a historical row,
+    // and rejecting it would break editing those. Adding the filter would turn this green case red.
+    it("still allows a soft-deleted substitute", async () => {
+      const res = await write(moderatorAuthId, dates.deletedSubstitute, {
+        employee_id: employeeId,
+        substitute_employee_id: deletedEmployeeId,
+      });
+
+      expect(res.status).toBe(201);
+      const rows = await storedFor(employeeId, dates.deletedSubstitute);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].substitute_employee_id).toBe(deletedEmployeeId);
     });
   });
 });
