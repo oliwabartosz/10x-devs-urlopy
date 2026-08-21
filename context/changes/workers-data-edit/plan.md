@@ -79,12 +79,13 @@ Verification: the automated and manual criteria listed per phase below.
 - **No e-mail addresses in the sheet's row list**, and no `listUsers()` anywhere. Addresses are fetched one at a time, on dialog open, and never shipped into a `client:load` prop (`employee-management/reviews/impl-review-phases-2-4.md` F2).
 - **No batch-balance endpoint.** Still does not exist; the per-row `GET` is the cheap alternative and the endpoint already supports it.
 - **No confirmation e-mail to the worker on an address change**, and no notification. `GOTRUE_MAILER_NOTIFICATIONS_EMAIL_CHANGED_ENABLED` defaults to `false`; leave it.
-- **No session revocation on e-mail change.** The worker's cookie session keeps working; the JWT's `email` claim goes stale until refresh. (Password change *does* revoke others — different operation, different answer.)
+- **No session revocation on e-mail change.** The worker's cookie session keeps working. The *token's* `email` claim does go stale until refresh, but **nothing the worker sees is stale** — corrected on evidence during 3.12: `middleware.ts:15` resolves `locals.user` through `auth.getUser()`, which validates against the auth server and returns the current row, so the top bar renders the new address on the very next reload. (Password change *does* revoke others — different operation, different answer.)
 - **No self-service account creation, no password *reset* by e-mail link.** The signup surface was deleted on purpose (`admin-bootstrap/plan.md:221`); do not reintroduce it. This is password *change* by an already-authenticated user only.
 - ~~**No moderator-initiated password reset for a worker.** Not requested.~~ **Reversed mid-implementation (2026-08-13), after Phase 2 landed.** It was subsequently requested — *"Moderator could also change the password if user forgets"* — and is now Phase 3 item 6. The reversal is cheap to build (the same service-role client, the same `[id]` sub-resource, the same guard order as the e-mail write) but it is a materially larger authority grant than the e-mail change, so it is recorded here rather than folded in silently. The consequence, stated with eyes open and compounding the no-audit-trail decision above: **a moderator can set any worker's password, thereby gaining full access to that worker's account, leaving no record of who did it or when.** The worker's remedy is Phase 4's self-service change — which is an argument for keeping Phase 4 in scope, not dropping it now that resets exist. The alternative of a server-generated one-time password (moderator relays it, never chooses it) was offered and declined.
 - **No `dropdown-menu`, no `alert-dialog`, no new shadcn primitives.** Work within `button`, `dialog`, `input`, `label`, `popover`, `select`, `sheet`, `sonner`, `tooltip`.
 - **No change to `window.location.reload()` after mutations.** It is a recorded project-wide decision (`huge-ui-ux-improvement/plan.md:105`). Its cost is acknowledged under Critical Implementation Details.
 - **No shared auth-guard helper extraction.** The ~25-line block is duplicated across five routes; refactoring it is a separate change.
+- **No `DialogDescription` on any dialog.** Surfaced during Phase 4 manual verification as a Radix console warning (*"Missing `Description` or `aria-describedby={undefined}` for {DialogContent}"*). It is **app-wide and pre-existing**, not a regression here: none of the app's seven dialogs use it, including the four predating this change, though `ui/dialog.tsx:115` exports it. Real a11y gap, wrong change to fix it in.
 - **No fix for the stale docs** found during research (`AGENTS.md:9`, `test-plan.md:98/118/152`, the missing S-17 roadmap row). Flagged, not in scope.
 
 ## Implementation Approach
@@ -273,7 +274,7 @@ Note the semantics this relies on: `admin.updateUserById` writes `users.email` d
 
 **Intent**: Add the trigger. The active-employee row currently carries Edytuj and Dezaktywuj in a 560 px sheet; this is a third action.
 
-**Contract**: New `emailTarget` state mirroring `editTarget`/`deleteTarget` (`:69-70`), a `ghost` Button labelled **"E-mail"** (short, to protect the row layout), and the dialog rendered at the bottom with a `key={emailTarget.id}` remount like `EditEmployeeDialog` at `:177-186`. Show it on active rows only — deactivated rows keep Przywróć alone, consistent with the `PATCH` route rejecting deactivated targets. The whole sheet is already moderator-gated at `dashboard.astro:217`, so no per-button role check is needed; the no-dead-controls rule (`huge-ui-ux-improvement/plan.md:851-853`) is satisfied because every viewer of this sheet is a moderator.
+**Contract**: New `emailTarget` state mirroring `editTarget`/`deleteTarget` (`:69-70`), a `ghost` Button labelled **"E-mail"** (short, to protect the row layout) — **shipped icon-only instead** (a `Mail` icon with `aria-label` + `title` "Zmień e-mail"): with item 6's action added the row carries four controls, and text labels crowded the employee name out at 560 px (`EmployeeManagementSheet.tsx:146-164`). Verified at 3.14, and the dialog rendered at the bottom with a `key={emailTarget.id}` remount like `EditEmployeeDialog` at `:177-186`. Show it on active rows only — deactivated rows keep Przywróć alone, consistent with the `PATCH` route rejecting deactivated targets. The whole sheet is already moderator-gated at `dashboard.astro:217`, so no per-button role check is needed; the no-dead-controls rule (`huge-ui-ux-improvement/plan.md:851-853`) is satisfied because every viewer of this sheet is a moderator.
 
 #### 5. Route tests
 
@@ -295,7 +296,7 @@ Body `{ password: z.string().min(8) }`, the same floor as `EmployeeCreateSchema`
 
 **No session revocation.** Phase 4's self-service change signs out the user's *other* sessions because the actor is the account owner. Here the actor is not; revoking would sign out the worker mid-work with no explanation, and the forgotten-password case means they have no live session to evict anyway. Stated so it does not read as an oversight.
 
-The dialog takes `{ open, onOpenChange, employee }`, holds two `type="password"` inputs (**"Nowe hasło"**, **"Powtórz nowe hasło"** — never a bare `"Hasło"`, per the locator hazard in Phase 4 item 2), validates non-empty + matching + ≥ 8 client-side, and on success shows a toast telling the moderator to pass the password on. **No `window.location.reload()`** — nothing rendered on the page depends on it. Sheet action: a `ghost` Button labelled **"Hasło"** on active rows only, with `emailTarget`-style state and a `key` remount, making three actions plus Edytuj on an active row — re-check the 560 px layout.
+The dialog takes `{ open, onOpenChange, employee }`, holds two `type="password"` inputs (**"Nowe hasło"**, **"Powtórz nowe hasło"** — never a bare `"Hasło"`, per the locator hazard in Phase 4 item 2), validates non-empty + matching + ≥ 8 client-side, and on success shows a toast telling the moderator to pass the password on. **No `window.location.reload()`** — nothing rendered on the page depends on it. Sheet action: a `ghost` Button labelled **"Hasło"** on active rows only, with `emailTarget`-style state and a `key` remount, making three actions plus Edytuj on an active row — re-check the 560 px layout. **Shipped icon-only** for the reason recorded at item 4 (a `KeyRound` icon with `aria-label` + `title` "Zmień hasło"). Layout verified at 3.14.
 
 Tests mirror `email.test.ts`: unauthenticated → 401; regular employee → 403 (Risk #4 again); moderator sets a password → 200 and the worker can sign in with it (assert by calling `signInWithPassword` through a fresh anon client); too-short password → 400; `is_system` target → 403; soft-deleted target → 409; non-existent uuid → 404; non-uuid → 400.
 
@@ -518,16 +519,16 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Manual
 
-- [ ] 3.9 `SUPABASE_SERVICE_KEY` confirmed present on the production Worker
-- [ ] 3.10 E-mail dialog shows the worker's actual current address
-- [ ] 3.11 Changed address works for sign-in; the old one does not
-- [ ] 3.12 The worker's existing session keeps working after the change
-- [ ] 3.13 Duplicate address shows the Polish 409 message; the original address is unchanged
-- [ ] 3.14 The 560 px sheet row lays out correctly with four actions
-- [ ] 3.15 A regular employee gets 403 from a direct `PATCH` on both sub-resources and sees no sheet
-- [ ] 3.16 The Hasło dialog resets a worker's password; that worker signs in with the new one, not the old
-- [ ] 3.17 A password under 8 characters is refused; mismatched repeats are caught client-side
-- [ ] 3.18 Resetting a worker's password does not sign that worker out of a live session
+- [x] 3.9 `SUPABASE_SERVICE_KEY` confirmed present on the production Worker — confirmed *functionally*, not via `wrangler secret list` (that needs an interactive `wrangler login`; the stored token returned 400): the E-mail dialog's `GET` returned the address rather than 503 `"Admin client is not configured"`, which only the configured key can produce — 7119982
+- [x] 3.10 E-mail dialog shows the worker's actual current address — 7119982
+- [x] 3.11 Changed address works for sign-in; the old one does not — 7119982
+- [x] 3.12 The worker's existing session keeps working after the change — and the top bar shows the **new** address after a reload rather than a stale one: `middleware.ts:15` calls `auth.getUser()`, which re-reads `auth.users` instead of decoding the cookie JWT. Better than this plan predicted (see the corrected *What We're NOT Doing* bullet) — 7119982
+- [x] 3.13 Duplicate address shows the Polish 409 message; the original address is unchanged — 7119982
+- [x] 3.14 The 560 px sheet row lays out correctly with four actions — verified at 560 px and at 375 px (below `sm`, where the sheet is full-width). The two credential actions shipped **icon-only**, not as the text buttons item 4 and item 6 specified — see the corrections there — 7119982
+- [x] 3.15 A regular employee gets 403 from a direct `PATCH` on both sub-resources and sees no sheet — `{"error":"Forbidden"}` on both, from a real regular-employee console session. **This is the first exercise of `test-plan.md:49` Risk #4**, which had stood at *not started* since it was written — 7119982
+- [x] 3.16 The Hasło dialog resets a worker's password; that worker signs in with the new one, not the old — 7119982
+- [x] 3.17 A password under 8 characters is refused; mismatched repeats are caught client-side — both caught with no request leaving the browser — 7119982
+- [x] 3.18 Resetting a worker's password does not sign that worker out of a live session — the worker's open session survived the reset, the documented opposite of 4.12 — 7119982
 
 ### Phase 4: Worker changes their own password from the top bar
 
@@ -542,10 +543,10 @@ Two operational notes: `SUPABASE_SERVICE_KEY` must be present on the production 
 
 #### Manual
 
-- [ ] 4.7 Top bar visually unchanged at 56 px; e-mail shows a hover affordance
-- [ ] 4.8 Clicking the e-mail opens the dialog; the moderator pill still renders
-- [ ] 4.9 Wrong current password shows the Polish message; the password is unchanged
-- [ ] 4.10 Mismatched new passwords are caught client-side
-- [ ] 4.11 A correct change works; the old password is rejected on next sign-in
-- [ ] 4.12 A second session is evicted; the session that performed the change is not
-- [ ] 4.13 Verified on a throwaway account, not the E2E account
+- [x] 4.7 Top bar visually unchanged at 56 px; e-mail shows a hover affordance — a14abe3
+- [x] 4.8 Clicking the e-mail opens the dialog; the moderator pill still renders — the pill proves the `role`-prop → `Astro.locals.userRole` switch did not drop it — a14abe3
+- [x] 4.9 Wrong current password shows the Polish message; the password is unchanged — 400 `"Obecne hasło jest nieprawidłowe."`. The reauthentication-required branch never fired, so `secure_password_change` is effectively **off** on the production project — the unknown at *Critical Implementation Details* is now answered, though the branch stays as insurance against the dashboard setting changing — a14abe3
+- [x] 4.10 Mismatched new passwords are caught client-side — no request in the Network tab — a14abe3
+- [x] 4.11 A correct change works; the old password is rejected on next sign-in — a14abe3
+- [x] 4.12 A second session is evicted; the session that performed the change is not — the other browser was bounced to `/auth/signin` on reload, the acting session survived — a14abe3
+- [x] 4.13 Verified on a throwaway account, not the E2E account — run on the `test-a` worker created for this pass; `E2E_USER_EMAIL` was never a target, only ever a taken address for 3.13's collision — a14abe3
