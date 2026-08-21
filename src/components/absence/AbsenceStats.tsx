@@ -11,6 +11,15 @@ interface AbsenceStatsProps {
   monthlyAbsences: Absence[];
   employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
+  /**
+   * Role alone decides the view — there is no self/team toggle. A moderator gets the team
+   * matrix with medals and totals; everyone else gets a single row, their own.
+   *
+   * This flag only shapes the presentation. The data behind it is already scoped: the monthly
+   * props are narrowed in `dashboard.astro`, and the yearly fetch below is scoped server-side
+   * by `GET /api/absences/stats`, which reads the caller's role rather than anything sent.
+   */
+  isModerator: boolean;
   year: number;
   month: number;
 }
@@ -82,9 +91,22 @@ interface StatsMatrixCardProps {
   data: MatrixData;
   /** Yearly matrix only — 🥇🥈🥉 per type column and on the Łącznie column. */
   showMedals?: boolean;
+  /**
+   * Omit the bottom `Łącznie` band. Set in the single-row self view, where that band is a
+   * verbatim copy of the one data row above it. The per-row `Łącznie` column stays either way.
+   */
+  hideTotalsRow?: boolean;
 }
 
-function StatsMatrixCard({ title, subtitle, employees, absenceTypes, data, showMedals }: StatsMatrixCardProps) {
+function StatsMatrixCard({
+  title,
+  subtitle,
+  employees,
+  absenceTypes,
+  data,
+  showMedals,
+  hideTotalsRow,
+}: StatsMatrixCardProps) {
   const gridTemplate = `240px repeat(${String(absenceTypes.length)},1fr) 150px`;
 
   const medalsByType = useMemo(() => {
@@ -188,27 +210,41 @@ function StatsMatrixCard({ title, subtitle, employees, absenceTypes, data, showM
             );
           })}
 
-          <div className="grid items-center bg-[#f4f6f8] py-3" style={{ gridTemplateColumns: gridTemplate }}>
-            <div className="text-primary px-4 text-xs font-bold tracking-[0.05em] uppercase">Łącznie</div>
-            {absenceTypes.map((type, i) => (
+          {!hideTotalsRow && (
+            <div className="grid items-center bg-[#f4f6f8] py-3" style={{ gridTemplateColumns: gridTemplate }}>
+              <div className="text-primary px-4 text-xs font-bold tracking-[0.05em] uppercase">Łącznie</div>
+              {absenceTypes.map((type, i) => (
+                <div
+                  key={type.id}
+                  className={cn(
+                    "text-center text-[13px] font-bold",
+                    data.perType[i] > 0 ? "text-primary" : "text-line",
+                  )}
+                >
+                  {cellText(data.perType[i])}
+                </div>
+              ))}
               <div
-                key={type.id}
-                className={cn("text-center text-[13px] font-bold", data.perType[i] > 0 ? "text-primary" : "text-line")}
+                className={cn("px-4 text-right text-[13px] font-bold", data.grand > 0 ? "text-primary" : "text-line")}
               >
-                {cellText(data.perType[i])}
+                {cellText(data.grand)}
               </div>
-            ))}
-            <div className={cn("px-4 text-right text-[13px] font-bold", data.grand > 0 ? "text-primary" : "text-line")}>
-              {cellText(data.grand)}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes, year, month }: AbsenceStatsProps) {
+export default function AbsenceStats({
+  monthlyAbsences,
+  employees,
+  absenceTypes,
+  isModerator,
+  year,
+  month,
+}: AbsenceStatsProps) {
   const [yearlyAbsences, setYearlyAbsences] = useState<Absence[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,7 +254,9 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/absences?year=${year}`, { signal: controller.signal })
+    // The scoped counterpart to GET /api/absences, which stays team-wide for the grid and
+    // Szczegóły. Both roles call it; the server decides what comes back.
+    fetch(`/api/absences/stats?year=${year}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         setTruncated(r.headers.get("X-Result-Truncated") === "1");
@@ -264,21 +302,39 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
       )}
       <div className="grid grid-cols-2 gap-4">
         <KpiTile label="Dni nieobecności" value={cellText(monthlyData.grand)} note={capitalizedMonth} />
-        <KpiTile
-          label="Pracownicy z nieobecnością"
-          // Denominator is the passed employees prop, already visibleEmployeesFilter()-scoped.
-          value={`${String(monthlyData.employeesWithAbsence)} / ${String(employees.length)}`}
-          note="w tym miesiącu"
-        />
+        {isModerator ? (
+          <KpiTile
+            label="Pracownicy z nieobecnością"
+            // Denominator is the passed employees prop, already visibleEmployeesFilter()-scoped.
+            value={`${String(monthlyData.employeesWithAbsence)} / ${String(employees.length)}`}
+            note="w tym miesiącu"
+          />
+        ) : (
+          // "N / M" is meaningless at M=1, so the self view spends the tile on year-to-date
+          // instead. It reads off the yearly fetch, so unlike the month tile beside it, it has
+          // a pending state — a placeholder rather than a 0 that would read as a real figure.
+          <KpiTile
+            label="Dni nieobecności w tym roku"
+            value={loading || error ? "—" : cellText(yearlyData.grand)}
+            // The raw error is an HTTP status; it stays in the paragraph below, where it has
+            // room. Here it only has to say "this is not a real figure".
+            note={error ? "Błąd ładowania" : `Rok ${String(year)}`}
+          />
+        )}
       </div>
 
       <TypeBreakdown absenceTypes={absenceTypes} data={monthlyData} period={capitalizedMonth} />
 
       <StatsMatrixCard
-        title={`Statystyki miesięczne – ${capitalizedMonth}`}
+        title={
+          isModerator
+            ? `Statystyki miesięczne – ${capitalizedMonth}`
+            : `Moje statystyki miesięczne – ${capitalizedMonth}`
+        }
         employees={employees}
         absenceTypes={absenceTypes}
         data={monthlyData}
+        hideTotalsRow={!isModerator}
       />
 
       {loading ? (
@@ -287,12 +343,17 @@ export default function AbsenceStats({ monthlyAbsences, employees, absenceTypes,
         <p className="text-destructive">{error}</p>
       ) : (
         <StatsMatrixCard
-          title={`Statystyki roczne – Rok ${String(year)}`}
-          subtitle="narastająco od stycznia · 🥇🥈🥉 najwięcej dni w kolumnie"
+          title={
+            isModerator ? `Statystyki roczne – Rok ${String(year)}` : `Moje statystyki roczne – Rok ${String(year)}`
+          }
+          subtitle={
+            isModerator ? "narastająco od stycznia · 🥇🥈🥉 najwięcej dni w kolumnie" : "narastająco od stycznia"
+          }
           employees={employees}
           absenceTypes={absenceTypes}
           data={yearlyData}
-          showMedals
+          showMedals={isModerator}
+          hideTotalsRow={!isModerator}
         />
       )}
     </div>

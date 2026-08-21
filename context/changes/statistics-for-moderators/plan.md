@@ -359,10 +359,10 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [x] 2.1 Type checking passes: `npm run build`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 New unit suite passes: `npm run test:run -- src/tests/lib/absence-stats.test.ts`
-- [x] 2.4 Full suite passes: `npm run test:run`
+- [x] 2.1 Type checking passes: `npm run build` — e377daf
+- [x] 2.2 Linting passes: `npm run lint` — e377daf
+- [x] 2.3 New unit suite passes: `npm run test:run -- src/tests/lib/absence-stats.test.ts` — e377daf
+- [x] 2.4 Full suite passes: `npm run test:run` — e377daf
 
 #### Manual
 
@@ -372,9 +372,9 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [ ] 3.1 Type checking passes: `npm run build`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Full suite passes: `npm run test:run`
+- [x] 3.1 Type checking passes: `npm run build`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Full suite passes: `npm run test:run`
 
 #### Manual
 

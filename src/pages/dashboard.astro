@@ -19,7 +19,7 @@ import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import { visibleEmployeesFilter } from "@/lib/employees";
-import type { Employee, Absence, AbsenceType, HolidayBalanceView } from "@/types";
+import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
@@ -51,7 +51,7 @@ if (!Astro.locals.user) {
 const db = createDb(DATABASE_URL);
 
 let employeeDbError = false;
-let currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role"> | null = null;
+let currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role"> | null = null;
 
 try {
   const row = await db
@@ -71,8 +71,12 @@ try {
 }
 
 let dataDbError = false;
-let allEmployees: Employee[] = [];
-let gridEmployees: Employee[] = [];
+let allEmployees: EmployeeListItem[] = [];
+let gridEmployees: EmployeeListItem[] = [];
+// The Statystyki tab is role-scoped: a moderator keeps the team view, everyone else sees only
+// their own figures. Siatka and Szczegóły stay team-wide and keep gridEmployees / absences.
+let statsEmployees: EmployeeListItem[] = [];
+let statsAbsences: Absence[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
 let holidayBalance: HolidayBalanceView | null = null;
@@ -83,18 +87,22 @@ if (currentEmployee) {
   const firstDayNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
 
   const empCols = {
+    // No `user_id`: these rows become client:load island props, which Astro serializes into the
+    // page HTML. The Supabase Auth id must not travel to every browser and no component reads
+    // it — hence EmployeeListItem rather than Employee. GET /api/employees omits it too.
     id: employeesTable.id,
-    user_id: employeesTable.user_id,
     first_name: employeesTable.first_name,
     last_name: employeesTable.last_name,
     role: employeesTable.role,
     deleted_at: employeesTable.deleted_at,
     created_at: employeesTable.created_at,
     display_order: employeesTable.display_order,
-    // Selected so the row type satisfies `Employee` after Phase 1 added the column.
+    // Selected so the row type satisfies `EmployeeListItem` after Phase 1 added the column.
     // Phase 3 adds the visible-employees `where` filter; this is type-only.
     is_system: employeesTable.is_system,
   };
+
+  const isModerator = currentEmployee.role === "moderator";
 
   // `visibleEmployeesFilter()` on both arms, matching the employee selects below: an
   // is_system-owned absence would otherwise reach the grid and the Details table with no
@@ -173,6 +181,15 @@ if (currentEmployee) {
         : allEmployees;
     absences = absencesResult;
     absenceTypes = typesResult;
+
+    // Narrowed here rather than in React: island props are serialized into the page HTML, so a
+    // non-moderator's browser must never be handed a colleague's row to filter out client-side.
+    // The yearly half of the tab is scoped separately and server-side by GET /api/absences/stats.
+    // Falls back to an empty list if the caller's own row is somehow absent — the matrix renders
+    // empty rather than erroring.
+    const selfId = currentEmployee.id;
+    statsEmployees = isModerator ? gridEmployees : employeesResult.filter((e) => e.id === selfId);
+    statsAbsences = isModerator ? absencesResult : absencesResult.filter((a) => a.employee_id === selfId);
   } catch (error) {
     Sentry.captureException(error, { tags: { page: "dashboard", phase: "data-fetch" } });
     dataDbError = true;
@@ -285,9 +302,10 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
             {currentTab === "stats" && (
               <AbsenceStats
                 client:load
-                monthlyAbsences={absences}
-                employees={gridEmployees}
+                monthlyAbsences={statsAbsences}
+                employees={statsEmployees}
                 absenceTypes={absenceTypes}
+                isModerator={currentEmployee.role === "moderator"}
                 year={year}
                 month={month}
               />
