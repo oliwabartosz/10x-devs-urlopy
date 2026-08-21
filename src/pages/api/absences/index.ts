@@ -7,10 +7,10 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
+import { LIST_LIMIT, absenceListColumns, absenceEmployeeJoin, yearWindow } from "@/lib/services/absence-list";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
-import { visibleEmployeesFilter } from "@/lib/employees";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
@@ -20,11 +20,6 @@ const json = (data: unknown, status: number, extraHeaders?: Record<string, strin
     status,
     headers: { "Content-Type": "application/json", ...extraHeaders },
   });
-
-// Hard cap on a list response. Consumers that aggregate over the whole list (statistics,
-// the Details yearly view) must know when they were handed a partial one, so GET reports
-// truncation through the `X-Result-Truncated` header rather than silently returning short.
-const LIST_LIMIT = 5000;
 
 const YearSchema = z.string().regex(/^\d{4}$/);
 
@@ -73,9 +68,7 @@ export const GET: APIRoute = async (context) => {
   let to: string;
 
   if (useYearMode) {
-    const year = yearParsed.data;
-    from = `${year}-01-01`;
-    to = `${(parseInt(year, 10) + 1).toString().padStart(4, "0")}-01-01`;
+    ({ from, to } = yearWindow(yearParsed.data));
   } else if (fromParsed.success && toParsed.success) {
     from = fromParsed.data;
     if (new Date(from + "T00:00:00Z") > new Date(toParsed.data + "T00:00:00Z")) {
@@ -92,34 +85,16 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
-  // `visibleEmployeesFilter()` on both arms: the Details table renders these rows raw, so an
-  // is_system-owned absence would surface as an unnamed row carrying its date, type, hours and
-  // comment. The employee lists are already scoped; this closes the same hole on the join
-  // (context/changes/admin-bootstrap/plan.md).
-  const joinCondition =
-    employeeRow.role === "moderator"
-      ? and(eq(absences.employee_id, employees.id), visibleEmployeesFilter())
-      : and(eq(absences.employee_id, employees.id), isNull(employees.deleted_at), visibleEmployeesFilter());
+  // Shared with `GET /api/absences/stats` — see `@/lib/services/absence-list` for why both
+  // arms carry `visibleEmployeesFilter()` and only the employee arm guards `deleted_at`.
+  const joinCondition = absenceEmployeeJoin(employeeRow.role);
 
   try {
     const data = await db
-      .select({
-        id: absences.id,
-        employee_id: absences.employee_id,
-        absence_type_id: absences.absence_type_id,
-        date: absences.date,
-        is_full_day: absences.is_full_day,
-        start_time: absences.start_time,
-        end_time: absences.end_time,
-        comment: absences.comment,
-        substitute_employee_id: absences.substitute_employee_id,
-        created_at: absences.created_at,
-        updated_at: absences.updated_at,
-      })
+      .select(absenceListColumns)
       .from(absences)
       // No employee_id filter: the team grid shows all employees' absences to every user.
-      // Regular employees: only active employees' absences (isNull guard on deleted_at).
-      // Moderators: all absences including deactivated employees (historical data preservation).
+      // `GET /api/absences/stats` is the scoped counterpart for the Statystyki tab.
       .innerJoin(employees, joinCondition)
       .where(and(gte(absences.date, from), lt(absences.date, to)))
       .orderBy(asc(absences.date))
