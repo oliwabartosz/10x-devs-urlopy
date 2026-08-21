@@ -146,7 +146,9 @@ Uzytkownicy loguja sie przez email i haslo.
 - The leave plan module is not required for the primary MVP flow; it remains nice-to-have unless pulled into scope later.
 - No external integrations with other workplace platforms in the MVP.
 - No native mobile application in the MVP; the first version is web-only.
-- No separate statistics visibility rules for employees and moderators; statistics are general for everyone.
+- Separate statistics visibility rules for employees and moderators were out of scope at shaping time.
+  Superseded 2026-08-21 by S-23 (`statistics-for-moderators`) — see PRD §Access Control for the rule
+  that shipped.
 - No full leave-planning module in the primary MVP flow.
 - No complex vacation approval workflow in the MVP.
 

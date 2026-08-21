@@ -37,31 +37,32 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (użytkownik może …)                                                                                    | Prerequisites | PRD refs                                    | Status   |
-| ---- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------- | -------- |
-| F-01 | data-schema-and-rls          | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator | —             | FR-001, FR-002, FR-003, FR-004, FR-007      | done     |
-| S-01 | monthly-grid-own-absence     | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis   | F-01          | FR-001, FR-002, FR-004, US-01               | done     |
-| S-02 | details-and-stats            | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                         | S-01          | FR-005, FR-006                              | done     |
-| S-03 | moderator-absence-management | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                  | S-01, F-01    | FR-003                                      | done     |
-| S-04 | employee-management          | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                        | F-01          | FR-007                                      | done     |
-| S-05 | drizzle-migration            | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                      | S-04          | —                                           | done     |
-| S-06 | details-subcards             | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                       | S-02          | FR-005, FR-006                              | done     |
-| S-07 | employee-grid-order          | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                      | S-04          | FR-007                                      | done     |
-| S-08 | deactivated-employee-grid    | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                     | S-03, S-04    | FR-003, FR-007                              | done     |
-| S-09 | absence-hours-range          | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach | S-01       | FR-004, US-01                               | done     |
-| S-10 | dev-vars-rename              | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie             | —             | —                                           | done     |
-| S-11 | admin-bootstrap              | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04 | FR-007 | done     |
-| S-12 | sentry-integration           | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                     | —          | —      | done     |
-| S-13 | urlop-planowany-category     | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01       | FR-001, FR-002 | done |
-| S-14 | hours-onsite-training-only   | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09       | FR-004         | done     |
-| S-15 | urlop-balance                | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01       | FR-005, FR-006 | done     |
-| S-16 | main-page-redesign           | (tech/UX) zalogować się z nowej, jasnej strony logowania na `/` (branding NBP „Nieobecności") zamiast startowego szablonu; zalogowany użytkownik trafia od razu do `/dashboard`                                 | —          | —              | done     |
-| S-17 | huge-ui-ux-improvement       | (UX) korzystać z całego dashboardu w jednym języku wizualnym marki NBP — warstwa design-tokenów, przeprojektowane karty, siatka, filtry typów; koniec trzech współistniejących motywów                          | S-16       | FR-001, FR-002, FR-005 | done |
-| S-18 | absence-hours-window         | zakres godzin nieobecności niepełnodniowej jest ograniczony (maks. 8 h, start ≥ 06:00) i korygowany zarówno w formularzu, jak i po stronie API                                                                  | S-09, S-14 | FR-004         | done |
-| S-19 | radial-timepicker-ux         | wybrać godziny nieobecności na tarczy zegara w skoku 15 min i zobaczyć komunikat o korekcie zamiast cichego przycięcia wartości                                                                                 | S-18       | FR-004         | done |
-| S-20 | grid-adjustment-offsite-training | siatka mieści ~10 pracowników — komórka pokazuje ikonę + zakres godzin (nazwa typu w legendzie i tooltipie), a szerokości kolumn są związane `table-fixed`                                                  | S-17       | FR-001, FR-002 | done |
-| S-21 | grid-multicheck              | zaznaczyć wielodniową nieobecność jednym przeciągnięciem myszy po siatce, z pominięciem nieklikalnych weekendów                                                                                                 | S-17       | FR-001, FR-004 | done |
-| S-22 | workers-data-edit            | (moderator) zmienić e-mail pracownika oraz wymiar urlopu (bieżący / zaległy / korekta); pracownik zmienia własne hasło z poziomu swojego e-maila w topbarze                                                     | S-04, S-15 | FR-005, FR-007 | planned  |
+| ID   | Change ID                        | Outcome (użytkownik może …)                                                                                                                                                                                     | Prerequisites | PRD refs                               | Status  |
+| ---- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------- | ------- |
+| F-01 | data-schema-and-rls              | (foundation) tabele employees, absences, absence_types z migracjami + polityki RLS dla ról pracownik/moderator                                                                                                  | —             | FR-001, FR-002, FR-003, FR-004, FR-007 | done    |
+| S-01 | monthly-grid-own-absence         | wybrać miesiąc, zobaczyć siatkę miesięczną (dni × pracownicy z kolorami), dodać/edytować/usunąć własny wpis                                                                                                     | F-01          | FR-001, FR-002, FR-004, US-01          | done    |
+| S-02 | details-and-stats                | zobaczyć tabelę szczegółów nieobecności za dany miesiąc i statystyki miesięczne/roczne                                                                                                                          | S-01          | FR-005, FR-006                         | done    |
+| S-03 | moderator-absence-management     | (moderator) dodawać/edytować/usuwać wpisy nieobecności wszystkich pracowników                                                                                                                                   | S-01, F-01    | FR-003                                 | done    |
+| S-04 | employee-management              | (moderator) dodawać i usuwać pracowników bez usuwania historycznych wpisów nieobecności                                                                                                                         | F-01          | FR-007                                 | done    |
+| S-05 | drizzle-migration                | (tech) wymienić klienta Supabase JS na Drizzle ORM — typesafe queries, migracje w kodzie                                                                                                                        | S-04          | —                                      | done    |
+| S-06 | details-subcards                 | zakładka Szczegóły pokazuje osobne karty: Dzisiaj, Miesięcznie, Rocznie                                                                                                                                         | S-02          | FR-005, FR-006                         | done    |
+| S-07 | employee-grid-order              | (moderator) zmiana kolejności kolumn pracowników w siatce miesięcznej przez przeciąganie                                                                                                                        | S-04          | FR-007                                 | done    |
+| S-08 | deactivated-employee-grid        | (bugfix) siatka miesięczna pokazuje historyczne nieobecności zdezaktywowanych pracowników                                                                                                                       | S-03, S-04    | FR-003, FR-007                         | done    |
+| S-09 | absence-hours-range              | (UX) użytkownik widzi zakres godzin (np. "12:00–14:00") dla nieobecności niepełnodniowych w siatce i szczegółach                                                                                                | S-01          | FR-004, US-01                          | done    |
+| S-10 | dev-vars-rename                  | (tech) jeden plik `.env` dla Node tooling i Cloudflare local dev — wrangler czyta `.env` natywnie                                                                                                               | —             | —                                      | done    |
+| S-11 | admin-bootstrap                  | (tech/auth) konto admin tworzone z .env/.env.dev; brak samorejestracji — tylko moderatorzy dodają użytkowników; admin niewidoczny w siatce/szczegółach/liście pracowników i niesuwalny przez innych moderatorów | F-01, S-04    | FR-007                                 | done    |
+| S-12 | sentry-integration               | (tech) Sentry SDK wdrożone dla Cloudflare Workers — automatyczne raportowanie błędów runtime, source maps, alerting; zera ręcznego triage logów po incydentach produkcyjnych                                    | —             | —                                      | done    |
+| S-13 | urlop-planowany-category         | wybrać nową kategorię nieobecności "urlop planowany" z listy typów przy dodawaniu/edycji wpisu — widoczną w siatce i szczegółach z własnym kolorem                                                              | F-01          | FR-001, FR-002                         | done    |
+| S-14 | hours-onsite-training-only       | przy dodawaniu/edycji wpisu pole godzin (zakres czasu) jest dostępne wyłącznie dla kategorii "szkolenie w miejscu pracy"; pozostałe kategorie pozostają całodniowe                                              | S-09          | FR-004                                 | done    |
+| S-15 | urlop-balance                    | (pracownik) wpisać wymiar urlopu z systemu kadrowego (bieżący + zaległy) i widzieć ile dni urlopu zostało — aplikacja zlicza wykorzystane wpisy "urlop" i pokazuje saldo na karcie dashboardu, per rok          | F-01          | FR-005, FR-006                         | done    |
+| S-16 | main-page-redesign               | (tech/UX) zalogować się z nowej, jasnej strony logowania na `/` (branding NBP „Nieobecności") zamiast startowego szablonu; zalogowany użytkownik trafia od razu do `/dashboard`                                 | —             | —                                      | done    |
+| S-17 | huge-ui-ux-improvement           | (UX) korzystać z całego dashboardu w jednym języku wizualnym marki NBP — warstwa design-tokenów, przeprojektowane karty, siatka, filtry typów; koniec trzech współistniejących motywów                          | S-16          | FR-001, FR-002, FR-005                 | done    |
+| S-18 | absence-hours-window             | zakres godzin nieobecności niepełnodniowej jest ograniczony (maks. 8 h, start ≥ 06:00) i korygowany zarówno w formularzu, jak i po stronie API                                                                  | S-09, S-14    | FR-004                                 | done    |
+| S-19 | radial-timepicker-ux             | wybrać godziny nieobecności na tarczy zegara w skoku 15 min i zobaczyć komunikat o korekcie zamiast cichego przycięcia wartości                                                                                 | S-18          | FR-004                                 | done    |
+| S-20 | grid-adjustment-offsite-training | siatka mieści ~10 pracowników — komórka pokazuje ikonę + zakres godzin (nazwa typu w legendzie i tooltipie), a szerokości kolumn są związane `table-fixed`                                                      | S-17          | FR-001, FR-002                         | done    |
+| S-21 | grid-multicheck                  | zaznaczyć wielodniową nieobecność jednym przeciągnięciem myszy po siatce, z pominięciem nieklikalnych weekendów                                                                                                 | S-17          | FR-001, FR-004                         | done    |
+| S-22 | workers-data-edit                | (moderator) zmienić e-mail pracownika oraz wymiar urlopu (bieżący / zaległy / korekta); pracownik zmienia własne hasło z poziomu swojego e-maila w topbarze                                                     | S-04, S-15    | FR-005, FR-007                         | planned |
+| S-23 | statistics-for-moderators        | (moderator) zobaczyć statystyki wszystkich pracowników; pracownik widzi wyłącznie własne statystyki                                                                                                             | S-02          | FR-005, FR-006                         | planned |
 
 Legenda statusów: `done` = zaimplementowane i po impl-review · `review pending` =
 zaimplementowane, czeka na `/10x-impl-review` przed archiwizacją · `in progress` =
@@ -73,14 +74,14 @@ Nawigacyjna pomoc — grupuje pozycje ze wspólnym łańcuchem zależności. Kan
 wciąż żyje w sekcjach Foundations + Slices; ta tabela to proponowana kolejność czytania
 przez równoległe tory.
 
-| Stream | Temat                    | Łańcuch                                  | Uwaga                                                                        |
-| ------ | ------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------- |
-| A      | Rdzeń siatki i ewidencji | `F-01` → `S-01` → `S-02` / `S-03` / `S-09` | Ścieżka must-have; S-02, S-03 i S-09 można realizować równolegle po S-01  |
-| B      | Zarządzanie pracownikami | `F-01` → `S-04` → `S-07`                | S-07 wymaga S-04 (kolumna display_order na tabeli employees)                 |
-| C      | Post-MVP enhancements    | `S-02` → `S-06` / `S-04` → `S-05`       | S-05, S-06, S-07 można realizować równolegle; S-05 nie blokuje żadnego z nich |
-| D      | Bugfixy integralności    | `S-03` + `S-04` → `S-08`                | Bug odkryty podczas S-03; wymaga S-04 (is_active/deleted_at na employees)    |
-| E      | Redesign i dopracowanie UX | `S-16` → `S-17` → `S-20` / `S-21`     | S-17 wprowadza tokeny i ikony; S-20 i S-21 to jego świadome carve-outy      |
-| F      | Godziny nieobecności     | `S-09` → `S-14` → `S-18` → `S-19`       | Kolejne zawężenia tej samej reguły; S-19 dokłada kontrolkę i feedback       |
+| Stream | Temat                      | Łańcuch                                    | Uwaga                                                                         |
+| ------ | -------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------- |
+| A      | Rdzeń siatki i ewidencji   | `F-01` → `S-01` → `S-02` / `S-03` / `S-09` | Ścieżka must-have; S-02, S-03 i S-09 można realizować równolegle po S-01      |
+| B      | Zarządzanie pracownikami   | `F-01` → `S-04` → `S-07`                   | S-07 wymaga S-04 (kolumna display_order na tabeli employees)                  |
+| C      | Post-MVP enhancements      | `S-02` → `S-06` / `S-04` → `S-05`          | S-05, S-06, S-07 można realizować równolegle; S-05 nie blokuje żadnego z nich |
+| D      | Bugfixy integralności      | `S-03` + `S-04` → `S-08`                   | Bug odkryty podczas S-03; wymaga S-04 (is_active/deleted_at na employees)     |
+| E      | Redesign i dopracowanie UX | `S-16` → `S-17` → `S-20` / `S-21`          | S-17 wprowadza tokeny i ikony; S-20 i S-21 to jego świadome carve-outy        |
+| F      | Godziny nieobecności       | `S-09` → `S-14` → `S-18` → `S-19`          | Kolejne zawężenia tej samej reguły; S-19 dokłada kontrolkę i feedback         |
 
 ## Baseline
 
@@ -402,27 +403,27 @@ Zmiany bez wartości użytkowej per se, więc bez numeru slice'a — ale realne 
 tak samo. Śledzone tu, żeby archiwum dało się odczytać wstecz. Rollout testów ma własny
 dokument: `context/foundation/test-plan.md`.
 
-| Change ID           | Czego dotyczy                                                                 | Status                              |
-| ------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| ci-cd-code-review   | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)          | archived 2026-07-06                 |
-| code-review-evals   | promptfoo jako harness ewaluacyjny dla agenta code-review                     | archived 2026-08-17                 |
-| crud-integrity      | Bootstrap Vitest + testy integralności CRUD i 409 (test-plan §3, faza 1)      | archived 2026-08-12                 |
-| tool-loop-agent     | Agent z pętlą narzędziową (ćwiczenie M4)                                      | archived 2026-08-12                 |
-| team-status-digest  | Poranny digest statusu projektu — `scripts/team-digest.ts` (M5L1)             | archived 2026-08-12                 |
-| e2e-auth-locators   | Naprawa lokatorów logowania w `tests/e2e/setup/auth.setup.ts`                 | archived 2026-08-12                 |
-| dev-vars-rename     | (ma slice S-10) — konsolidacja `.dev.vars` → `.env.dev`                       | archived 2026-08-17                 |
-| bootstrap-verification | Log weryfikacji ze scaffoldingu (`/10x-bootstrapper`) — nie jest zmianą     | artefakt, nie do archiwizacji       |
+| Change ID              | Czego dotyczy                                                            | Status                        |
+| ---------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| ci-cd-code-review      | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)     | archived 2026-07-06           |
+| code-review-evals      | promptfoo jako harness ewaluacyjny dla agenta code-review                | archived 2026-08-17           |
+| crud-integrity         | Bootstrap Vitest + testy integralności CRUD i 409 (test-plan §3, faza 1) | archived 2026-08-12           |
+| tool-loop-agent        | Agent z pętlą narzędziową (ćwiczenie M4)                                 | archived 2026-08-12           |
+| team-status-digest     | Poranny digest statusu projektu — `scripts/team-digest.ts` (M5L1)        | archived 2026-08-12           |
+| e2e-auth-locators      | Naprawa lokatorów logowania w `tests/e2e/setup/auth.setup.ts`            | archived 2026-08-12           |
+| dev-vars-rename        | (ma slice S-10) — konsolidacja `.dev.vars` → `.env.dev`                  | archived 2026-08-17           |
+| bootstrap-verification | Log weryfikacji ze scaffoldingu (`/10x-bootstrapper`) — nie jest zmianą  | artefakt, nie do archiwizacji |
 
 ## Backlog Handoff
 
 Rozliczone zostały wszystkie pozycje do S-20 włącznie; poniżej tylko to, co realnie czeka
 na pracę. Pełna historia zamkniętych pozycji jest w sekcji **Done** i w `context/archive/`.
 
-| Roadmap ID | Change ID                        | Sugerowany tytuł issue                                                 | Gotowy na `/10x-plan` | Uwagi                                                             |
-| ---------- | -------------------------------- | ---------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| S-21       | grid-multicheck                  | [Urlopy] Zaznaczanie wielu dni przeciągnięciem po siatce               | yes                   | `research.md` gotowy; uruchom `/10x-plan grid-multicheck`         |
-| S-22       | workers-data-edit                | [Urlopy] Moderator edytuje e-mail i wymiar urlopu; pracownik zmienia hasło | yes               | `research.md` gotowy; uruchom `/10x-plan workers-data-edit`       |
-| —          | code-review-evals                | [Tooling] promptfoo — ewaluacja agenta code-review                     | done                  | Zarchiwizowane 2026-08-17 → `context/archive/2026-07-06-code-review-evals/` |
+| Roadmap ID | Change ID         | Sugerowany tytuł issue                                                     | Gotowy na `/10x-plan` | Uwagi                                                                       |
+| ---------- | ----------------- | -------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| S-21       | grid-multicheck   | [Urlopy] Zaznaczanie wielu dni przeciągnięciem po siatce                   | yes                   | `research.md` gotowy; uruchom `/10x-plan grid-multicheck`                   |
+| S-22       | workers-data-edit | [Urlopy] Moderator edytuje e-mail i wymiar urlopu; pracownik zmienia hasło | yes                   | `research.md` gotowy; uruchom `/10x-plan workers-data-edit`                 |
+| —          | code-review-evals | [Tooling] promptfoo — ewaluacja agenta code-review                         | done                  | Zarchiwizowane 2026-08-17 → `context/archive/2026-07-06-code-review-evals/` |
 
 ## Open Roadmap Questions
 
@@ -435,7 +436,6 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 - **Złożony workflow zatwierdzania urlopów** — Why parked: PRD §Non-Goals.
 - **Integracje zewnętrzne (inne platformy firmowe)** — Why parked: PRD §Non-Goals.
 - **Aplikacja natywna mobilna** — Why parked: PRD §Non-Goals; pierwsza wersja web-only.
-- **Osobne reguły widoczności statystyk dla pracownika i moderatora** — Why parked: PRD §Non-Goals.
 - **Zaawansowane logowanie strukturalne** — Why parked: brak wymogu w PRD NFRs; podstawowy error tracking pokrywa S-12 (Sentry); pełne structured logging to post-MVP.
 
 ## Done

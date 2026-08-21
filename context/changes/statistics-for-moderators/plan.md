@@ -372,9 +372,9 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [x] 3.1 Type checking passes: `npm run build`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Full suite passes: `npm run test:run`
+- [x] 3.1 Type checking passes: `npm run build` — 16d841c
+- [x] 3.2 Linting passes: `npm run lint` — 16d841c
+- [x] 3.3 Full suite passes: `npm run test:run` — 16d841c
 
 #### Manual
 
@@ -389,8 +389,8 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [ ] 4.1 Prettier clean on the edited markdown
-- [ ] 4.2 No stale "statistics are general for everyone" reference remains in `context/foundation/`
+- [x] 4.1 Prettier clean on the edited markdown
+- [x] 4.2 No stale "statistics are general for everyone" reference remains in `context/foundation/`
 
 #### Manual
 

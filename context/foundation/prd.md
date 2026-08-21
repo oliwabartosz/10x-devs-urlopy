@@ -106,15 +106,15 @@ The rule applies to these absence types from the seed notes: wyjazd zagraniczny,
 
 Accepted color mapping (superseded 2026-08-07 by S-17 `huge-ui-ux-improvement`, which adopted the `new-design/` prototype palette). Each type now also carries an explicit foreground colour and an emoji icon, and the catalogue has a stable display order. All three live in `absence_types` alongside the colour — adding or recolouring a type is a data change, not a code change.
 
-| Order | Type | Background | Foreground | Icon |
-| --- | --- | --- | --- | --- |
-| 1 | urlop | #cceeff | #0b5a72 | 🌴 |
-| 2 | szkolenie/wyjscie poza miejsce pracy | #ffcc99 | #8a4a00 | 🏃🏼‍♂️‍➡️ |
-| 3 | szkolenie w miejscu pracy | #ffe8a8 | #7a5b00 | 🎓 |
-| 4 | choroba | #2f578c | #ffffff | 🤒 |
-| 5 | wyjazd zagraniczny | #f2a3a3 | #7d0d1c | 🌍 |
-| 6 | stala nieobecnosc | #ccffcc | #2c5c2c | 🚫 |
-| 7 | urlop planowany | #99ccff | #0b3f6b | 📅 |
+| Order | Type                                 | Background | Foreground | Icon |
+| ----- | ------------------------------------ | ---------- | ---------- | ---- |
+| 1     | urlop                                | #cceeff    | #0b5a72    | 🌴   |
+| 2     | szkolenie/wyjscie poza miejsce pracy | #ffcc99    | #8a4a00    | 🏃🏼‍♂️‍➡️   |
+| 3     | szkolenie w miejscu pracy            | #ffe8a8    | #7a5b00    | 🎓   |
+| 4     | choroba                              | #2f578c    | #ffffff    | 🤒   |
+| 5     | wyjazd zagraniczny                   | #f2a3a3    | #7d0d1c    | 🌍   |
+| 6     | stala nieobecnosc                    | #ccffcc    | #2c5c2c    | 🚫   |
+| 7     | urlop planowany                      | #99ccff    | #0b3f6b    | 📅   |
 
 Note that `choroba` takes the navy `wyjazd zagraniczny` previously used; the icon, not the colour, is now the fast discriminator. `urlop planowany` (seeded by S-13) is included here — the superseded list predated it.
 
@@ -125,6 +125,10 @@ Uzytkownicy loguja sie przez email i haslo.
 - Pracownik moze dodawac, edytowac i usuwac tylko wpisy dotyczace jego wlasnej kolumny / osoby.
 - Moderator moze dodawac, edytowac i usuwac wpisy wszystkich pracownikow.
 - Moderator moze dodawac i usuwac pracownikow.
+- Moderator widzi statystyki wszystkich pracownikow; pozostali uzytkownicy widza w zakladce Statystyki
+  wylacznie wlasne dane. Nie jest to pelna granica prywatnosci: siatka miesieczna i tabela szczegolow
+  pozostaja wspolne dla calego zespolu, wiec te same dni nieobecnosci sa nadal widoczne. Znika wylacznie
+  porownawczy, rankingowy widok statystyk (medale, macierz "kto wzial najwiecej dni").
 - Niezalogowany uzytkownik nie ma dostepu do widokow ewidencji, planu urlopow ani statystyk.
 
 ## Non-Goals
@@ -132,7 +136,6 @@ Uzytkownicy loguja sie przez email i haslo.
 - The leave plan module is not required for the primary MVP flow; it remains nice-to-have unless pulled into scope later.
 - No external integrations with other workplace platforms in the MVP.
 - No native mobile application in the MVP; the first version is web-only.
-- No separate statistics visibility rules for employees and moderators; statistics are general for everyone.
 - No full leave-planning module in the primary MVP flow.
 - No complex vacation approval workflow in the MVP.
 
