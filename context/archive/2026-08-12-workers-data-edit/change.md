@@ -1,10 +1,10 @@
 ---
 change_id: workers-data-edit
 title: Moderator edits worker email and absence-day balances; workers change own password
-status: impl_reviewed
+status: archived
 created: 2026-08-12
 updated: 2026-08-21
-archived_at: null
+archived_at: 2026-08-21T14:18:16Z
 ---
 
 ## Notes

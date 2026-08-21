@@ -3,7 +3,7 @@ project: Urlopy
 version: 1
 status: draft
 created: 2026-05-25
-updated: 2026-08-18
+updated: 2026-08-21
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -61,7 +61,7 @@ jeśli ten flow działa end-to-end, rdzeń produktu jest udowodniony.
 | S-19 | radial-timepicker-ux             | wybrać godziny nieobecności na tarczy zegara w skoku 15 min i zobaczyć komunikat o korekcie zamiast cichego przycięcia wartości                                                                                 | S-18          | FR-004                                 | done    |
 | S-20 | grid-adjustment-offsite-training | siatka mieści ~10 pracowników — komórka pokazuje ikonę + zakres godzin (nazwa typu w legendzie i tooltipie), a szerokości kolumn są związane `table-fixed`                                                      | S-17          | FR-001, FR-002                         | done    |
 | S-21 | grid-multicheck                  | zaznaczyć wielodniową nieobecność jednym przeciągnięciem myszy po siatce, z pominięciem nieklikalnych weekendów                                                                                                 | S-17          | FR-001, FR-004                         | done    |
-| S-22 | workers-data-edit                | (moderator) zmienić e-mail pracownika oraz wymiar urlopu (bieżący / zaległy / korekta); pracownik zmienia własne hasło z poziomu swojego e-maila w topbarze                                                     | S-04, S-15    | FR-005, FR-007                         | planned |
+| S-22 | workers-data-edit                | (moderator) zmienić e-mail pracownika oraz wymiar urlopu (bieżący / zaległy / korekta); pracownik zmienia własne hasło z poziomu swojego e-maila w topbarze                                                     | S-04, S-15    | FR-005, FR-007                         | done    |
 | S-23 | statistics-for-moderators        | (moderator) zobaczyć statystyki wszystkich pracowników; pracownik widzi wyłącznie własne statystyki                                                                                                             | S-02          | FR-005, FR-006                         | planned |
 
 Legenda statusów: `done` = zaimplementowane i po impl-review · `review pending` =
@@ -395,7 +395,7 @@ Foundations poniżej zakładają, że warstwy „OBECNA" są w miejscu i ich nie
   - Zmiana hasła przez pracownika: `updateUser` na sesji użytkownika vs. flow resetu mailem; czy wymagać starego hasła?
   - „Korekta" mapuje się na istniejące `used_adjustment_days` z S-15 czy na nowe pole?
 - **Risk:** Średnie — dotyka warstwy auth (service role po stronie serwera, nigdy w kliencie) i danych, które S-15 liczy do salda.
-- **Status:** planned — `research.md` gotowy, brak planu
+- **Status:** done
 
 ## Poza roadmapą — inżynieria, testy i narzędzia
 
@@ -440,6 +440,7 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Done
 
+- **S-22: moderator zmienia e-mail pracownika oraz jego wymiar urlopu (bieżący, zaległy, korekta); każdy pracownik może zmienić własne hasło, klikając swój e-mail w lewym górnym rogu.** — Archived 2026-08-21 → `context/archive/2026-08-12-workers-data-edit/`. Lesson: —.
 - **S-21: użytkownik zaznacza wielodniową nieobecność (np. 10 dni urlopu) jednym przeciągnięciem myszy po siatce zamiast klikać każdą komórkę osobno; weekendy pozostają nieklikalne i są pomijane w zaznaczeniu.** — Archived 2026-08-18 → `context/archive/2026-08-12-grid-multicheck/`. Lesson: —.
 - **S-17: cały dashboard w jednym języku wizualnym marki NBP — warstwa design-tokenów w `global.css`, przeprojektowane karty, siatka, zakładki i filtry typów; koniec trzech współistniejących motywów.** — Implemented + impl-reviewed 2026-08-10, archived 2026-08-12 → `context/archive/2026-08-07-huge-ui-ux-improvement/`. 8 faz, 80/80 wierszy Progress potwierdzonych; addytywna migracja `absence_types` (`icon`, `text_color`, `display_order`), usunięcie zduplikowanych ciemnych prymitywów auth, bramka moderatora na zapisie salda urlopu. Dwa wiersze zamknięte z odstępstwem opisanym w `change.md` (m.in. `Wyczyść filtry` jako toggle dwustanowy, `8b25781`). Ręczna weryfikacja wygenerowała trzy zmiany potomne: `absence-hours-window` (S-18), `holiday-balance-valid-until` i `grid-multicheck` (S-21). Reports: `reviews/impl-review.md`, `reviews/impl-review-2.md`.
 - **S-18: zakres godzin nieobecności niepełnodniowej ograniczony do maks. 8 h ze startem nie wcześniej niż 06:00, korygowany w formularzu i po stronie API.** — Implemented 2026-08-11, impl-reviewed 2026-08-17, archived 2026-08-18 → `context/archive/2026-08-07-absence-hours-window/`, 25/25 wierszy Progress. `frame.md` przestawił zakres z pierwotnego 07:15–23:59 (źródło „01:22" okazało się dummy data z makiety); dwa śmieciowe wiersze wyczyszczone, bez backfillu i bez CHECK-a w bazie. Impl-review NEEDS ATTENTION — 3 ostrzeżenia + 1 obserwacja, wszystkie naprawione w `2b9a228` (komunikat PATCH nazywał 06:00 dla zakresu bez związku z 06:00; zakres kończący się ≤ 06:00 blokował każdy PATCH wiersza; `END_BEFORE_FLOOR_ERROR` ręcznie zsynchronizowany w trzech trasach; test trasy asertował po wszystkich wierszach pracownika zamiast po własnej dacie). Report: `reviews/impl-review.md`. Lesson: —.
