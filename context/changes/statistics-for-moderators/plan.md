@@ -389,8 +389,8 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [x] 4.1 Prettier clean on the edited markdown
-- [x] 4.2 No stale "statistics are general for everyone" reference remains in `context/foundation/`
+- [x] 4.1 Prettier clean on the edited markdown — d89f325
+- [x] 4.2 No stale "statistics are general for everyone" reference remains in `context/foundation/` — d89f325
 
 #### Manual
 
