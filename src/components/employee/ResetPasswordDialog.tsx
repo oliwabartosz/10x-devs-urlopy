@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Employee } from "@/types";
+import type { EmployeeListItem } from "@/types";
 
 interface ResetPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employee: Employee;
+  employee: EmployeeListItem;
 }
 
 const MIN_PASSWORD_LENGTH = 8;

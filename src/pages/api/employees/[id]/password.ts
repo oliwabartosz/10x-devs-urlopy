@@ -34,7 +34,7 @@ export const PATCH: APIRoute = async (context) => {
   const resolved = await resolveModeratorTarget(context, route);
   if (resolved instanceof Response) return resolved;
 
-  if (resolved.deleted_at !== null) {
+  if (resolved.target.deleted_at !== null) {
     return json({ error: "Cannot update a deactivated employee" }, 409);
   }
 
@@ -56,7 +56,7 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   try {
-    const { error } = await adminClient.auth.admin.updateUserById(resolved.user_id, {
+    const { error } = await adminClient.auth.admin.updateUserById(resolved.target.user_id, {
       password: parsed.data.password,
     });
     if (error) {

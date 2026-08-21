@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { Absence, Employee, AbsenceType } from "@/types";
+import type { Absence, EmployeeListItem, AbsenceType } from "@/types";
 import AbsenceDetailsTable from "@/components/absence/AbsenceDetailsTable";
 import { AbsenceFormDialog } from "@/components/absence/AbsenceFormDialog";
 import { entryCountLabel } from "@/lib/plural";
@@ -8,9 +8,9 @@ import { toggleHidden, clearHidden, isFilterActive, visibleByType } from "@/lib/
 
 interface AbsenceDetailsSubcardsProps {
   absences: Absence[];
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
-  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
+  currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role">;
   year: number;
   month: number;
   initialSubcard: "today" | "monthly" | "yearly";
@@ -55,11 +55,11 @@ function parseIsoDate(value: string): Date {
 interface GroupCardProps {
   title: string;
   rows: Absence[];
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
   emptyLabel?: string;
-  onRowClick: (absence: Absence, employee: Employee) => void;
-  canEdit: (absence: Absence, employee: Employee | undefined) => boolean;
+  onRowClick: (absence: Absence, employee: EmployeeListItem) => void;
+  canEdit: (absence: Absence, employee: EmployeeListItem | undefined) => boolean;
 }
 
 // Module scope on purpose: declared inside the parent's render, every re-render would
@@ -102,9 +102,11 @@ export default function AbsenceDetailsSubcards({
   // clearFilters (`10xUrlopy.dc.html:1321`) does the opposite and hides every type.
   const [hiddenTypeIds, setHiddenTypeIds] = useState<ReadonlySet<number>>(() => new Set());
 
-  const [dialogState, setDialogState] = useState<{ day: Date; absence: Absence; targetEmployee: Employee } | null>(
-    null,
-  );
+  const [dialogState, setDialogState] = useState<{
+    day: Date;
+    absence: Absence;
+    targetEmployee: EmployeeListItem;
+  } | null>(null);
 
   const [weekAbsences, setWeekAbsences] = useState<Absence[] | null>(null);
   const [weekLoading, setWeekLoading] = useState(false);
@@ -206,12 +208,12 @@ export default function AbsenceDetailsSubcards({
 
   // Same permission rule as the grid cell: own absence, or moderator; never on a
   // deactivated employee's row.
-  function canEdit(_absence: Absence, employee: Employee | undefined): boolean {
+  function canEdit(_absence: Absence, employee: EmployeeListItem | undefined): boolean {
     if (!employee || employee.deleted_at) return false;
     return employee.id === currentEmployee.id || isModerator;
   }
 
-  function openRow(absence: Absence, employee: Employee) {
+  function openRow(absence: Absence, employee: EmployeeListItem) {
     setDialogState({ day: parseIsoDate(absence.date), absence, targetEmployee: employee });
   }
 

@@ -81,6 +81,19 @@ export const POST: APIRoute = async (context) => {
     if (updateError.code === "reauthentication_needed") {
       return json({ error: "Ze względów bezpieczeństwa zaloguj się ponownie, zanim zmienisz hasło." }, 400);
     }
+    // The project's password rules (minimum_password_length, password_requirements) live in the
+    // Supabase dashboard, not supabase/config.toml — the same unverifiable-setting problem as
+    // secure_password_change above. weak_password shares the 400/422 statuses with a wrong
+    // current password, so without this branch a rejected NEW password is reported as a wrong
+    // CURRENT one: false and unactionable.
+    if (updateError.code === "weak_password") {
+      return json({ error: "Nowe hasło nie spełnia wymagań bezpieczeństwa. Wybierz inne." }, 400);
+    }
+    // Supabase compares against the stored hash, so this fires where the equality check above
+    // cannot: the new password matches the old one without the client having sent it as current.
+    if (updateError.code === "same_password") {
+      return json({ error: "Nowe hasło musi różnić się od obecnego." }, 400);
+    }
     if (updateError.status === 400 || updateError.status === 401 || updateError.status === 422) {
       return json({ error: "Obecne hasło jest nieprawidłowe." }, 400);
     }

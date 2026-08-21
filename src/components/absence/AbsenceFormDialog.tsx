@@ -18,7 +18,7 @@ import { rawTimeRange } from "@/lib/absence-grid-cell";
 import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
-import type { Absence, AbsenceBulkCreateCommand, AbsenceType, Employee } from "@/types";
+import type { Absence, AbsenceBulkCreateCommand, AbsenceType, EmployeeListItem } from "@/types";
 
 /**
  * Accessible name of the single dial trigger. Named once because the E2E suite locates the button
@@ -88,9 +88,9 @@ interface AbsenceFormDialogBaseProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   absenceTypes: AbsenceType[];
-  employees: Employee[];
-  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
-  targetEmployee: Employee;
+  employees: EmployeeListItem[];
+  currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role">;
+  targetEmployee: EmployeeListItem;
 }
 
 interface AbsenceFormDialogSingleProps extends AbsenceFormDialogBaseProps {

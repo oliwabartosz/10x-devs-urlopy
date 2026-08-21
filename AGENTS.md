@@ -41,6 +41,8 @@ All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js`
   const db = createDb(DATABASE_URL);
   ```
   Do **not** call `createDb` at module top level — `astro:env/server` values are only available inside request handler scope.
+- **One pool per request.** `createDb` opens a fresh `postgres()` pool and nothing ever `.end()`s it — correct for the Workers isolate, which owns the lifetime, but it means a second call in the same request runs it on two pools against a session pooler capped at 15 clients. A route that needs a `db` after calling a guard helper must reuse the handle that helper returns (`resolveModeratorTarget` returns `{ target, db }`) rather than calling `createDb` again.
+- **One read reaches outside `src/db/schema.ts`.** `src/pages/api/employees/[id]/email.ts` runs a raw `select 1 from auth.users …` for its duplicate-address pre-check — the only place the app's Drizzle connection touches the `auth` schema, and therefore invisible to the migration discipline below. It depends on `DATABASE_URL`'s role keeping read access to `auth.users`; a least-privilege change to that role would silently turn duplicate detection into an opaque 500. Update that call site if the role's grants change.
 
 ### Connection strings
 

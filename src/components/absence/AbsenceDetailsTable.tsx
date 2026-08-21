@@ -1,19 +1,19 @@
 import { useState, useMemo } from "react";
-import type { Absence, Employee, AbsenceType } from "@/types";
+import type { Absence, EmployeeListItem, AbsenceType } from "@/types";
 import { cn } from "@/lib/utils";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 
 interface AbsenceDetailsTableProps {
   absences: Absence[];
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
   className?: string;
   emptyLabel?: string;
   /** Called for rows the caller may edit; omit to make every row inert. */
-  onRowClick?: (absence: Absence, employee: Employee) => void;
+  onRowClick?: (absence: Absence, employee: EmployeeListItem) => void;
   /** True when the caller may edit this absence. Defaults to "nobody". */
-  canEdit?: (absence: Absence, employee: Employee | undefined) => boolean;
+  canEdit?: (absence: Absence, employee: EmployeeListItem | undefined) => boolean;
 }
 
 type SortColumn = "date" | "type" | "employee" | "substitute" | "time" | "created_at";
@@ -31,7 +31,7 @@ const SORT_COLUMNS: { id: SortColumn; label: string; align: "left" | "right" }[]
   { id: "created_at", label: "Dodano", align: "right" },
 ];
 
-function resolveEmployee(id: string | null, employees: Employee[]): Employee | undefined {
+function resolveEmployee(id: string | null, employees: EmployeeListItem[]): EmployeeListItem | undefined {
   if (!id) return undefined;
   return employees.find((e) => e.id === id);
 }
@@ -61,7 +61,7 @@ function formatAbsenceTime(absence: Absence): string {
   return `${absence.start_time?.slice(0, 5) ?? "?"}–${absence.end_time?.slice(0, 5) ?? "?"}`;
 }
 
-function fullName(e: Employee | undefined): string {
+function fullName(e: EmployeeListItem | undefined): string {
   return e ? `${e.first_name} ${e.last_name}` : "";
 }
 

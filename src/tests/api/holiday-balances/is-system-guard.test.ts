@@ -7,9 +7,12 @@ import { getTestDb } from "@/tests/helpers/db";
 import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { POST } from "@/pages/api/holiday-balances/index";
 
-// The balance upsert was the last mutation path in the codebase without an `is_system` guard.
 // RLS is bypassed on the service-role connection (context/changes/admin-bootstrap/plan.md:38),
-// so the technical admin's immutability is app-enforced only — these cases are the enforcement.
+// so the technical admin's immutability is app-enforced only — these cases are the enforcement
+// on this route. Deliberately no claim about which other paths do or do not carry the guard: an
+// earlier version of this comment asserted the balance upsert was "the last mutation path in the
+// codebase" without one, which was false when written — POST /api/absences lacked it then and
+// kept lacking it for months behind that claim (context/foundation/lessons.md).
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — is_system guard on POST", () => {
   const YEAR = 2032;
   let db!: Db;
@@ -95,5 +98,24 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — is_system
     const rows = await storedRowsFor(employeeId);
     expect(rows).toHaveLength(1);
     expect(rows[0].current_entitlement_days).toBe(26);
+  });
+
+  // The owner-or-moderator gate on entitlement/carryover, sharing this file's fixtures. It
+  // supersedes the rest of S-15 and mirrors the DELETE matrix in delete.test.ts; the two cases
+  // above already cover a moderator writing someone else's balance.
+  it("an employee writes their own balance", async () => {
+    const res = await post(employeeAuthId, employeeId);
+    expect(res.status).toBe(200);
+
+    const rows = await storedRowsFor(employeeId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].current_entitlement_days).toBe(26);
+  });
+
+  it("an employee cannot write another employee's balance", async () => {
+    const res = await post(employeeAuthId, moderatorId);
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "Forbidden" });
+    expect(await storedRowsFor(moderatorId)).toHaveLength(0);
   });
 });

@@ -5,12 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Employee, HolidayBalanceView, UserRole } from "@/types";
+import type { EmployeeListItem, HolidayBalanceView, UserRole } from "@/types";
 
 interface EditEmployeeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employee: Employee;
+  employee: EmployeeListItem;
   year: number;
   currentRole: UserRole;
 }

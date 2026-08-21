@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
+import type { Db } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, and } from "drizzle-orm";
@@ -31,18 +32,29 @@ export interface ModeratorTarget {
   is_system: boolean;
 }
 
+export interface ResolvedModeratorTarget {
+  target: ModeratorTarget;
+  /**
+   * The pool this guard already opened. Reuse it — a route that calls `createDb()` again runs
+   * the request on two pools, and postgres-js pools are never `.end()`ed here (correct for
+   * Workers, where the isolate owns the lifetime). Supabase's session pooler caps at 15 clients.
+   */
+  db: Db;
+}
+
 /**
  * Runs, in order: authenticated → resolves to a non-deleted employee → is a moderator → the id
  * parses as a uuid → the target exists → the target is not the protected technical admin.
  *
- * Returns the target row when every gate passes, or the `Response` to send when one does not.
+ * Returns the target row plus the pool it opened when every gate passes, or the `Response` to
+ * send when one does not. Callers must reuse the returned `db` rather than opening their own.
  * The deactivated-target check is left to the caller: `GET` must still read a deactivated
  * worker's address, while `PATCH` must refuse to write it.
  */
 export async function resolveModeratorTarget(
   context: Parameters<APIRoute>[0],
   route: string,
-): Promise<Response | ModeratorTarget> {
+): Promise<Response | ResolvedModeratorTarget> {
   if (!context.locals.user) {
     return json({ error: "Unauthorized" }, 401);
   }
@@ -97,5 +109,5 @@ export async function resolveModeratorTarget(
     return json({ error: "Nie można modyfikować tego konta." }, 403);
   }
 
-  return target;
+  return { target, db };
 }

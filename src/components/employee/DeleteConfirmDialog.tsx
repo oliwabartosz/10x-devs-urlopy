@@ -2,12 +2,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Employee } from "@/types";
+import type { EmployeeListItem } from "@/types";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employee: Employee;
+  employee: EmployeeListItem;
 }
 
 export function DeleteConfirmDialog({ open, onOpenChange, employee }: DeleteConfirmDialogProps) {

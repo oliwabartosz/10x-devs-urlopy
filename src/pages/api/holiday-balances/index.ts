@@ -145,12 +145,13 @@ export const POST: APIRoute = async (context) => {
   }
   const { employee_id, year, current_entitlement_days, carryover_days, used_adjustment_days } = parsed.data;
 
-  // Both roles may edit any balance's entitlement and carryover — no role gate on
-  // those (S-15, context/archive/2026-06-22-urlop-balance/plan.md:34). The one exception is
-  // `used_adjustment_days` ("Korekta wykorzystania"), which S-17 narrowed to moderators: a
-  // non-moderator's submitted value is ignored and the stored one preserved (see the upsert
-  // below). The target must exist either way — moderators may target soft-deleted employees,
-  // regular employees only active ones.
+  // `used_adjustment_days` ("Korekta wykorzystania") keeps its separate S-17 field gate below:
+  // moderator-only, enforced by omitting the column rather than rejecting the request. The
+  // owner-or-moderator gate on the other two fields is applied after the lookups below, in the
+  // same 404 → is_system → ownership order as the sibling DELETE ([id].ts:42-80).
+  //
+  // The target must exist either way — moderators may target soft-deleted employees, regular
+  // employees only active ones.
   const targetCond =
     caller.role === "moderator"
       ? eq(employees.id, employee_id)
@@ -176,6 +177,21 @@ export const POST: APIRoute = async (context) => {
   // for months behind it (context/foundation/lessons.md).
   if (isProtectedAdmin(targetRow)) {
     return json({ error: "Nie można modyfikować tego konta." }, 403);
+  }
+
+  // Owner-or-moderator: a caller may write their own balance, a moderator may write anyone's.
+  //
+  // This supersedes the rest of S-15 (context/archive/2026-06-22-urlop-balance/plan.md:34),
+  // which let both roles write any employee's entitlement and carryover. The workers-data-edit
+  // Phase 1 narrowed DELETE on that same reasoning ([id].ts:33-38) but left POST open, so the
+  // two verbs sat on opposite sides of one rule in adjacent files: an employee could not delete
+  // a colleague's balance row but could zero its entitlement. Both POST callers already comply —
+  // HolidayBalanceCard sends the session owner's id, EditEmployeeDialog is moderator-only.
+  //
+  // Ordered after the is_system gate so the technical admin keeps its own message for every
+  // caller, matching DELETE's 404 → is_system → ownership sequence.
+  if (targetRow.id !== caller.id && caller.role !== "moderator") {
+    return json({ error: "Forbidden" }, 403);
   }
 
   // Korekta is moderator-only, enforced by omitting the column rather than by rejecting the

@@ -28,7 +28,12 @@ export function AccountMenu({ email }: AccountMenuProps) {
       >
         {email}
       </button>
-      <ChangePasswordDialog open={open} onOpenChange={setOpen} />
+      {/* Conditionally rendered so closing unmounts it, which is how every dialog in this app
+          resets — EmployeeManagementSheet.tsx:215-245 does the same with a `key` remount. It
+          matters more here than elsewhere: this is the one dialog that deliberately skips
+          window.location.reload(), so without the unmount all three plaintext passwords would
+          survive in state and in the controlled inputs for the rest of the page's life. */}
+      {open && <ChangePasswordDialog open onOpenChange={setOpen} />}
     </>
   );
 }

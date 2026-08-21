@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import type { Employee, Absence, AbsenceType } from "@/types";
+import type { EmployeeListItem, Absence, AbsenceType } from "@/types";
 import { AbsenceFormDialog } from "./AbsenceFormDialog";
 import {
   DndContext,
@@ -28,10 +28,10 @@ import type { DragSelection, OccupiedRangeDay, RangeDay } from "@/lib/absence-ra
 import { cn } from "@/lib/utils";
 
 interface AbsenceGridProps {
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absences: Absence[];
   absenceTypes: AbsenceType[];
-  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
+  currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role">;
   year: number;
   month: number;
 }
@@ -46,13 +46,13 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days;
 }
 
-function selfFirst(emps: Employee[], currentId: string): Employee[] {
+function selfFirst(emps: EmployeeListItem[], currentId: string): EmployeeListItem[] {
   const me = emps.find((e) => e.id === currentId);
   const others = emps.filter((e) => e.id !== currentId);
   return me ? [me, ...others] : others;
 }
 
-function SortableEmployeeHeader({ emp, isModerator }: { emp: Employee; isModerator: boolean }) {
+function SortableEmployeeHeader({ emp, isModerator }: { emp: EmployeeListItem; isModerator: boolean }) {
   const { setNodeRef, attributes, listeners, isDragging } = useSortable({ id: emp.id });
   const isInactive = !!emp.deleted_at;
   const fullName = `${emp.first_name} ${emp.last_name}${isInactive ? " (nieakt.)" : ""}`;
@@ -94,7 +94,9 @@ export default function AbsenceGrid({
 }: AbsenceGridProps) {
   const isModerator = currentEmployee.role === "moderator";
 
-  const [orderedEmployees, setOrderedEmployees] = useState<Employee[]>(() => selfFirst(employees, currentEmployee.id));
+  const [orderedEmployees, setOrderedEmployees] = useState<EmployeeListItem[]>(() =>
+    selfFirst(employees, currentEmployee.id),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -105,8 +107,8 @@ export default function AbsenceGrid({
   }, []);
 
   type DialogState =
-    | { kind: "single"; day: Date; absence: Absence | null; targetEmployee: Employee }
-    | { kind: "range"; rangeDays: RangeDay[]; occupiedDays: OccupiedRangeDay[]; targetEmployee: Employee };
+    | { kind: "single"; day: Date; absence: Absence | null; targetEmployee: EmployeeListItem }
+    | { kind: "range"; rangeDays: RangeDay[]; occupiedDays: OccupiedRangeDay[]; targetEmployee: EmployeeListItem };
 
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
@@ -199,7 +201,7 @@ export default function AbsenceGrid({
     };
   }, [drag, days, absenceMap, orderedEmployees]);
 
-  function buildTooltip(emp: Employee, date: Date, type: AbsenceType, absence: Absence): string {
+  function buildTooltip(emp: EmployeeListItem, date: Date, type: AbsenceType, absence: Absence): string {
     const substituteName = absence.substitute_employee_id
       ? employeeNameMap.get(absence.substitute_employee_id)
       : undefined;
@@ -247,7 +249,7 @@ export default function AbsenceGrid({
     if (isActiveInInactiveGroup && !isOverInInactiveGroup) return;
 
     const prevOrder = orderedEmployees;
-    let next: Employee[];
+    let next: EmployeeListItem[];
 
     if (isActiveInActiveGroup) {
       const fromIdx = draggableActive.findIndex((e) => e.id === activeIdStr);

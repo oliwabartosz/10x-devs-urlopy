@@ -5,8 +5,6 @@ import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
 
 // A sibling of [id]/restore.ts rather than a field on [id].ts, deliberately: the address lives
@@ -40,7 +38,7 @@ export const GET: APIRoute = async (context) => {
   }
 
   try {
-    const { data, error } = await adminClient.auth.admin.getUserById(resolved.user_id);
+    const { data, error } = await adminClient.auth.admin.getUserById(resolved.target.user_id);
     if (error ?? !data.user) {
       Sentry.captureException(error ?? new Error("Auth user not found"), { tags: { route } });
       return json({ error: "Database error" }, 503);
@@ -59,7 +57,7 @@ export const PATCH: APIRoute = async (context) => {
   const resolved = await resolveModeratorTarget(context, route);
   if (resolved instanceof Response) return resolved;
 
-  if (resolved.deleted_at !== null) {
+  if (resolved.target.deleted_at !== null) {
     return json({ error: "Cannot update a deactivated employee" }, 409);
   }
 
@@ -100,10 +98,14 @@ export const PATCH: APIRoute = async (context) => {
   // A concurrent insert between this check and the write still lands as the opaque 500 below.
   // That race is accepted: it needs two moderators claiming the same address in the same
   // instant, and the fallback is a wrong-but-honest error rather than a wrong success.
-  const db = createDb(DATABASE_URL);
+  //
+  // The guard's pool, not a second one: postgres-js pools are never `.end()`ed here (correct for
+  // Workers, where the isolate owns the lifetime), so opening one per call site would run this
+  // request on two of them against a session pooler that caps at 15 clients.
+  const { db } = resolved;
   try {
     const clash = await db.execute(
-      sql`select 1 from auth.users where lower(email) = lower(${email}) and id <> ${resolved.user_id} limit 1`,
+      sql`select 1 from auth.users where lower(email) = lower(${email}) and id <> ${resolved.target.user_id} limit 1`,
     );
     if (clash.length > 0) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);
@@ -123,7 +125,7 @@ export const PATCH: APIRoute = async (context) => {
     // why the admin API is the right tool for the chosen immediate, no-confirmation
     // behaviour. No session revocation occurs: the worker's cookie session keeps working
     // with a stale `email` JWT claim until it refreshes.
-    const { error } = await adminClient.auth.admin.updateUserById(resolved.user_id, {
+    const { error } = await adminClient.auth.admin.updateUserById(resolved.target.user_id, {
       email,
       email_confirm: true,
     });

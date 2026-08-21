@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Employee } from "@/types";
+import type { EmployeeListItem } from "@/types";
 
 interface ChangeEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employee: Employee;
+  employee: EmployeeListItem;
 }
 
 // The Auth write is kept in its own dialog so a single Zapisz never spans two storage rails —

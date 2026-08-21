@@ -11,11 +11,11 @@ import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
-import type { Employee } from "@/types";
+import type { EmployeeListItem } from "@/types";
 
 interface EmployeeManagementSheetProps {
-  employees: Employee[];
-  currentEmployee: Pick<Employee, "id" | "first_name" | "last_name" | "role">;
+  employees: EmployeeListItem[];
+  currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role">;
   /** The year the edit dialog's balance section reads and writes — pinned to the current
    *  calendar year by the page, deliberately independent of the browsed month. */
   balanceYear: number;
@@ -40,7 +40,7 @@ function EmployeeRow({
   inactive,
   children,
 }: {
-  employee: Employee;
+  employee: EmployeeListItem;
   colorIndex: number;
   inactive?: boolean;
   children: React.ReactNode;
@@ -71,15 +71,15 @@ function EmployeeRow({
 export function EmployeeManagementSheet({ employees, currentEmployee, balanceYear }: EmployeeManagementSheetProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Employee | null>(null);
-  const [emailTarget, setEmailTarget] = useState<Employee | null>(null);
-  const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [editTarget, setEditTarget] = useState<EmployeeListItem | null>(null);
+  const [emailTarget, setEmailTarget] = useState<EmployeeListItem | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<EmployeeListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
 
   const activeEmployees = employees.filter((e) => !e.deleted_at);
   const deactivatedEmployees = employees.filter((e) => !!e.deleted_at);
 
-  const handleRestore = async (employee: Employee) => {
+  const handleRestore = async (employee: EmployeeListItem) => {
     try {
       const res = await fetch(`/api/employees/${employee.id}/restore`, { method: "POST" });
       if (res.ok) {
