@@ -2,6 +2,19 @@ import { employees, absence_types, absences, holiday_balances } from "@/db/schem
 
 export type UserRole = "employee" | "moderator";
 export type Employee = typeof employees.$inferSelect;
+/**
+ * An employee row as a `client:load` island may receive it: everything except `user_id`.
+ *
+ * Astro serializes island props into the page HTML, so anything in a prop is readable by every
+ * signed-in browser. `user_id` is the Supabase Auth identifier and no component reads it, so it
+ * must not travel — the same rule `GET /api/employees` already follows by omitting the column
+ * from its select (employees/index.ts:35-43), and the one
+ * `employee-management/reviews/impl-review-phases-2-4.md` F2 records.
+ *
+ * Use `Employee` on the server (routes, `src/lib/`) and `EmployeeListItem` for anything that
+ * crosses into a component prop.
+ */
+export type EmployeeListItem = Omit<Employee, "user_id">;
 export type AbsenceType = typeof absence_types.$inferSelect;
 export type Absence = typeof absences.$inferSelect;
 

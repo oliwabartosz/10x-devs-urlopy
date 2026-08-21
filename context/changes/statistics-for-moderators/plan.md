@@ -345,11 +345,11 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [x] 1.1 Type checking passes: `npm run build`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 New route suite passes: `npm run test:run -- src/tests/api/absences/stats-scope.test.ts`
-- [x] 1.4 Pre-existing absence suites still pass after the refactor: `npm run test:run -- src/tests/api/absences`
-- [x] 1.5 Full unit + integration suite passes: `npm run test:run`
+- [x] 1.1 Type checking passes: `npm run build` — 4c26b77
+- [x] 1.2 Linting passes: `npm run lint` — 4c26b77
+- [x] 1.3 New route suite passes: `npm run test:run -- src/tests/api/absences/stats-scope.test.ts` — 4c26b77
+- [x] 1.4 Pre-existing absence suites still pass after the refactor: `npm run test:run -- src/tests/api/absences` — 4c26b77
+- [x] 1.5 Full unit + integration suite passes: `npm run test:run` — 4c26b77
 
 #### Manual
 
@@ -359,10 +359,10 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `npm run build`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 New unit suite passes: `npm run test:run -- src/tests/lib/absence-stats.test.ts`
-- [ ] 2.4 Full suite passes: `npm run test:run`
+- [x] 2.1 Type checking passes: `npm run build`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 New unit suite passes: `npm run test:run -- src/tests/lib/absence-stats.test.ts`
+- [x] 2.4 Full suite passes: `npm run test:run`
 
 #### Manual
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Absence, Employee, AbsenceType } from "@/types";
-import { FULL_DAY_HOURS, hoursToDays, formatDayCount } from "@/lib/hours";
+import type { Absence, EmployeeListItem, AbsenceType } from "@/types";
+import { formatDayCount } from "@/lib/hours";
+import { buildMatrix, type MatrixData } from "@/lib/absence-stats";
 import { medalRanks } from "@/lib/medals";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
@@ -8,64 +9,10 @@ import { cn } from "@/lib/utils";
 
 interface AbsenceStatsProps {
   monthlyAbsences: Absence[];
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
   year: number;
   month: number;
-}
-
-function getAbsenceHours(a: Absence): number {
-  if (a.is_full_day) return FULL_DAY_HOURS;
-  const [sh, sm] = (a.start_time ?? "00:00").slice(0, 5).split(":").map(Number);
-  const [eh, em] = (a.end_time ?? "00:00").slice(0, 5).split(":").map(Number);
-  return (eh * 60 + em - (sh * 60 + sm)) / 60;
-}
-
-interface MatrixData {
-  /** `${employeeId}_${typeId}` → day count (partial days folded in as fractions). */
-  cells: Map<string, number>;
-  /** Parallel to `employees`. */
-  perEmployee: number[];
-  /** Parallel to `absenceTypes`. */
-  perType: number[];
-  grand: number;
-  maxEmployeeTotal: number;
-  employeesWithAbsence: number;
-}
-
-// The split between whole days and partial hours is still needed to convert correctly —
-// only the *display* collapses to one figure (reverses S-02's separate-units decision,
-// context/archive/2026-05-30-details-and-stats/plan-brief.md:24).
-function buildMatrix(absences: Absence[], employees: Employee[], absenceTypes: AbsenceType[]): MatrixData {
-  const raw = new Map<string, { days: number; hours: number }>();
-  for (const absence of absences) {
-    const key = `${absence.employee_id}_${absence.absence_type_id}`;
-    const current = raw.get(key) ?? { days: 0, hours: 0 };
-    if (absence.is_full_day) current.days += 1;
-    else current.hours += getAbsenceHours(absence);
-    raw.set(key, current);
-  }
-
-  const cells = new Map<string, number>();
-  for (const [key, { days, hours }] of raw) {
-    cells.set(key, days + hoursToDays(hours));
-  }
-
-  const perEmployee = employees.map((emp) =>
-    absenceTypes.reduce((sum, type) => sum + (cells.get(`${emp.id}_${type.id}`) ?? 0), 0),
-  );
-  const perType = absenceTypes.map((type) =>
-    employees.reduce((sum, emp) => sum + (cells.get(`${emp.id}_${type.id}`) ?? 0), 0),
-  );
-
-  return {
-    cells,
-    perEmployee,
-    perType,
-    grand: perType.reduce((a, b) => a + b, 0),
-    maxEmployeeTotal: Math.max(1, ...perEmployee),
-    employeesWithAbsence: perEmployee.filter((t) => t > 0).length,
-  };
 }
 
 function cellText(days: number): string {
@@ -130,7 +77,7 @@ function TypeBreakdown({
 interface StatsMatrixCardProps {
   title: string;
   subtitle?: string;
-  employees: Employee[];
+  employees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
   data: MatrixData;
   /** Yearly matrix only — 🥇🥈🥉 per type column and on the Łącznie column. */
