@@ -353,7 +353,7 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Manual
 
-- [ ] 1.6 `GET /api/absences?year=` still returns team-wide rows (grid and Szczegóły unaffected)
+- [x] 1.6 `GET /api/absences?year=` still returns team-wide rows (grid and Szczegóły unaffected) — 4c26b77
 
 ### Phase 2: Extract the Statistics Aggregation
 
@@ -366,7 +366,7 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Manual
 
-- [ ] 2.5 Statystyki tab renders exactly as before for a moderator — same numbers, medals, totals
+- [x] 2.5 Statystyki tab renders exactly as before for a moderator — same numbers, medals, totals — e377daf
 
 ### Phase 3: Role-Scoped Statistics View
 
@@ -378,12 +378,12 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Manual
 
-- [ ] 3.4 Moderator view visually identical to before the change
-- [ ] 3.5 Non-moderator sees one row, no medals, no footer total, own year-to-date tile
-- [ ] 3.6 `/api/absences/stats?year=` returns only own rows for a non-moderator
-- [ ] 3.7 Siatka and Szczegóły still show the whole team for a non-moderator
-- [ ] 3.8 Month navigation preserves `?tab=stats` and the role-correct view
-- [ ] 3.9 Yearly loading and error states render sensibly in the self view
+- [x] 3.4 Moderator view visually identical to before the change — 16d841c
+- [x] 3.5 Non-moderator sees one row, no medals, no footer total, own year-to-date tile — 16d841c
+- [x] 3.6 `/api/absences/stats?year=` returns only own rows for a non-moderator — 16d841c
+- [x] 3.7 Siatka and Szczegóły still show the whole team for a non-moderator — 16d841c
+- [x] 3.8 Month navigation preserves `?tab=stats` and the role-correct view — 16d841c
+- [x] 3.9 Yearly loading and error states render sensibly in the self view — 16d841c
 
 ### Phase 4: Foundation Documents
 
@@ -394,5 +394,5 @@ None. No schema change, no migration, no data backfill. Rollback is a redeploy o
 
 #### Manual
 
-- [ ] 4.3 `prd.md` §Access Control reads consistently — statistics rule does not contradict the team-wide grid
-- [ ] 4.4 Roadmap Parked list no longer mentions statistics visibility; S-23 appears in the slice table
+- [x] 4.3 `prd.md` §Access Control reads consistently — statistics rule does not contradict the team-wide grid — d89f325
+- [x] 4.4 Roadmap Parked list no longer mentions statistics visibility; S-23 appears in the slice table — d89f325

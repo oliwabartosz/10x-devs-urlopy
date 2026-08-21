@@ -1,7 +1,7 @@
 ---
 change_id: statistics-for-moderators
 title: Role-scoped statistics — moderators see all, others see only their own
-status: implementing
+status: implemented
 created: 2026-08-21
 updated: 2026-08-21
 archived_at: null
