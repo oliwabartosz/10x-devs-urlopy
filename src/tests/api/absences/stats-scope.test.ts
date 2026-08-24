@@ -17,19 +17,33 @@ import { GET } from "@/pages/api/absences/stats";
 // role scoping and the `is_system` exclusion are app-enforced only. Nothing below asserts against
 // the join fragment; every case goes through the handler.
 describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — role scoping", () => {
-  // 2027, a year no other suite under src/tests/ touches — every date literal in the repo's tests
-  // is in 2026. The route's window is a whole calendar year, so an isolated year is what keeps
-  // "the moderator sees both rows" from depending on what else happens to be seeded.
+  // The route's window is a whole calendar year, so "the moderator sees both rows" would otherwise
+  // depend on whatever else happens to be seeded. 2027 is untouched by every other suite under
+  // src/tests/ (checked) — but NOT by the repo as a whole: tests/e2e/absence-grid-range.spec.ts
+  // reserves 2027-03 and sweeps 2027-03-01…2027-03-31 on teardown. No collision today, because
+  // that sweep filters to its own employeeId and fixtureRows() below filters to ours. Pick a
+  // different month if you add dates here, and re-grep tests/e2e/ before claiming a year is free.
   const YEAR = "2027";
-  const DATES = { employee: "2027-03-02", moderator: "2027-03-03", system: "2027-03-04" };
+  const DATES = {
+    employee: "2027-03-02",
+    moderator: "2027-03-03",
+    system: "2027-03-04",
+    systemEmployee: "2027-03-05",
+  };
   const SUITE_DATES = Object.values(DATES);
 
   let db!: Db;
   let employeeId!: string;
   let moderatorId!: string;
   let systemEmployeeId!: string;
+  // A second `is_system` fixture left at `role: "employee"`, so it takes the non-moderator arm of
+  // `absenceEmployeeJoin`. Without it, `visibleEmployeesFilter()` on that arm is untested: the
+  // own-scope `eq(employee_id, callerId)` already hides every *other* system row, so the filter
+  // could be deleted from absence-list.ts and no assertion in this repo would notice.
+  let systemAsEmployeeId!: string;
   let employeeAuthId!: string;
   let moderatorAuthId!: string;
+  let systemAsEmployeeAuthId!: string;
   let vacationTypeId!: number;
 
   const authIdOf = async (id: string): Promise<string> =>
@@ -47,18 +61,22 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
 
   /** Only this suite's fixtures — the year is isolated, but the assertions stay explicit. */
   const fixtureRows = (rows: Absence[]) =>
-    rows.filter((r) => [employeeId, moderatorId, systemEmployeeId].includes(r.employee_id));
+    rows.filter((r) => [employeeId, moderatorId, systemEmployeeId, systemAsEmployeeId].includes(r.employee_id));
 
   beforeAll(async () => {
     db = getTestDb();
     employeeId = await createTestEmployee(db);
     moderatorId = await createTestEmployee(db);
     systemEmployeeId = await createTestEmployee(db);
+    systemAsEmployeeId = await createTestEmployee(db);
     await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
     // `role: moderator` as well as the flag, mirroring how the real admin is seeded (AGENTS.md:55).
     await db.update(employees).set({ role: "moderator", is_system: true }).where(eq(employees.id, systemEmployeeId));
+    // Flag only — role stays "employee", which is the whole point of this fixture.
+    await db.update(employees).set({ is_system: true }).where(eq(employees.id, systemAsEmployeeId));
     employeeAuthId = await authIdOf(employeeId);
     moderatorAuthId = await authIdOf(moderatorId);
+    systemAsEmployeeAuthId = await authIdOf(systemAsEmployeeId);
 
     const rows = await db.select({ id: absence_types.id }).from(absence_types).where(eq(absence_types.name, "urlop"));
     expect(rows, 'absence_types row for "urlop" — drifted from the seed migration?').toHaveLength(1);
@@ -68,6 +86,12 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
       { employee_id: employeeId, absence_type_id: vacationTypeId, date: DATES.employee, is_full_day: true },
       { employee_id: moderatorId, absence_type_id: vacationTypeId, date: DATES.moderator, is_full_day: true },
       { employee_id: systemEmployeeId, absence_type_id: vacationTypeId, date: DATES.system, is_full_day: true },
+      {
+        employee_id: systemAsEmployeeId,
+        absence_type_id: vacationTypeId,
+        date: DATES.systemEmployee,
+        is_full_day: true,
+      },
     ]);
   });
 
@@ -76,16 +100,20 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
       .delete(absences)
       .where(
         and(
-          inArray(absences.employee_id, [employeeId, moderatorId, systemEmployeeId]),
+          inArray(absences.employee_id, [employeeId, moderatorId, systemEmployeeId, systemAsEmployeeId]),
           inArray(absences.date, SUITE_DATES),
         ),
       );
     // Undo the fixture flag before teardown — an orphaned row left with it set reads as a second
     // technical admin (rationale: holiday-balances/delete.test.ts:63-64).
-    await db.update(employees).set({ is_system: false }).where(eq(employees.id, systemEmployeeId));
+    await db
+      .update(employees)
+      .set({ is_system: false })
+      .where(inArray(employees.id, [systemEmployeeId, systemAsEmployeeId]));
     await teardownTestEmployee(db, employeeId);
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
+    await teardownTestEmployee(db, systemAsEmployeeId);
     await db.$client.end();
   });
 
@@ -119,6 +147,9 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
     expect(res.status).toBe(200);
     const rows = (await res.json()) as Absence[];
     expect(rows.every((r) => r.employee_id === employeeId)).toBe(true);
+    // `[].every()` is true, so without this the case would also pass if the parameter broke the
+    // query outright and returned nothing.
+    expect(rows.map((r) => r.date)).toContain(DATES.employee);
   });
 
   // A moderator's own row is not special-cased away by the same parameter.
@@ -140,10 +171,26 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
     expect(rows.map((r) => r.employee_id)).not.toContain(systemEmployeeId);
   });
 
+  // The non-moderator arm of `absenceEmployeeJoin` carries `visibleEmployeesFilter()` on top of
+  // the own-scope predicate. Only an `is_system` *caller* can prove it is doing work — for every
+  // other caller the own-scope predicate hides system rows on its own, so the filter is dead
+  // weight to the assertions. Drop it from absence-list.ts and this is the case that goes red.
+  it("hides an is_system caller's own rows on the non-moderator arm", async () => {
+    const res = await GET(makeContext(systemAsEmployeeAuthId, `?year=${YEAR}`));
+
+    expect(res.status).toBe(200);
+    const rows = (await res.json()) as Absence[];
+    expect(rows.map((r) => r.employee_id)).not.toContain(systemAsEmployeeId);
+    expect(rows.map((r) => r.date)).not.toContain(DATES.systemEmployee);
+  });
+
   it.each([
     { label: "missing", query: "" },
     { label: "non-numeric", query: "?year=abcd" },
     { label: "three digits", query: "?year=202" },
+    // Postgres has no year zero: `0000-01-01` raises 22008 at the driver, so a loose `\d{4}`
+    // turns a bad request into a 500 and a Sentry event. YearSchema is `[12]\d{3}` for this.
+    { label: "year-zero", query: "?year=0000" },
   ])("answers 400 for a $label year", async ({ query }) => {
     const res = await GET(makeContext(moderatorAuthId, query));
 

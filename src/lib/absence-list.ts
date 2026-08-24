@@ -1,4 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { employees, absences } from "@/db/schema";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import type { UserRole } from "@/types";
@@ -10,8 +11,9 @@ import type { UserRole } from "@/types";
 // A second route over the same table composes from this module rather than copying the
 // first one, so the join and the cap cannot drift apart again.
 //
-// Pure Drizzle fragments and plain values — no `createDb`, no `Response` — so both routes
-// can import it and it stays unit-testable.
+// Drizzle fragments, schemas and plain values — no `createDb`, no query execution — so both
+// routes can import it and it stays unit-testable. (`json` below does build a `Response`, but
+// from its arguments alone; nothing here reaches the database or the request.)
 
 // Hard cap on a list response. Consumers that aggregate over the whole list (statistics,
 // the Details yearly view) must know when they were handed a partial one, so GET reports
@@ -39,6 +41,23 @@ export const absenceListColumns = {
  * Half-open so the `gte`/`lt` pair below needs no leap-year or month-length reasoning:
  * `2026` → `["2026-01-01", "2027-01-01")`.
  */
+/**
+ * JSON `Response` shorthand shared by the absence routes. Hoisted here after the third verbatim
+ * copy appeared (index.ts, bulk.ts, stats.ts) — the same copy-a-route drift this module exists
+ * to prevent, in miniature.
+ */
+export const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...extraHeaders },
+  });
+
+/**
+ * `year=YYYY`. Deliberately narrower than `\d{4}`: Postgres has no year zero, so `0000` would
+ * reach the driver and raise 22008 — a 500 and a Sentry event where a 400 is the honest answer.
+ */
+export const YearSchema = z.string().regex(/^[12]\d{3}$/);
+
 export function yearWindow(year: string): { from: string; to: string } {
   return {
     from: `${year}-01-01`,

@@ -18,6 +18,7 @@ import { buildBalanceView } from "@/lib/services/holiday-balance";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
+import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
 
@@ -76,6 +77,7 @@ let gridEmployees: EmployeeListItem[] = [];
 // The Statystyki tab is role-scoped: a moderator keeps the team view, everyone else sees only
 // their own figures. Siatka and Szczegóły stay team-wide and keep gridEmployees / absences.
 let statsEmployees: EmployeeListItem[] = [];
+let statsYearlyEmployees: EmployeeListItem[] = [];
 let statsAbsences: Absence[] = [];
 let absences: Absence[] = [];
 let absenceTypes: AbsenceType[] = [];
@@ -189,6 +191,11 @@ if (currentEmployee) {
     // empty rather than erroring.
     const selfId = currentEmployee.id;
     statsEmployees = isModerator ? gridEmployees : employeesResult.filter((e) => e.id === selfId);
+    // The yearly matrix aggregates a whole calendar year, so it must not inherit the monthly
+    // grid's window: buildMatrix sums only over the employees it is handed, so a colleague hired
+    // mid-year would silently drop out of the yearly totals whenever an earlier month is browsed.
+    // Unfiltered here mirrors what GET /api/absences/stats already returns for a moderator.
+    statsYearlyEmployees = isModerator ? employeesResult : statsEmployees;
     statsAbsences = isModerator ? absencesResult : absencesResult.filter((a) => a.employee_id === selfId);
   } catch (error) {
     Sentry.captureException(error, { tags: { page: "dashboard", phase: "data-fetch" } });
@@ -232,12 +239,20 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
     <div class="border-line flex h-15 items-center gap-3 border-b bg-white px-8">
       {
         currentEmployee?.role === "moderator" && (
-          <EmployeeManagementSheet
-            client:load
-            employees={allEmployees}
-            currentEmployee={currentEmployee}
-            balanceYear={balanceYear}
-          />
+          <>
+            <EmployeeManagementSheet
+              client:load
+              employees={allEmployees}
+              currentEmployee={currentEmployee}
+              balanceYear={balanceYear}
+            />
+            <AbsenceExportDialog
+              client:load
+              employees={allEmployees}
+              absenceTypes={absenceTypes}
+              currentEmployeeId={currentEmployee.id}
+            />
+          </>
         )
       }
     </div>
@@ -304,6 +319,7 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
                 client:load
                 monthlyAbsences={statsAbsences}
                 employees={statsEmployees}
+                yearlyEmployees={statsYearlyEmployees}
                 absenceTypes={absenceTypes}
                 isModerator={currentEmployee.role === "moderator"}
                 year={year}

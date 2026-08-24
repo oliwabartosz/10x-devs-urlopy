@@ -7,21 +7,13 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
-import { LIST_LIMIT, absenceListColumns, absenceEmployeeJoin, yearWindow } from "@/lib/services/absence-list";
+import { LIST_LIMIT, YearSchema, absenceListColumns, absenceEmployeeJoin, json, yearWindow } from "@/lib/absence-list";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
-
-const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-  });
-
-const YearSchema = z.string().regex(/^\d{4}$/);
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -85,7 +77,7 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
-  // Shared with `GET /api/absences/stats` — see `@/lib/services/absence-list` for why both
+  // Shared with `GET /api/absences/stats` — see `@/lib/absence-list` for why both
   // arms carry `visibleEmployeesFilter()` and only the employee arm guards `deleted_at`.
   const joinCondition = absenceEmployeeJoin(employeeRow.role);
 

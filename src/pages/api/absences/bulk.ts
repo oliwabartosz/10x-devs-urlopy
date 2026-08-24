@@ -13,6 +13,7 @@ import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
+import { json } from "@/lib/absence-list";
 import { resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
 import type { AbsenceBulkCreateResult } from "@/types";
 
@@ -28,12 +29,6 @@ import type { AbsenceBulkCreateResult } from "@/types";
 // validity, partial-day eligibility, hour bounds. Not defensiveness for its own sake: the
 // connection uses the service role key and bypasses RLS (AGENTS.md), so no policy backstops a
 // hand-crafted body, and the server has had no weekday rule at any layer until now.
-
-const json = (data: unknown, status: number) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 
 /**
  * Ceiling on one request's date list.

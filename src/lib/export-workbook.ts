@@ -91,6 +91,30 @@ export function monthSheetName(year: number, month: number): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+/** How many years before the current one the export dropdown always offers. */
+export const EXPORT_YEARS_BACK = 5;
+
+/**
+ * The selectable export years, newest first: `currentYear - EXPORT_YEARS_BACK` through
+ * `currentYear + 1`, widened further if someone on the list was hired before that.
+ *
+ * Next year is included deliberately — `urlop planowany` is a real type, so a moderator planning
+ * ahead has a year worth exporting before it starts.
+ *
+ * The floor is fixed rather than derived from the earliest `created_at`, which is what this did
+ * first: that is when the employee *record* was created, not how far back the absence data goes.
+ * Nothing ties `absences.date` to `employees.created_at`, so a back-filled year was simply not
+ * offerable. A year with no data exports as twelve legend-only sheets, which is harmless; an
+ * unreachable year is not.
+ */
+export function exportYearOptions(employees: EmployeeListItem[], currentYear: number): number[] {
+  const hireYears = employees.map((e) => asDate(e.created_at).getFullYear()).filter((y) => Number.isFinite(y));
+  const earliest = Math.min(currentYear - EXPORT_YEARS_BACK, ...hireYears);
+  const years: number[] = [];
+  for (let y = currentYear + 1; y >= earliest; y--) years.push(y);
+  return years;
+}
+
 /**
  * The employee columns for a whole year: everyone who existed at any point during it.
  *

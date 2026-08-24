@@ -431,41 +431,41 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 
 #### Automated
 
-- [x] 2.1 Type checking passes: `npx tsc --noEmit`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Full suite green, zero skipped: `npx vitest run`
-- [x] 2.4 Sample generates: `npm run sample:xlsx`
-- [x] 2.5 Generated file contains `xl/comments1.xml`, `xl/drawings/vmlDrawing1.vml`, twelve worksheets, and a frozen `<pane>` in sheet 1
-- [x] 2.6 Production build succeeds: `npm run build`
+- [x] 2.1 Type checking passes: `npx tsc --noEmit` — b74a23b
+- [x] 2.2 Linting passes: `npm run lint` — b74a23b
+- [x] 2.3 Full suite green, zero skipped: `npx vitest run` — b74a23b
+- [x] 2.4 Sample generates: `npm run sample:xlsx` — b74a23b
+- [x] 2.5 Generated file contains `xl/comments1.xml`, `xl/drawings/vmlDrawing1.vml`, twelve worksheets, and a frozen `<pane>` in sheet 1 — b74a23b
+- [x] 2.6 Production build succeeds: `npm run build` — b74a23b
 
 #### Manual
 
-- [x] 2.7 Sample opens in Microsoft Excel with no repair prompt; twelve Polish tab names
-- [x] 2.8 Sample opens in LibreOffice Calc with no warning
-- [x] 2.9 Fill colours match the on-screen palette; Polish diacritics intact
-- [x] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines
-- [x] 2.11 Legend, header and date column stay frozen when scrolling
-- [x] 2.12 Weekend rows are visibly shaded
+- [x] 2.7 Sample opens in Microsoft Excel with no repair prompt; twelve Polish tab names — b74a23b
+- [x] 2.8 Sample opens in LibreOffice Calc with no warning — b74a23b
+- [x] 2.9 Fill colours match the on-screen palette; Polish diacritics intact — b74a23b
+- [x] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines — b74a23b
+- [x] 2.11 Legend, header and date column stay frozen when scrolling — b74a23b
+- [x] 2.12 Weekend rows are visibly shaded — b74a23b
 
 ### Phase 3: Moderator Export Dialog
 
 #### Automated
 
-- [ ] 3.1 Type checking passes: `npx tsc --noEmit`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Full suite green, zero skipped: `npx vitest run`
-- [ ] 3.4 Production build succeeds: `npm run build`
-- [ ] 3.5 `hucre` lands in its own chunk, not the dashboard entry chunk
+- [x] 3.1 Type checking passes: `npx tsc --noEmit`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Full suite green, zero skipped: `npx vitest run`
+- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.5 `hucre` lands in its own chunk, not the dashboard entry chunk
 
 #### Manual
 
-- [ ] 3.6 Moderator sees the button; regular employee does not, and the props are absent from their page source
-- [ ] 3.7 Selecting a year downloads `nieobecnosci-<rok>.xlsx`
-- [ ] 3.8 Downloaded file passes the Phase 2 manual checks against real data
-- [ ] 3.9 A year with no absences yields twelve legend-only sheets, not an error
-- [ ] 3.10 Next year exports and contains `urlop planowany` entries
-- [ ] 3.11 Column order matches the Siatka tab, viewer's own column first
-- [ ] 3.12 A network failure shows a Polish error and leaves the dialog open
+- [x] 3.6 Moderator sees the button; regular employee does not, and the props are absent from their page source
+- [x] 3.7 Selecting a year downloads `nieobecnosci-<rok>.xlsx`
+- [x] 3.8 Downloaded file passes the Phase 2 manual checks against real data
+- [x] 3.9 A year with no absences yields twelve legend-only sheets, not an error
+- [x] 3.10 Next year exports and contains `urlop planowany` entries
+- [x] 3.11 Column order matches the Siatka tab, viewer's own column first
+- [x] 3.12 A network failure shows a Polish error and leaves the dialog open
 
 ### Phase 4: Foundation Doc Corrections
 

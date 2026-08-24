@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Absence, EmployeeListItem, AbsenceType } from "@/types";
 import { formatDayCount } from "@/lib/hours";
 import { buildMatrix, type MatrixData } from "@/lib/absence-stats";
@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 interface AbsenceStatsProps {
   monthlyAbsences: Absence[];
   employees: EmployeeListItem[];
+  /**
+   * The yearly matrix only. Kept separate from `employees` because that list is windowed to the
+   * browsed month for a moderator, and `buildMatrix` sums only over the employees it is handed —
+   * so sharing one list would drop a mid-year hire out of the yearly totals. See dashboard.astro.
+   */
+  yearlyEmployees: EmployeeListItem[];
   absenceTypes: AbsenceType[];
   /**
    * Role alone decides the view — there is no self/team toggle. A moderator gets the team
@@ -240,6 +246,7 @@ function StatsMatrixCard({
 export default function AbsenceStats({
   monthlyAbsences,
   employees,
+  yearlyEmployees,
   absenceTypes,
   isModerator,
   year,
@@ -251,9 +258,22 @@ export default function AbsenceStats({
   // Every yearly figure below — medals, totals, the stacked bars — aggregates over this
   // list. A server-side cap would skew all of them at once, so it has to be visible.
   const [truncated, setTruncated] = useState(false);
+  const fetchedYear = useRef<number | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    // Reset on a *year change* only, in the spirit of AbsenceDetailsSubcards.tsx:168-170 — a stale
+    // error would otherwise outlive a successful retry, and the previous year's rows would sit
+    // under the new year's heading. On mount the initial state already says exactly this, so the
+    // guard keeps the effect from setting state synchronously on first render.
+    // Month/year navigation is a full page load today, so the island remounts and this is belt and
+    // braces; it stops being belt and braces the moment that navigation goes client-side.
+    if (fetchedYear.current !== null && fetchedYear.current !== year) {
+      setError(null);
+      setLoading(true);
+      setTruncated(false);
+    }
+    fetchedYear.current = year;
     // The scoped counterpart to GET /api/absences, which stays team-wide for the grid and
     // Szczegóły. Both roles call it; the server decides what comes back.
     fetch(`/api/absences/stats?year=${year}`, { signal: controller.signal })
@@ -284,8 +304,8 @@ export default function AbsenceStats({
     [monthlyAbsences, employees, absenceTypes],
   );
   const yearlyData = useMemo(
-    () => buildMatrix(yearlyAbsences ?? [], employees, absenceTypes),
-    [yearlyAbsences, employees, absenceTypes],
+    () => buildMatrix(yearlyAbsences ?? [], yearlyEmployees, absenceTypes),
+    [yearlyAbsences, yearlyEmployees, absenceTypes],
   );
 
   const monthlyTitle = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" }).format(
@@ -349,7 +369,7 @@ export default function AbsenceStats({
           subtitle={
             isModerator ? "narastająco od stycznia · 🥇🥈🥉 najwięcej dni w kolumnie" : "narastająco od stycznia"
           }
-          employees={employees}
+          employees={yearlyEmployees}
           absenceTypes={absenceTypes}
           data={yearlyData}
           showMedals={isModerator}

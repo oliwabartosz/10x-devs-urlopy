@@ -5,6 +5,8 @@ import {
   buildExportWorkbook,
   employeeColumnLabel,
   employeesForYear,
+  EXPORT_YEARS_BACK,
+  exportYearOptions,
   FULL_DAY_LABEL,
   monthSheetName,
   type ExportSheet,
@@ -135,6 +137,49 @@ describe("employeesForYear", () => {
   it("preserves the incoming order", () => {
     const list = [emp("c"), emp("a"), emp("b")];
     expect(employeesForYear(list, 2026).map((e) => e.id)).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("exportYearOptions", () => {
+  const thisYear = 2026;
+
+  it("offers next year first, then this year, then backwards", () => {
+    const years = exportYearOptions([emp("a")], thisYear);
+    expect(years[0]).toBe(thisYear + 1);
+    expect(years[1]).toBe(thisYear);
+    expect(years).toEqual([...years].sort((x, y) => y - x));
+  });
+
+  it("reaches EXPORT_YEARS_BACK years back even when everyone was hired this year", () => {
+    // The bug this replaced: deriving the floor from the earliest created_at made a back-filled
+    // year unreachable, because every employee row was created the year the app shipped.
+    const years = exportYearOptions([emp("a", { created_at: new Date(thisYear, 5, 1) })], thisYear);
+    expect(years).toContain(thisYear - EXPORT_YEARS_BACK);
+    expect(years).toHaveLength(EXPORT_YEARS_BACK + 2);
+  });
+
+  it("widens past the floor for someone hired earlier still", () => {
+    const years = exportYearOptions([emp("old", { created_at: new Date(thisYear - 9, 0, 1) })], thisYear);
+    expect(years).toContain(thisYear - 9);
+    expect(Math.min(...years)).toBe(thisYear - 9);
+  });
+
+  it("never returns a duplicate", () => {
+    const years = exportYearOptions([emp("a"), emp("b"), emp("c")], thisYear);
+    expect(new Set(years).size).toBe(years.length);
+  });
+
+  it("still offers the full range with no employees at all", () => {
+    const years = exportYearOptions([], thisYear);
+    expect(years).toEqual([2027, 2026, 2025, 2024, 2023, 2022, 2021]);
+  });
+
+  it("accepts the ISO strings island props actually carry", () => {
+    const years = exportYearOptions(
+      [emp("stringy", { created_at: "2019-03-04T10:00:00.000Z" as unknown as Date })],
+      thisYear,
+    );
+    expect(Math.min(...years)).toBe(2019);
   });
 });
 

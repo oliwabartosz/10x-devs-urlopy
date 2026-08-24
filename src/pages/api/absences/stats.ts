@@ -2,12 +2,11 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
-import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
-import { LIST_LIMIT, absenceListColumns, absenceEmployeeJoin, yearWindow } from "@/lib/services/absence-list";
+import { LIST_LIMIT, YearSchema, absenceListColumns, absenceEmployeeJoin, json, yearWindow } from "@/lib/absence-list";
 
 // The yearly dataset behind the Statystyki tab, scoped by the caller's role on the server.
 //
@@ -18,14 +17,13 @@ import { LIST_LIMIT, absenceListColumns, absenceEmployeeJoin, yearWindow } from 
 //
 // Response body and `X-Result-Truncated` semantics are identical to `GET /api/absences?year=`
 // so the component parses one contract.
-
-const json = (data: unknown, status: number, extraHeaders?: Record<string, string>) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-  });
-
-const YearSchema = z.string().regex(/^\d{4}$/);
+//
+// Scope, not secrecy. This route narrows what the Statystyki tab *renders*; it is not a
+// confidentiality boundary over absence data. The same non-moderator can still call
+// `GET /api/absences?year=` and receive the whole team — deliberately, because the Siatka grid
+// and the Szczegóły table need it (see index.ts). What this change removes is the ranked,
+// comparative presentation, not access to the underlying days. Do not build a privacy guarantee
+// on top of this route without narrowing that one too.
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
