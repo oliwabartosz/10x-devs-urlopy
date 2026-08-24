@@ -20,22 +20,24 @@ The tech stack already uses `@astrojs/cloudflare` — there is zero adapter migr
 
 ## Platform Comparison
 
-| Platform | CLI-first | Managed/Serverless | Agent docs | Stable deploy API | MCP/Integration | Notes |
-|---|---|---|---|---|---|---|
-| **Cloudflare Workers + Pages** | Pass | Pass | Pass | Pass | Pass | 5 / 5 — existing adapter |
-| Vercel | Pass | Pass | Pass | Pass | Pass | 5 / 5 — requires adapter swap, Pro plan for commercial use |
-| Netlify | Partial | Pass | Pass | Partial | Partial | 2P + 3 Partial — no CLI rollback or log tailing; MCP 404'd on research date |
-| Fly.io | Pass | Partial | Partial | Pass | Fail | 3P + 1 Partial + 1 Fail — container overhead overkill for stateless SSR |
-| Railway | Pass | Partial | Partial | Pass | Fail | 3P + 1 Partial + 1 Fail — same as Fly.io |
-| Render | Partial | Partial | Fail | Partial | Fail | 3 Partial + 2 Fail — no GitHub docs, no llms.txt, free tier cold-starts |
+| Platform                       | CLI-first | Managed/Serverless | Agent docs | Stable deploy API | MCP/Integration | Notes                                                                       |
+| ------------------------------ | --------- | ------------------ | ---------- | ----------------- | --------------- | --------------------------------------------------------------------------- |
+| **Cloudflare Workers + Pages** | Pass      | Pass               | Pass       | Pass              | Pass            | 5 / 5 — existing adapter                                                    |
+| Vercel                         | Pass      | Pass               | Pass       | Pass              | Pass            | 5 / 5 — requires adapter swap, Pro plan for commercial use                  |
+| Netlify                        | Partial   | Pass               | Pass       | Partial           | Partial         | 2P + 3 Partial — no CLI rollback or log tailing; MCP 404'd on research date |
+| Fly.io                         | Pass      | Partial            | Partial    | Pass              | Fail            | 3P + 1 Partial + 1 Fail — container overhead overkill for stateless SSR     |
+| Railway                        | Pass      | Partial            | Partial    | Pass              | Fail            | 3P + 1 Partial + 1 Fail — same as Fly.io                                    |
+| Render                         | Partial   | Partial            | Fail       | Partial           | Fail            | 3 Partial + 2 Fail — no GitHub docs, no llms.txt, free tier cold-starts     |
 
 **Scoring notes:**
+
 - Netlify CLI-first PARTIAL: rollback is dashboard-only (API route exists but no `netlify rollback` command); log tailing requires Enterprise Log Drains.
 - Netlify MCP PARTIAL: `llms.txt` confirmed at `docs.netlify.com/llms.txt`, but MCP server docs URL returned 404 on 2026-05-24.
 - Fly.io / Railway PARTIAL on managed/serverless: both require Dockerfile or buildpack config and more runtime-level decisions than pure serverless. Not wrong for larger apps, but overkill for a stateless SSR MVP.
 - Render FAIL on agent docs: no GitHub-hosted Markdown source, no confirmed `llms.txt`.
 
 **Interview weights applied:**
+
 - No persistent connections needed → no platform filtered out
 - No strong cost/DX preference → neutral weighting
 - Cloudflare familiarity → tiebreaker between Cloudflare and Vercel (both scored 5/5)
@@ -66,7 +68,9 @@ Netlify has a confirmed `llms.txt` (February 2025 GA) and the `@astrojs/netlify`
 
 3. **`wrangler pages deployment tail` has documented reliability issues.** Log streaming for Pages Functions is in the official docs but community threads report connection drops and delayed output. Production debugging relies on this feature; its real-world reliability is lower than `wrangler tail` for standalone Workers.
 
-4. **25 MB compressed bundle size limit.** Astro 6 + React 19 + shadcn/ui components can accumulate. If the bundle approaches this limit, the deploy will fail at `wrangler pages deploy` time with no obvious fix short of code-splitting or dependency removal. This should be monitored in CI.
+4. **3 MB gzip Worker size limit on the Free plan.** Astro 6 + React 19 + shadcn/ui components can accumulate. If the bundle approaches this limit, the deploy will fail at `wrangler deploy` time with no obvious fix short of code-splitting or dependency removal. This should be monitored in CI.
+
+   The limits are **3 MB gzip on Workers Free, 10 MB gzip on Workers Paid**, with a 64 MB uncompressed ceiling on both ([Workers platform limits](https://developers.cloudflare.com/workers/platform/limits)). This document previously cited a Cloudflare **Pages** compressed-bundle figure (see git history); this project deploys a standalone Worker (`.github/workflows/ci.yml:85` runs `wrangler deploy --config dist/server/wrangler.json`), so the Pages number never applied. Measured on 2026-08-24 after the XLSX export change: **3580 KiB raw / 740 KiB gzip**, i.e. about a quarter of the Free-plan budget (3303 KiB / 681 KiB before that change).
 
 5. **Vendor lock-in via Cloudflare env binding model.** `astro:env/server` secrets map to Cloudflare Worker `env` bindings, not `process.env`. Both `.env` (local dev) and `wrangler secret put` (production) must be populated with matching names. If this project ever moves platforms, env handling must be rewritten — it is not a portable pattern.
 
@@ -90,7 +94,7 @@ The project shipped on time, but approximately one day of the three-week MVP win
 
 - **Supabase requests originate from Cloudflare's anycast IPs.** If Supabase's threat detection ever rate-limits Cloudflare egress IPs (uncommon but non-zero for shared infrastructure), auth failures would appear global with no obvious cause.
 
-- **React 19 + shadcn/ui bundle size should be monitored proactively.** The 25 MB compressed Pages bundle limit is not typically hit, but an absence-tracking grid with many cell components and color-coded entries can grow. A `wrangler pages deploy --dry-run` step in CI catches this before it blocks a production deploy.
+- **React 19 + shadcn/ui bundle size should be monitored proactively.** The 3 MB gzip Workers Free limit is not typically hit — the bundle measured 740 KiB gzip on 2026-08-24 — but an absence-tracking grid with many cell components and color-coded entries can grow. A `wrangler deploy --dry-run` step in CI catches this before it blocks a production deploy. Client-side dependencies that only some users need (the XLSX writer, ~40 KiB gzip) are kept out of the entry chunk with a dynamic `import()`.
 
 ## Operational Story
 
@@ -106,40 +110,45 @@ The project shipped on time, but approximately one day of the three-week MVP win
 
 ## Risk Register
 
-| Risk | Source | Likelihood | Impact | Mitigation |
-|---|---|---|---|---|
-| Transitive dependency uses unsupported Node.js API, breaks only at runtime | Devil's advocate | M | H | Set `nodejs_compat` flag in `wrangler.toml`; add a `wrangler dev` smoke-test step to CI that exercises auth routes before merging |
-| `SUPABASE_KEY` missing from Cloudflare Secrets (set only in `.env`) | Pre-mortem + Unknown unknowns | H | H | Add a deployment health-check step in GitHub Actions: after `wrangler pages deploy`, hit `/api/auth/signin` and assert a non-500 response |
-| Pages rollback requires dashboard navigation — agent or CI cannot automate it | Devil's advocate | M | M | Document the Cloudflare REST API rollback call (`/pages/projects/{name}/deployments/{id}/retry`) in the runbook; add it to the GitHub Actions reusable workflow |
-| `wrangler pages deployment tail` connection drops in production debugging | Devil's advocate | M | M | Set up a Cloudflare Log Drain (Workers Paid, $5/month) to forward logs to a persistent sink (R2, Logpush to S3); use Cloudflare MCP server `workers_observability` as fallback |
-| Fork PR preview deploys fail auth silently | Unknown unknowns | H | L | Document expected behavior in CONTRIBUTING.md; protect preview URLs with Cloudflare Access for internal testing |
-| Bundle exceeds 25 MB compressed limit | Devil's advocate | L | H | Add `wrangler pages deploy --dry-run` to CI to catch bundle size before production deploy |
-| Supabase anycast IP rate limiting | Unknown unknowns | L | H | Monitor Supabase usage dashboard; if rate limiting appears, add Cloudflare Hyperdrive as a proxy layer |
-| Developer uses `astro dev` instead of `wrangler dev`, misses runtime differences | Unknown unknowns | H | L | Add a `predev` npm hook that echoes "Use npm run dev (wrangler dev) for Cloudflare runtime fidelity" |
+| Risk                                                                             | Source                        | Likelihood | Impact | Mitigation                                                                                                                                                                     |
+| -------------------------------------------------------------------------------- | ----------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Transitive dependency uses unsupported Node.js API, breaks only at runtime       | Devil's advocate              | M          | H      | Set `nodejs_compat` flag in `wrangler.toml`; add a `wrangler dev` smoke-test step to CI that exercises auth routes before merging                                              |
+| `SUPABASE_KEY` missing from Cloudflare Secrets (set only in `.env`)              | Pre-mortem + Unknown unknowns | H          | H      | Add a deployment health-check step in GitHub Actions: after `wrangler pages deploy`, hit `/api/auth/signin` and assert a non-500 response                                      |
+| Pages rollback requires dashboard navigation — agent or CI cannot automate it    | Devil's advocate              | M          | M      | Document the Cloudflare REST API rollback call (`/pages/projects/{name}/deployments/{id}/retry`) in the runbook; add it to the GitHub Actions reusable workflow                |
+| `wrangler pages deployment tail` connection drops in production debugging        | Devil's advocate              | M          | M      | Set up a Cloudflare Log Drain (Workers Paid, $5/month) to forward logs to a persistent sink (R2, Logpush to S3); use Cloudflare MCP server `workers_observability` as fallback |
+| Fork PR preview deploys fail auth silently                                       | Unknown unknowns              | H          | L      | Document expected behavior in CONTRIBUTING.md; protect preview URLs with Cloudflare Access for internal testing                                                                |
+| Bundle exceeds the 3 MB gzip Workers Free limit                                  | Devil's advocate              | L          | H      | Add `wrangler deploy --dry-run` to CI to catch bundle size before production deploy; currently 740 KiB gzip (2026-08-24)                                                       |
+| Supabase anycast IP rate limiting                                                | Unknown unknowns              | L          | H      | Monitor Supabase usage dashboard; if rate limiting appears, add Cloudflare Hyperdrive as a proxy layer                                                                         |
+| Developer uses `astro dev` instead of `wrangler dev`, misses runtime differences | Unknown unknowns              | H          | L      | Add a `predev` npm hook that echoes "Use npm run dev (wrangler dev) for Cloudflare runtime fidelity"                                                                           |
 
 ## Getting Started
 
 1. **Authenticate wrangler** (if not already done):
+
    ```bash
    npx wrangler login
    ```
 
 2. **Add production secrets** (run once per environment):
+
    ```bash
    npx wrangler secret put SUPABASE_URL
    npx wrangler secret put SUPABASE_KEY
    ```
 
 3. **Verify local dev** reads `.env` correctly:
+
    ```bash
    npm run dev   # runs wrangler dev — do NOT use astro dev for runtime testing
    ```
 
 4. **Deploy to Cloudflare Pages** (manual first deploy):
+
    ```bash
    npm run build
    npx wrangler pages deploy dist --project-name urlopy
    ```
+
    After the first deploy, subsequent deploys are automated via GitHub Actions (`cloudflare/pages-action`) on every push to `main`.
 
 5. **Connect the GitHub repo to Cloudflare Pages** via the Cloudflare dashboard (one-time setup): Pages → Create a project → Connect to Git → select this repo → set build command `npm run build`, output directory `dist`, Node.js version `22`.
@@ -147,6 +156,7 @@ The project shipped on time, but approximately one day of the three-week MVP win
 ## Out of Scope
 
 The following were not evaluated in this research:
+
 - Docker image configuration
 - CI/CD pipeline setup (GitHub Actions workflow is already in `.github/workflows/ci.yml`)
 - Production-scale architecture (multi-region, HA, DR)

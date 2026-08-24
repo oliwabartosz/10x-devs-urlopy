@@ -21,7 +21,7 @@ Give a moderator a one-click download of a full calendar year of the absence gri
 - Any dynamic `import()` or `React.lazy` — every island is `client:load`.
 - Any XLSX dependency.
 
-**Key constraint discovered:** the project is on **Workers Free** (10 ms CPU per request). A measured 30-employee *monthly* workbook already costs 10–16 ms of pure CPU, and a year is 12× that. Server-side generation is therefore not viable, which also removes the only path that could not be tested locally (Drizzle cannot reach Supabase under `wrangler dev`).
+**Key constraint discovered:** the project is on **Workers Free** (10 ms CPU per request). A measured 30-employee _monthly_ workbook already costs 10–16 ms of pure CPU, and a year is 12× that. Server-side generation is therefore not viable, which also removes the only path that could not be tested locally (Drizzle cannot reach Supabase under `wrangler dev`).
 
 ## Desired End State
 
@@ -46,7 +46,7 @@ Opening that file in Excel or LibreOffice shows twelve tabs. Each tab opens with
 - **No server-side generation and no new API route.** Ruled out by the 10 ms Free-tier CPU budget.
 - **No emoji or type name in the cell.** Type identity is carried by fill colour, decoded via the legend. (Icons remain available to a later revision; the catalogue already supplies them.)
 - **The export ignores the Details-tab type filter** (`src/lib/type-filter.ts`) and always includes all seven types. That filter is scoped to the Details tab, the export control does not live there, and a "download the whole grid" action that silently omitted types would be a data-integrity trap.
-- **No public-holiday marking.** No table, column, migration or library for it exists anywhere; the only non-working-day concept in this codebase is *weekend*. Adding it is new semantics, not a port.
+- **No public-holiday marking.** No table, column, migration or library for it exists anywhere; the only non-working-day concept in this codebase is _weekend_. Adding it is new semantics, not a port.
 - **No yearly summary or statistics sheet.** Twelve month sheets plus the per-sheet legend, nothing more.
 - **No CSV, ODS or PDF export.**
 - **No export for regular employees.** Moderator-only.
@@ -63,7 +63,7 @@ The writer is loaded with a **dynamic `import()` on click** — the first in thi
 
 ## Critical Implementation Details
 
-**hucre's freeze-pane property is `freezePane`, not `freeze`.** Passing the wrong key is a *silent no-op*: the file still generates, and `<sheetView>` is simply emitted without a `<pane>` element. Verified both ways during research. Assert on the generated XML, not on the absence of an error.
+**hucre's freeze-pane property is `freezePane`, not `freeze`.** Passing the wrong key is a _silent no-op_: the file still generates, and `<sheetView>` is simply emitted without a `<pane>` element. Verified both ways during research. Assert on the generated XML, not on the absence of an error.
 
 **Freezing rows is top-anchored only**, so pinning the grid's header row necessarily pins everything above it. This is why the legend is specified as **one row of seven colour-filled cells with wrapped text** rather than seven stacked rows — it keeps the frozen band at 4 rows instead of 10, so a 31-day month still scrolls usefully.
 
@@ -131,40 +131,40 @@ Note that `created_at` / `deleted_at` arrive as **strings** in island props (Ast
 
 ```ts
 export interface ExportCell {
-  text: string;                 // "" for a full-day absence; HH:MM–HH:MM for a gated partial day
-  fill?: string;                // "#rrggbb" — type colour, weekend shade, or header band
-  textColor?: string;           // "#rrggbb" — from absence_types.text_color; never computed
+  text: string; // "" for a full-day absence; HH:MM–HH:MM for a gated partial day
+  fill?: string; // "#rrggbb" — type colour, weekend shade, or header band
+  textColor?: string; // "#rrggbb" — from absence_types.text_color; never computed
   bold?: boolean;
   wrap?: boolean;
-  note?: string;                // absenceNote() output
+  note?: string; // absenceNote() output
 }
 
 export interface ExportSheet {
-  name: string;                 // "Styczeń" … "Grudzień", pl-PL
+  name: string; // "Styczeń" … "Grudzień", pl-PL
   columnWidths: number[];
-  freezeRows: number;           // 4 — title, legend, spacer, header
-  freezeColumns: number;        // 1 — the date column
+  freezeRows: number; // 4 — title, legend, spacer, header
+  freezeColumns: number; // 1 — the date column
   rows: ExportCell[][];
 }
 
 export function buildExportWorkbook(input: {
   year: number;
-  employees: EmployeeListItem[];   // allEmployees, server order
-  absences: Absence[];             // the whole year, from GET /api/absences?year=
+  employees: EmployeeListItem[]; // allEmployees, server order
+  absences: Absence[]; // the whole year, from GET /api/absences?year=
   absenceTypes: AbsenceType[];
   currentEmployeeId: string;
-}): ExportSheet[];                 // always exactly 12
+}): ExportSheet[]; // always exactly 12
 ```
 
 Row layout per sheet, fixed:
 
-| Row | Content |
-| --- | --- |
-| 1 | Title `Nieobecności — <Miesiąc> <rok>`, bold |
-| 2 | Legend: seven cells in `display_order`, each filled with `type.color`, text `type.text_color`, value = `type.name`, wrapped |
-| 3 | Spacer |
-| 4 | Header: `Dzień` + one cell per employee column, on the `#e8e8e8` band (`#dcdcdc` with `#6f6f6f` text for a deactivated employee), bold |
-| 5+ | One row per day of the month |
+| Row | Content                                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Title `Nieobecności — <Miesiąc> <rok>`, bold                                                                                           |
+| 2   | Legend: seven cells in `display_order`, each filled with `type.color`, text `type.text_color`, value = `type.name`, wrapped            |
+| 3   | Spacer                                                                                                                                 |
+| 4   | Header: `Dzień` + one cell per employee column, on the `#e8e8e8` band (`#dcdcdc` with `#6f6f6f` text for a deactivated employee), bold |
+| 5+  | One row per day of the month                                                                                                           |
 
 Day-row rules, each a test case:
 
@@ -181,7 +181,7 @@ Day-row rules, each a test case:
 
 **Intent**: Cover every rule above. No database, no `describe.skipIf` — these are pure functions and must run in every CI invocation.
 
-**Contract**: at minimum — always twelve sheets; a mid-year hire is present as a column in *every* month including those before their start; a mid-year deactivation keeps the column and the `" (nieakt.)"` suffix; `selfFirst` puts the viewer at column index 1 (index 0 is the date column); weekend shading on a known date; a full-day absence yields `text === ""` with a fill and a note; a partial-day absence on a whitelisted type yields the `HH:MM–HH:MM` string with the **U+2013** dash pinned by codepoint (as `src/tests/lib/absence-grid-cell.test.ts:91-99` does); a partial-day absence on a **non**-whitelisted type yields `text === ""` while its note still reports the stored hours; notes omit `Komentarz:` / `Zastępstwo:` when absent; a leap-year February yields 29 day rows.
+**Contract**: at minimum — always twelve sheets; a mid-year hire is present as a column in _every_ month including those before their start; a mid-year deactivation keeps the column and the `" (nieakt.)"` suffix; `selfFirst` puts the viewer at column index 1 (index 0 is the date column); weekend shading on a known date; a full-day absence yields `text === ""` with a fill and a note; a partial-day absence on a whitelisted type yields the `HH:MM–HH:MM` string with the **U+2013** dash pinned by codepoint (as `src/tests/lib/absence-grid-cell.test.ts:91-99` does); a partial-day absence on a **non**-whitelisted type yields `text === ""` while its note still reports the stored hours; notes omit `Komentarz:` / `Zastępstwo:` when absent; a leap-year February yields 29 day rows.
 
 ### Success Criteria:
 
@@ -351,7 +351,7 @@ Amend the foundation docs the research falsified, following the S-23 precedent o
 
 **Intent**: Record a live trap for anyone verifying the export in a fresh environment.
 
-**Contract**: Note that `20260807122840_faulty_hobgoblin.sql` and `20260812153000_offsite_training_single_codepoint_icon.sql` are hand-authored data migrations deliberately absent from `_journal.json`, so a freshly provisioned environment carries the superseded 2026-05 palette — an export there is faithful to the *wrong* colours. Also note that `context/foundation/prd.md:112` still lists the stale ZWJ offsite-training icon; the database is authoritative.
+**Contract**: Note that `20260807122840_faulty_hobgoblin.sql` and `20260812153000_offsite_training_single_codepoint_icon.sql` are hand-authored data migrations deliberately absent from `_journal.json`, so a freshly provisioned environment carries the superseded 2026-05 palette — an export there is faithful to the _wrong_ colours. Also note that `context/foundation/prd.md:112` still lists the stale ZWJ offsite-training icon; the database is authoritative.
 
 ### Success Criteria:
 
@@ -451,29 +451,29 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 
 #### Automated
 
-- [x] 3.1 Type checking passes: `npx tsc --noEmit`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Full suite green, zero skipped: `npx vitest run`
-- [x] 3.4 Production build succeeds: `npm run build`
-- [x] 3.5 `hucre` lands in its own chunk, not the dashboard entry chunk
+- [x] 3.1 Type checking passes: `npx tsc --noEmit` — 5453a4b
+- [x] 3.2 Linting passes: `npm run lint` — 5453a4b
+- [x] 3.3 Full suite green, zero skipped: `npx vitest run` — 5453a4b
+- [x] 3.4 Production build succeeds: `npm run build` — 5453a4b
+- [x] 3.5 `hucre` lands in its own chunk, not the dashboard entry chunk — 5453a4b
 
 #### Manual
 
-- [x] 3.6 Moderator sees the button; regular employee does not, and the props are absent from their page source
-- [x] 3.7 Selecting a year downloads `nieobecnosci-<rok>.xlsx`
-- [x] 3.8 Downloaded file passes the Phase 2 manual checks against real data
-- [x] 3.9 A year with no absences yields twelve legend-only sheets, not an error
-- [x] 3.10 Next year exports and contains `urlop planowany` entries
-- [x] 3.11 Column order matches the Siatka tab, viewer's own column first
-- [x] 3.12 A network failure shows a Polish error and leaves the dialog open
+- [x] 3.6 Moderator sees the button; regular employee does not, and the props are absent from their page source — 5453a4b
+- [x] 3.7 Selecting a year downloads `nieobecnosci-<rok>.xlsx` — 5453a4b
+- [x] 3.8 Downloaded file passes the Phase 2 manual checks against real data — 5453a4b
+- [x] 3.9 A year with no absences yields twelve legend-only sheets, not an error — 5453a4b
+- [x] 3.10 Next year exports and contains `urlop planowany` entries — 5453a4b
+- [x] 3.11 Column order matches the Siatka tab, viewer's own column first — 5453a4b
+- [x] 3.12 A network failure shows a Polish error and leaves the dialog open — 5453a4b
 
 ### Phase 4: Foundation Doc Corrections
 
 #### Automated
 
-- [ ] 4.1 Formatting passes: `npm run format`
-- [ ] 4.2 No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing
+- [x] 4.1 Formatting passes: `npm run format`
+- [x] 4.2 No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing
 
 #### Manual
 
-- [ ] 4.3 The roadmap reads coherently with S-24 appended
+- [x] 4.3 The roadmap reads coherently with S-24 appended
