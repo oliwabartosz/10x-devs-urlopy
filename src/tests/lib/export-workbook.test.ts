@@ -5,6 +5,7 @@ import {
   buildExportWorkbook,
   employeeColumnLabel,
   employeesForYear,
+  FULL_DAY_LABEL,
   monthSheetName,
   type ExportSheet,
 } from "@/lib/export-workbook";
@@ -202,9 +203,9 @@ describe("buildExportWorkbook — sheet structure", () => {
     expect(build({ absences: [] })).toHaveLength(12);
   });
 
-  it("freezes the four-row band and the date column on every sheet", () => {
+  it("freezes the date column and nothing else on every sheet", () => {
     for (const sheet of build()) {
-      expect(sheet.freezeRows).toBe(4);
+      expect(sheet.freezeRows).toBe(0);
       expect(sheet.freezeColumns).toBe(1);
     }
   });
@@ -227,6 +228,7 @@ describe("buildExportWorkbook — sheet structure", () => {
       fill: "#b4dceb",
       textColor: "#072143",
       wrap: true,
+      border: true,
     });
     expect(legend[1].text).toBe(ONSITE_TRAINING_TYPE_NAME);
   });
@@ -309,6 +311,20 @@ describe("buildExportWorkbook — day rows", () => {
     for (const cell of dayRow(jan, 5)) expect(cell.fill).toBe("#ffffff");
   });
 
+  it("borders every day cell, absence or not", () => {
+    const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10" })] })[2];
+    for (const row of sheet.rows.slice(FIRST_DAY_ROW)) {
+      for (const cell of row) expect(cell.border).toBe(true);
+    }
+  });
+
+  it("borders the legend and header rows but not the title", () => {
+    const sheet = build()[0];
+    for (const cell of sheet.rows[1]) expect(cell.border).toBe(true);
+    for (const cell of sheet.rows[HEADER_ROW]) expect(cell.border).toBe(true);
+    expect(sheet.rows[0][0].border).toBeUndefined();
+  });
+
   it("starts the day rows at row 5", () => {
     expect(build()[0].rows[FIRST_DAY_ROW][0].text).toBe("1 czw.");
   });
@@ -321,10 +337,10 @@ describe("buildExportWorkbook — day rows", () => {
 });
 
 describe("buildExportWorkbook — absence cells", () => {
-  it("renders a full-day absence as an empty cell with a fill and a note", () => {
+  it("renders a full-day absence as `cały dzień` with a fill and a note", () => {
     const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10" })] })[2];
     const cell = dayRow(sheet, 10)[1];
-    expect(cell.text).toBe("");
+    expect(cell.text).toBe(FULL_DAY_LABEL);
     expect(cell.fill).toBe("#b4dceb");
     expect(cell.textColor).toBe("#072143");
     expect(cell.note).toBe("Typ: urlop wypoczynkowy\nGodziny: cały dzień");
@@ -376,7 +392,7 @@ describe("buildExportWorkbook — absence cells", () => {
     expect(text).not.toContain(" ");
   });
 
-  it("leaves a partial day on a non-whitelisted type textless while the note keeps the hours", () => {
+  it("reads a partial day on a non-whitelisted type as a full day while the note keeps the hours", () => {
     const sheet = build({
       absences: [
         absence({
@@ -390,7 +406,7 @@ describe("buildExportWorkbook — absence cells", () => {
       ],
     })[2];
     const cell = dayRow(sheet, 10)[1];
-    expect(cell.text).toBe("");
+    expect(cell.text).toBe(FULL_DAY_LABEL);
     expect(cell.note).toBe("Typ: urlop wypoczynkowy\nGodziny: 08:00–12:00");
   });
 
@@ -403,6 +419,22 @@ describe("buildExportWorkbook — absence cells", () => {
     expect(dayRow(sheet, 10)[1].note).toContain("Zastępstwo: Ewa Żółć");
   });
 
+  it("reads a gated partial day as its hours, never as cały dzień", () => {
+    const sheet = build({
+      absences: [
+        absence({
+          employee_id: "a",
+          date: "2026-03-10",
+          absence_type_id: TRAINING_TYPE_ID,
+          is_full_day: false,
+          start_time: "08:00:00",
+          end_time: "12:00:00",
+        }),
+      ],
+    })[2];
+    expect(dayRow(sheet, 10)[1].text).not.toBe(FULL_DAY_LABEL);
+  });
+
   it("carries the comment into the note", () => {
     const sheet = build({
       absences: [absence({ employee_id: "a", date: "2026-03-10", comment: "zjazd rodzinny" })],
@@ -410,7 +442,42 @@ describe("buildExportWorkbook — absence cells", () => {
     expect(dayRow(sheet, 10)[1].note).toContain("Komentarz: zjazd rodzinny");
   });
 
-  it("falls back to an empty cell when the type is not in the catalogue", () => {
+  it("also puts the comment in the cell, on its own line under the time text", () => {
+    // A note is invisible until pointed at; the cell is not. Both carry it.
+    const sheet = build({
+      absences: [absence({ employee_id: "a", date: "2026-03-10", comment: "zjazd rodzinny" })],
+    })[2];
+    const cell = dayRow(sheet, 10)[1];
+    expect(cell.text).toBe(`${FULL_DAY_LABEL}\nzjazd rodzinny`);
+    expect(cell.wrap).toBe(true);
+  });
+
+  it("puts the comment under the hours on a gated partial day", () => {
+    const sheet = build({
+      absences: [
+        absence({
+          employee_id: "a",
+          date: "2026-03-10",
+          absence_type_id: TRAINING_TYPE_ID,
+          is_full_day: false,
+          start_time: "08:00:00",
+          end_time: "12:00:00",
+          comment: "u klienta",
+        }),
+      ],
+    })[2];
+    expect(dayRow(sheet, 10)[1].text).toBe("08:00–12:00\nu klienta");
+  });
+
+  it("leaves a comment-less absence cell unwrapped and single-line", () => {
+    const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10" })] })[2];
+    const cell = dayRow(sheet, 10)[1];
+    expect(cell.text).toBe(FULL_DAY_LABEL);
+    expect(cell.text).not.toContain("\n");
+    expect(cell.wrap).toBeUndefined();
+  });
+
+  it("falls back to an empty, note-less cell when the type is not in the catalogue", () => {
     const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10", absence_type_id: 99 })] })[2];
     const cell = dayRow(sheet, 10)[1];
     expect(cell.text).toBe("");

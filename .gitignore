@@ -43,3 +43,6 @@ test-results/
 # team status digests (derived state — keep the dir, ignore the reports)
 context/team/digests/*
 !context/team/digests/.gitkeep
+
+# dev scratch output (scripts/export-sample.ts writes the sample workbook here)
+.scratch/

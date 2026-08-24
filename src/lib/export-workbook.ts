@@ -20,8 +20,10 @@ const INACTIVE_HEADER_TEXT = "#6f6f6f";
 const WEEKEND_FILL = "#f4f4f4";
 const WEEKDAY_FILL = "#ffffff";
 
-/** Title, legend, spacer, header — the band pinned above the scrolling day rows. */
-const FREEZE_ROWS = 4;
+// Only the date column is pinned. Freezing rows is top-anchored, so pinning the header row
+// necessarily pins the title and legend above it too, and a reader scrolling a 31-day month
+// judged that band more costly than the header it buys.
+const FREEZE_ROWS = 0;
 /** The date column. */
 const FREEZE_COLUMNS = 1;
 
@@ -31,8 +33,11 @@ const EMPLOYEE_COLUMN_WIDTH = 16;
 /** The literal suffix the grid's own header builds for a deactivated colleague. */
 const INACTIVE_SUFFIX = " (nieakt.)";
 
+/** What an absence cell reads when it has no time range to show. */
+export const FULL_DAY_LABEL = "cały dzień";
+
 export interface ExportCell {
-  /** `""` for a full-day absence; `HH:MM–HH:MM` for a gated partial day. */
+  /** `cały dzień` for a full-day absence; `HH:MM–HH:MM` for a gated partial day. */
   text: string;
   /** `#rrggbb` — type colour, weekend shade, or header band. */
   fill?: string;
@@ -40,6 +45,8 @@ export interface ExportCell {
   textColor?: string;
   bold?: boolean;
   wrap?: boolean;
+  /** Draw a thin dotted black outline on all four sides — the grid's eye-navigation aid. */
+  border?: boolean;
   /** `absenceNote()` output — rendered as an Excel hover note. */
   note?: string;
 }
@@ -167,6 +174,7 @@ export function buildExportWorkbook(input: BuildExportWorkbookInput): ExportShee
         fill: t.color,
         textColor: t.text_color,
         wrap: true,
+        border: true,
       })),
     );
 
@@ -175,13 +183,14 @@ export function buildExportWorkbook(input: BuildExportWorkbookInput): ExportShee
 
     // Row 4 — header.
     rows.push([
-      { text: "Dzień", fill: HEADER_FILL, bold: true },
+      { text: "Dzień", fill: HEADER_FILL, bold: true, border: true },
       ...columns.map((emp) => ({
         text: employeeColumnLabel(emp),
         fill: emp.deleted_at ? INACTIVE_HEADER_FILL : HEADER_FILL,
         textColor: emp.deleted_at ? INACTIVE_HEADER_TEXT : undefined,
         bold: true,
         wrap: true,
+        border: true,
       })),
     ]);
 
@@ -193,23 +202,33 @@ export function buildExportWorkbook(input: BuildExportWorkbookInput): ExportShee
       const rowFill = weekday === 0 || weekday === 6 ? WEEKEND_FILL : WEEKDAY_FILL;
       const dateKey = `${year}-${pad2(month)}-${pad2(day)}`;
 
-      const row: ExportCell[] = [{ text: `${day} ${weekdayFmt.format(date)}`, fill: rowFill }];
+      const row: ExportCell[] = [{ text: `${day} ${weekdayFmt.format(date)}`, fill: rowFill, border: true }];
 
       for (const emp of columns) {
         const absence = byEmployeeAndDate.get(`${emp.id}|${dateKey}`);
         const type = absence ? typeById.get(absence.absence_type_id) : undefined;
         if (!absence || !type) {
-          row.push({ text: "", fill: rowFill });
+          row.push({ text: "", fill: rowFill, border: true });
           continue;
         }
         const substituteName = absence.substitute_employee_id
           ? employeeNameById.get(absence.substitute_employee_id)
           : undefined;
+        // Gated, matching what the screen shows: an out-of-contract row carrying hours on a
+        // type the product forbids partial days on reads as a full day here, exactly as it
+        // renders on the grid. The note below stays ungated and still reports those hours.
+        const timeText = cellTimeRange(absence, type.name) || FULL_DAY_LABEL;
         row.push({
-          // Gated, matching what the screen shows. The note below stays ungated.
-          text: cellTimeRange(absence, type.name),
+          // The comment goes in the cell as well as in the note, on its own line, so it is
+          // readable without hovering — a note is invisible until pointed at, and on a printed
+          // or scrolled sheet it may as well not exist.
+          text: absence.comment ? `${timeText}\n${absence.comment}` : timeText,
           fill: type.color,
           textColor: type.text_color,
+          border: true,
+          // Only when there is a second line to wrap: an unwrapped one-liner keeps its row at
+          // the default height.
+          wrap: absence.comment ? true : undefined,
           note: absenceNote({ absence, typeName: type.name, substituteName }),
         });
       }

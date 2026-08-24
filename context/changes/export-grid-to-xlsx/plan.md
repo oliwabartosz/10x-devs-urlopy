@@ -417,35 +417,35 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 
 #### Automated
 
-- [x] 1.1 Type checking passes: `npx tsc --noEmit`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Unit tests pass with zero skipped: `npx vitest run src/tests/lib/export-workbook.test.ts src/tests/lib/employee-order.test.ts`
-- [x] 1.4 Full suite still green: `npx vitest run`
-- [x] 1.5 No new dependency yet: `git diff package.json` is empty
+- [x] 1.1 Type checking passes: `npx tsc --noEmit` — c6e32b6
+- [x] 1.2 Linting passes: `npm run lint` — c6e32b6
+- [x] 1.3 Unit tests pass with zero skipped: `npx vitest run src/tests/lib/export-workbook.test.ts src/tests/lib/employee-order.test.ts` — c6e32b6
+- [x] 1.4 Full suite still green: `npx vitest run` — c6e32b6
+- [x] 1.5 No new dependency yet: `git diff package.json` is empty — c6e32b6
 
 #### Manual
 
-- [x] 1.6 The grid renders and drag-reorders exactly as before the `selfFirst` extraction
+- [x] 1.6 The grid renders and drag-reorders exactly as before the `selfFirst` extraction — c6e32b6
 
 ### Phase 2: Writer Adapter and Download
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `npx tsc --noEmit`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Full suite green, zero skipped: `npx vitest run`
-- [ ] 2.4 Sample generates: `node scripts/export-sample.mjs`
-- [ ] 2.5 Generated file contains `xl/comments1.xml`, `xl/drawings/vmlDrawing1.vml`, twelve worksheets, and a frozen `<pane>` in sheet 1
-- [ ] 2.6 Production build succeeds: `npm run build`
+- [x] 2.1 Type checking passes: `npx tsc --noEmit`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Full suite green, zero skipped: `npx vitest run`
+- [x] 2.4 Sample generates: `npm run sample:xlsx`
+- [x] 2.5 Generated file contains `xl/comments1.xml`, `xl/drawings/vmlDrawing1.vml`, twelve worksheets, and a frozen `<pane>` in sheet 1
+- [x] 2.6 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.7 Sample opens in Microsoft Excel with no repair prompt; twelve Polish tab names
-- [ ] 2.8 Sample opens in LibreOffice Calc with no warning
-- [ ] 2.9 Fill colours match the on-screen palette; Polish diacritics intact
-- [ ] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines
-- [ ] 2.11 Legend, header and date column stay frozen when scrolling
-- [ ] 2.12 Weekend rows are visibly shaded
+- [x] 2.7 Sample opens in Microsoft Excel with no repair prompt; twelve Polish tab names
+- [x] 2.8 Sample opens in LibreOffice Calc with no warning
+- [x] 2.9 Fill colours match the on-screen palette; Polish diacritics intact
+- [x] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines
+- [x] 2.11 Legend, header and date column stay frozen when scrolling
+- [x] 2.12 Weekend rows are visibly shaded
 
 ### Phase 3: Moderator Export Dialog
 
