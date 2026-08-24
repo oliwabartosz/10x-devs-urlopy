@@ -471,9 +471,9 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 
 #### Automated
 
-- [x] 4.1 Formatting passes: `npm run format`
-- [x] 4.2 No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing
+- [x] 4.1 Formatting passes: `npm run format` — 45e19eb
+- [x] 4.2 No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing — 45e19eb
 
 #### Manual
 
-- [x] 4.3 The roadmap reads coherently with S-24 appended
+- [x] 4.3 The roadmap reads coherently with S-24 appended — 45e19eb

@@ -1,7 +1,7 @@
 ---
 change_id: export-grid-to-xlsx
 title: Moderator XLSX export of the yearly absence grid, one sheet per month
-status: implementing
+status: implemented
 created: 2026-08-24
 updated: 2026-08-24
 archived_at: null
