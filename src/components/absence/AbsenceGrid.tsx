@@ -16,6 +16,7 @@ import { GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { initialsOf } from "@/lib/initials";
 import { rawTimeRange, cellTimeRange } from "@/lib/absence-grid-cell";
+import { selfFirst } from "@/lib/employee-order";
 import {
   dateKey,
   expandSpanToWeekdays,
@@ -44,12 +45,6 @@ function getDaysInMonth(year: number, month: number): Date[] {
     days.push(new Date(year, month - 1, d));
   }
   return days;
-}
-
-function selfFirst(emps: EmployeeListItem[], currentId: string): EmployeeListItem[] {
-  const me = emps.find((e) => e.id === currentId);
-  const others = emps.filter((e) => e.id !== currentId);
-  return me ? [me, ...others] : others;
 }
 
 function SortableEmployeeHeader({ emp, isModerator }: { emp: EmployeeListItem; isModerator: boolean }) {
