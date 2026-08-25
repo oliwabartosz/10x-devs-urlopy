@@ -230,12 +230,12 @@ Not applicable — no data, schema, or API contract changes. Both phases are rev
 
 #### Automated
 
-- [x] 2.1 Linting and formatting pass: `npm run lint`
-- [x] 2.2 Production build succeeds: `npm run build`
-- [x] 2.3 No stale references: `grep -rn "Sign out" src/` returns nothing
+- [x] 2.1 Linting and formatting pass: `npm run lint` — 20110f8
+- [x] 2.2 Production build succeeds: `npm run build` — 20110f8
+- [x] 2.3 No stale references: `grep -rn "Sign out" src/` returns nothing — 20110f8
 
 #### Manual
 
-- [x] 2.4 Top bar reads `Wyloguj`
-- [x] 2.5 Clicking it signs out and redirects to sign-in
-- [x] 2.6 Moderator pill, account menu, and `Dashboard` link visually unchanged
+- [x] 2.4 Top bar reads `Wyloguj` — 20110f8
+- [x] 2.5 Clicking it signs out and redirects to sign-in — 20110f8
+- [x] 2.6 Moderator pill, account menu, and `Dashboard` link visually unchanged — 20110f8
