@@ -214,28 +214,28 @@ Not applicable — no data, schema, or API contract changes. Both phases are rev
 
 #### Automated
 
-- [x] 1.1 Type checking and linting pass: `npm run lint`
-- [x] 1.2 Unit test suite passes with no regressions: `npm run test:run`
-- [x] 1.3 Production build succeeds: `npm run build`
+- [x] 1.1 Type checking and linting pass: `npm run lint` — e75a36b
+- [x] 1.2 Unit test suite passes with no regressions: `npm run test:run` — e75a36b
+- [x] 1.3 Production build succeeds: `npm run build` — e75a36b
 
 #### Manual
 
-- [x] 1.4 Moderator: two breakdown cards, year first, month figures unchanged
-- [x] 1.5 Year card counts match the yearly matrix `Łącznie` row; shares sum to ~100%
-- [x] 1.6 Regular employee: both cards render own figures only
-- [x] 1.7 Loading state shows in the year slot; empty year renders `—` / 0% without `NaN`
-- [x] 1.8 Month navigation updates only the month card; year navigation updates both
+- [x] 1.4 Moderator: two breakdown cards, year first, month figures unchanged — e75a36b
+- [x] 1.5 Year card counts match the yearly matrix `Łącznie` row; shares sum to ~100% — e75a36b
+- [x] 1.6 Regular employee: both cards render own figures only — e75a36b
+- [x] 1.7 Loading state shows in the year slot; empty year renders `—` / 0% without `NaN` — e75a36b
+- [x] 1.8 Month navigation updates only the month card; year navigation updates both — e75a36b
 
 ### Phase 2: Polish sign-out label
 
 #### Automated
 
-- [ ] 2.1 Linting and formatting pass: `npm run lint`
-- [ ] 2.2 Production build succeeds: `npm run build`
-- [ ] 2.3 No stale references: `grep -rn "Sign out" src/` returns nothing
+- [x] 2.1 Linting and formatting pass: `npm run lint`
+- [x] 2.2 Production build succeeds: `npm run build`
+- [x] 2.3 No stale references: `grep -rn "Sign out" src/` returns nothing
 
 #### Manual
 
-- [ ] 2.4 Top bar reads `Wyloguj`
-- [ ] 2.5 Clicking it signs out and redirects to sign-in
-- [ ] 2.6 Moderator pill, account menu, and `Dashboard` link visually unchanged
+- [x] 2.4 Top bar reads `Wyloguj`
+- [x] 2.5 Clicking it signs out and redirects to sign-in
+- [x] 2.6 Moderator pill, account menu, and `Dashboard` link visually unchanged

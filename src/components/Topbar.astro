@@ -25,9 +25,16 @@ const { user, userRole } = Astro.locals;
           <a href="/dashboard" class="hover:text-accent transition-colors">
             Dashboard
           </a>
+          {/*
+            S-17 of the UI overhaul fixed the top-bar labels to English to match the design
+            prototype (context/archive/2026-08-07-huge-ui-ux-improvement/plan.md:210-219). This
+            one label is Polish by explicit request; `Dashboard`, `Sign in`, and `Not signed in`
+            deliberately stay English. The bar is mixed-language on purpose — do not "restore
+            consistency" in either direction without checking back.
+          */}
           <form method="POST" action="/api/auth/signout">
             <button type="submit" class="hover:text-accent cursor-pointer transition-colors">
-              Sign out
+              Wyloguj
             </button>
           </form>
         </div>
