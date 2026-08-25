@@ -82,9 +82,15 @@ export function AbsenceExportDialog({ employees, absenceTypes, currentEmployeeId
       const { writeWorkbook, downloadWorkbook } = await import("@/lib/export-xlsx");
       // Closing the dialog aborts the run; without these guards a cancelled export still
       // downloads a file and still drives setOpen on a dialog the user may have reopened.
-      if (controller.signal.aborted) return;
+      //
+      // Read through a call rather than touching `controller.signal.aborted` directly: TS narrows
+      // that property to `false` at the first guard and does not widen it back across the await,
+      // so the second guard reads as dead code to no-unnecessary-condition. It is not dead — the
+      // await below is the longest step here and the likeliest place for an abort to land.
+      const aborted = () => controller.signal.aborted;
+      if (aborted()) return;
       const bytes = await writeWorkbook(sheets);
-      if (controller.signal.aborted) return;
+      if (aborted()) return;
       // ASCII-only filename — a non-ASCII `download` value is honoured inconsistently.
       downloadWorkbook(bytes, `nieobecnosci-${year}.xlsx`);
 
