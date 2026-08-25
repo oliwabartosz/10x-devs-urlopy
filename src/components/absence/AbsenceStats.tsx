@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Absence, EmployeeListItem, AbsenceType } from "@/types";
 import { formatDayCount } from "@/lib/hours";
 import { buildMatrix, type MatrixData } from "@/lib/absence-stats";
@@ -44,46 +44,125 @@ function KpiTile({ label, value, note }: { label: string; value: string; note: s
   );
 }
 
+/**
+ * Pending/error shell for every region fed by the yearly fetch in the effect below. Two regions
+ * read that single fetch — the breakdown card's year side and the yearly matrix — so the copy for
+ * "still loading" and "it failed" is defined here once rather than inline at each of them.
+ */
+function YearlyFetchSlot({
+  loading,
+  error,
+  children,
+}: {
+  loading: boolean;
+  error: string | null;
+  children: ReactNode;
+}) {
+  if (loading) return <p className="text-muted-foreground">Ładowanie statystyk rocznych…</p>;
+  if (error) return <p className="text-destructive">{error}</p>;
+  return <>{children}</>;
+}
+
+// Segmented pill control, the same idiom as the dashboard tab bar (dashboard.astro:229-232) one
+// size down so it sits inside a card header rather than above the card.
+const segBase = "cursor-pointer px-3 py-1 text-xs transition-colors";
+const segOn = "bg-primary text-primary-foreground font-bold";
+const segOff = "bg-white text-muted-foreground hover:text-primary";
+
+/**
+ * One card, two periods, switched in place — not two stacked cards. The type split reads very
+ * differently over a year than over a month, and putting both in one frame makes that a toggle
+ * rather than a scroll. The year is the default: it is the figure that sets context for the
+ * month beside it and for the matrices below.
+ *
+ * Only the year side is fed by the client fetch, so only its body carries the pending/error
+ * shell; the month side is server-rendered and always present.
+ */
 function TypeBreakdown({
   absenceTypes,
-  data,
-  period,
+  yearlyData,
+  monthlyData,
+  yearLabel,
+  monthLabel,
+  loading,
+  error,
 }: {
   absenceTypes: AbsenceType[];
-  data: MatrixData;
-  period: string;
+  yearlyData: MatrixData;
+  monthlyData: MatrixData;
+  yearLabel: string;
+  monthLabel: string;
+  loading: boolean;
+  error: string | null;
 }) {
+  const [period, setPeriod] = useState<"year" | "month">("year");
+  const isYear = period === "year";
+  const data = isYear ? yearlyData : monthlyData;
+
+  const rows = absenceTypes.map((type, i) => {
+    const days = data.perType[i];
+    const share = data.grand > 0 ? (days / data.grand) * 100 : 0;
+    return (
+      <div
+        key={type.id}
+        className="grid items-center gap-[14px] py-[9px]"
+        style={{ gridTemplateColumns: "280px 1fr 90px 60px" }}
+      >
+        <div className="flex items-center gap-2 text-[13px] text-black">
+          <span className="text-sm leading-none">{type.icon}</span>
+          <span className="truncate">{type.name}</span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-[#f2f2f2]">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${String(Math.round(share))}%`, backgroundColor: type.color }}
+          />
+        </div>
+        <div className="text-primary text-[13px] font-bold">{cellText(days)}</div>
+        <div className="text-muted-foreground text-right text-xs">{`${String(Math.round(share))}%`}</div>
+      </div>
+    );
+  });
+
   return (
     <div className="border-line overflow-hidden rounded-[14px] border bg-white">
-      <div className="border-b-line-strong flex items-baseline justify-between gap-3 border-b px-[18px] py-[15px]">
+      <div className="border-b-line-strong flex flex-wrap items-center justify-between gap-3 border-b px-[18px] py-[15px]">
         <h3 className="text-primary m-0 text-[15px] font-bold">Podział wg typu nieobecności</h3>
-        <span className="text-muted-foreground text-xs">{period}</span>
+        <div className="flex items-center gap-3">
+          {/* The concrete period stays on screen — the buttons say which axis, not which year. */}
+          <span className="text-muted-foreground text-xs">{isYear ? yearLabel : monthLabel}</span>
+          <div className="border-line flex overflow-hidden rounded-[10px] border">
+            <button
+              type="button"
+              aria-pressed={isYear}
+              onClick={() => {
+                setPeriod("year");
+              }}
+              className={cn(segBase, isYear ? segOn : segOff)}
+            >
+              Rok
+            </button>
+            <button
+              type="button"
+              aria-pressed={!isYear}
+              onClick={() => {
+                setPeriod("month");
+              }}
+              className={cn("border-line border-l", segBase, isYear ? segOff : segOn)}
+            >
+              Miesiąc
+            </button>
+          </div>
+        </div>
       </div>
       <div className="px-[18px] pt-2 pb-4">
-        {absenceTypes.map((type, i) => {
-          const days = data.perType[i];
-          const share = data.grand > 0 ? (days / data.grand) * 100 : 0;
-          return (
-            <div
-              key={type.id}
-              className="grid items-center gap-[14px] py-[9px]"
-              style={{ gridTemplateColumns: "280px 1fr 90px 60px" }}
-            >
-              <div className="flex items-center gap-2 text-[13px] text-black">
-                <span className="text-sm leading-none">{type.icon}</span>
-                <span className="truncate">{type.name}</span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-[#f2f2f2]">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${String(Math.round(share))}%`, backgroundColor: type.color }}
-                />
-              </div>
-              <div className="text-primary text-[13px] font-bold">{cellText(days)}</div>
-              <div className="text-muted-foreground text-right text-xs">{`${String(Math.round(share))}%`}</div>
-            </div>
-          );
-        })}
+        {isYear ? (
+          <YearlyFetchSlot loading={loading} error={error}>
+            {rows}
+          </YearlyFetchSlot>
+        ) : (
+          rows
+        )}
       </div>
     </div>
   );
@@ -343,7 +422,15 @@ export default function AbsenceStats({
         )}
       </div>
 
-      <TypeBreakdown absenceTypes={absenceTypes} data={monthlyData} period={capitalizedMonth} />
+      <TypeBreakdown
+        absenceTypes={absenceTypes}
+        yearlyData={yearlyData}
+        monthlyData={monthlyData}
+        yearLabel={`Rok ${String(year)}`}
+        monthLabel={capitalizedMonth}
+        loading={loading}
+        error={error}
+      />
 
       <StatsMatrixCard
         title={
@@ -357,11 +444,7 @@ export default function AbsenceStats({
         hideTotalsRow={!isModerator}
       />
 
-      {loading ? (
-        <p className="text-muted-foreground">Ładowanie statystyk rocznych…</p>
-      ) : error ? (
-        <p className="text-destructive">{error}</p>
-      ) : (
+      <YearlyFetchSlot loading={loading} error={error}>
         <StatsMatrixCard
           title={
             isModerator ? `Statystyki roczne – Rok ${String(year)}` : `Moje statystyki roczne – Rok ${String(year)}`
@@ -375,7 +458,7 @@ export default function AbsenceStats({
           showMedals={isModerator}
           hideTotalsRow={!isModerator}
         />
-      )}
+      </YearlyFetchSlot>
     </div>
   );
 }
