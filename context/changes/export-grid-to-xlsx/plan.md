@@ -444,7 +444,7 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 - [x] 2.8 Sample opens in LibreOffice Calc with no warning — b74a23b
 - [x] 2.9 Fill colours match the on-screen palette; Polish diacritics intact — b74a23b
 - [x] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines — b74a23b
-- [x] 2.11 The date column stays frozen when scrolling — b74a23b (see Deviations, D1)
+- [x] 2.11 The date column stays frozen when scrolling (see Deviations, D1) — b74a23b
 - [x] 2.12 Weekend rows are visibly shaded — b74a23b
 
 ### Phase 3: Moderator Export Dialog
