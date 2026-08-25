@@ -8,7 +8,7 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 - Do not edit generated or ignored output: `.astro/`, `dist/`, `.wrangler/`, or `node_modules/`.
 - Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. Browser-level tests run on Playwright: `npm run e2e` (`playwright.config.ts`). Do not invent commands beyond these.
 - **`npm run e2e` runs against the deployed app**, not a local server — `playwright.config.ts` defaults `baseURL` to the production Worker and `wrangler dev` cannot reach Supabase. So an E2E run writes to the **production** database and must clean up after itself; read `tests/e2e/e2e-rules.md` before writing one. Override the target with `BASE_URL`.
-- The DB integration suites under `src/tests/` hit a **real** database and self-skip unless `DATABASE_URL_DIRECT` is set (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` are also needed for the auth-user fixtures). A green run with those unset means *skipped*, not *passed* — check the reported test count before claiming coverage.
+- The DB integration suites under `src/tests/` hit a **real** database and self-skip unless `DATABASE_URL_DIRECT` is set (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` are also needed for the auth-user fixtures). A green run with those unset means _skipped_, not _passed_ — check the reported test count before claiming coverage.
 
 ## Commands
 
@@ -24,6 +24,7 @@ Urlopy is an Astro 6 SSR app with React 19 islands, TypeScript, Tailwind CSS 4, 
 - `src/pages/` owns Astro pages; `src/pages/api/auth/` owns email/password endpoints; protected pages are listed in `PROTECTED_ROUTES` inside `@src/middleware.ts`.
 - Supabase client creation is centralized in `@src/lib/supabase.ts`. It returns `null` when `SUPABASE_URL` or `SUPABASE_KEY` is missing; API routes must handle that case.
 - Use `@/*` imports for `src/*`. Shared helpers belong in `src/lib/`; UI primitives live in `src/components/ui/` per `@components.json`.
+- `src/lib/services/` is only for modules that take a `Db` and execute queries. Query-free logic — Drizzle fragments, zod schemas, `Response` builders — stays in `src/lib/` so it is unit-testable without a database. See the header comment in `@src/lib/absence-list.ts`.
 - Keep static/layout markup in `.astro` files and use React components for hydrated interactivity, as the current auth forms do with `client:load`.
 
 ## Database (Drizzle ORM)
@@ -60,7 +61,7 @@ All application table queries use Drizzle ORM with the `drizzle-orm/postgres-js`
 
 `drizzle-kit` outputs to `supabase/migrations/` alongside hand-authored Supabase CLI migrations. **Always manually review the generated diff before running `db:migrate`** — the Drizzle schema intentionally omits some DB-level constraints (CHECK constraints on `absence_types.color` and `absences.hours`; the `auth.users` FK cascade) because they cannot be represented in Drizzle. A generated migration will not include them, so any future schema change must re-add them manually after inspecting the diff.
 
-**Hand-authored data migrations are not in the journal, so `db:migrate` never runs them.** `drizzle-kit` generates DDL only; any file that changes *data* is written by hand and deliberately left out of `supabase/migrations/meta/_journal.json`. Applying one is a manual `psql`/SQL-editor step against `DATABASE_URL_DIRECT`. Provisioning a new environment must include:
+**Hand-authored data migrations are not in the journal, so `db:migrate` never runs them.** `drizzle-kit` generates DDL only; any file that changes _data_ is written by hand and deliberately left out of `supabase/migrations/meta/_journal.json`. Applying one is a manual `psql`/SQL-editor step against `DATABASE_URL_DIRECT`. Provisioning a new environment must include:
 
 - `20260812153000_offsite_training_single_codepoint_icon.sql` — **required**. The journaled `20260807122840_faulty_hobgoblin.sql` seeds the offsite type's icon as an 8-codepoint ZWJ sequence; this file corrects it to a single codepoint. Since the monthly grid's cell chip carries no type name, the icon is the only per-type signal, so an environment that skips this renders three or four glyphs per offsite cell.
 - `20260811120000_purge_demo_partial_day_absences.sql` — **not** required on a fresh database; it is a one-off cleanup of rows that only ever existed in an already-provisioned environment.
@@ -74,15 +75,17 @@ The `DATABASE_URL` uses the service role key, which bypasses Supabase RLS. All r
 ### Runtime type gotcha
 
 `NUMERIC` columns (e.g. `absences.hours`) return **strings** from postgres-js, not numbers. Cast in every SELECT and RETURNING clause that includes `hours`:
+
 ```ts
 import { sql } from "drizzle-orm";
 // inside .select({ ... }) or .returning({ ... }):
-hours: sql<number | null>`${absences.hours}::float`
+hours: sql<number | null>`${absences.hours}::float`;
 ```
 
 ### Error handling
 
 Drizzle wraps driver errors in `DrizzleQueryError`. The PostgreSQL error code is **not** on `err.code` — it is on `err.cause.code`. Always access it via:
+
 ```ts
 } catch (err) {
   const e = err as { code?: string; cause?: { code?: string } };
@@ -98,7 +101,7 @@ Drizzle wraps driver errors in `DrizzleQueryError`. The PostgreSQL error code is
 
 ## Style And UI Conventions
 
-- Node is pinned to `22.14.0` in `@.nvmrc`; package manager is npm.
+- Node is pinned to `24.15.0` in `@.nvmrc`; package manager is npm.
 - Prettier uses 2 spaces, semicolons, double quotes, trailing commas, and `printWidth: 120`.
 - Merge conditional Tailwind classes with `cn()` from `@src/lib/utils.ts`; do not hand-concatenate long conditional class strings.
 - shadcn/ui uses `new-york`, neutral base color, Lucide icons, and aliases in `@components.json`. Add primitives with `npx shadcn@latest add <name>`.

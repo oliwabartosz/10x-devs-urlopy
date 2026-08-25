@@ -357,7 +357,7 @@ Amend the foundation docs the research falsified, following the S-23 precedent o
 
 #### Automated Verification:
 
-- Formatting passes: `npm run format`
+- Formatting passes: `npx prettier --check` on the files this change touches
 - No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing
 
 #### Manual Verification:
@@ -444,7 +444,7 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 - [x] 2.8 Sample opens in LibreOffice Calc with no warning — b74a23b
 - [x] 2.9 Fill colours match the on-screen palette; Polish diacritics intact — b74a23b
 - [x] 2.10 Hover note shows the expected `Typ:` / `Godziny:` / `Komentarz:` / `Zastępstwo:` lines — b74a23b
-- [x] 2.11 Legend, header and date column stay frozen when scrolling — b74a23b
+- [x] 2.11 The date column stays frozen when scrolling — b74a23b (see Deviations, D1)
 - [x] 2.12 Weekend rows are visibly shaded — b74a23b
 
 ### Phase 3: Moderator Export Dialog
@@ -471,9 +471,78 @@ No schema change, no migration, no data backfill. Nothing to roll back beyond re
 
 #### Automated
 
-- [x] 4.1 Formatting passes: `npm run format` — 45e19eb
+- [x] 4.1 Formatting passes: `npx prettier --check` on this change's files — 45e19eb
 - [x] 4.2 No stale figure remains: `grep -rn "25 MB" context/foundation/infrastructure.md` returns nothing — 45e19eb
 
 #### Manual
 
 - [x] 4.3 The roadmap reads coherently with S-24 appended — 45e19eb
+
+## Deviations from the plan
+
+Recorded after implementation. Phase blocks above stay as written — this section is
+the authoritative record of where the shipped code diverges from them.
+
+### D1 — Freeze is column-only, not 4 rows (Phase 1 §6, Phase 2)
+
+`FREEZE_ROWS = 0` in `src/lib/export-workbook.ts`, not the 4 the §6 contract specifies.
+Every sheet emits `<pane xSplit="1" topLeftCell="B1" state="frozen"/>` with no `ySplit`,
+so only the date column is pinned and the header row does not survive a scroll down.
+Decided during manual verification of the sample in Excel and LibreOffice: a top-anchored
+freeze would pin the title and legend rows too, costing four rows of vertical space on a
+31-day month. Progress row 2.11 has been reworded to match. Disclosed in `b74a23b`.
+
+### D2 — Absence cells carry text, and comments render inline (Phase 1 §6, Phase 2)
+
+An absence cell reads `"cały dzień"` or its time range instead of the specified `""`, and a
+comment is appended on a second wrapped line so it is readable without hovering. The hover
+note is unchanged and still reports raw hours. Disclosed in `b74a23b`.
+
+### D3 — Dotted borders on legend, header and day cells (Phase 1 §6, Phase 2)
+
+`ExportCell` gained a `border?: boolean` field not present in the §6 interface; every legend,
+header and day cell carries a thin dotted black border. Disclosed in `b74a23b`.
+
+### D4 — Sample harness is TypeScript via tsx (Phase 2)
+
+The harness is `scripts/export-sample.ts` run via `tsx`, not the planned
+`scripts/export-sample.mjs` run via `node`: it imports `@/`-aliased TypeScript modules, which
+plain node cannot resolve. Matches `scripts/seed-admin.ts` and `scripts/team-digest.ts`.
+Progress row 2.4 was reworded to the command that exists. Disclosed in `b74a23b`.
+
+### D5 — Commit `5453a4b` bundles four changes no phase planned
+
+None of the following appear in any phase's Changes Required. All are disclosed in
+`5453a4b`, which also explains why they could not be split: `dashboard.astro` carries both
+the export edit and the stats edit, so landing only the export half would push a `main` in
+which `AbsenceStats` receives a prop it does not declare.
+
+- **`src/lib/services/absence-list.ts` → `src/lib/absence-list.ts`.** A `json` helper was
+  de-duplicated out of three routes (`api/absences/index.ts`, `bulk.ts`, `stats.ts`) and
+  `YearSchema` was hoisted alongside it. See also D6.
+- **`YearSchema` narrowed from `\d{4}` to `[12]\d{3}`** — a behaviour change on two live
+  endpoints. `?year=0000` now returns 400 instead of reaching Postgres and surfacing 22008
+  as a 500. An improvement, but a public validation-contract change shipped under an export plan.
+- **`AbsenceStats.tsx` gained a `yearlyEmployees` prop**, fixing a real pre-existing bug:
+  `dashboard.astro` windows a moderator's employee list to the browsed month, and
+  `buildMatrix` sums only over the list it is handed — so a mid-year hire silently vanished
+  from the _yearly_ totals whenever a moderator browsed an earlier month. **Not verified:**
+  whether any figure a moderator already acted on was affected by this.
+- **`stats-scope.test.ts` gained two cases** — an `is_system` caller on the non-moderator
+  join arm, and the year-zero 400.
+
+### D6 — `absence-list.ts` moved out of `src/lib/services/`
+
+The move (part of D5) leaves `src/lib/services/` holding only `absence-partial-day.ts` and
+`holiday-balance.ts`, while `src/lib/` holds ~25 modules. CLAUDE.md says helpers go in
+`src/lib/` "or `src/lib/services/` for extracted business logic" without a rule for choosing;
+the move follows the numerical majority. The directory no longer explains itself — see the
+impl-review finding F7.
+
+### D7 — `exportYearOptions` has a fixed years-back floor (Phase 1 §6)
+
+The plan derived the earliest selectable year from the earliest employee `created_at`. The
+shipped `exportYearOptions` takes `Math.min(currentYear - EXPORT_YEARS_BACK, ...hireYears)`,
+so the range always reaches at least `EXPORT_YEARS_BACK` years back and only extends further
+for an earlier hire year. Reason: every employee record was created the year the app shipped,
+which made back-filled years unreachable under the planned rule. Disclosed in a commit message.

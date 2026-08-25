@@ -52,33 +52,33 @@ Given the uncertainty, the evidence currently favours **generating the workbook 
 
 **Orientation.** Days are rows, employees are columns (`AbsenceGrid.tsx:369`, `:390`). Days come from `getDaysInMonth(year, month)` (`:39-47`), 1-indexed month, no padding days, no week grouping. `dateStr` is built from **local** getters (`:371`) — never `toISOString()`, because Warsaw is UTC+1/+2 and ISO reports the previous day (`src/lib/absence-range.ts:14-27`).
 
-**Absence types are data, not code.** No enum, no slug column — only `absence_types.name`, which doubles as the Polish display label (`src/db/schema.ts:31-43`; the comment at `:35-37` states the intent: *"Types stay data, never a name-keyed code map: adding an eighth type is a seed row, not a code change"*). `id` is a `serial`, so ids differ per environment and every catalogue migration keys on `name`.
+**Absence types are data, not code.** No enum, no slug column — only `absence_types.name`, which doubles as the Polish display label (`src/db/schema.ts:31-43`; the comment at `:35-37` states the intent: _"Types stay data, never a name-keyed code map: adding an eighth type is a seed row, not a code change"_). `id` is a `serial`, so ids differ per environment and every catalogue migration keys on `name`.
 
 The palette an export must reproduce (`supabase/migrations/20260807122840_faulty_hobgoblin.sql:23-64`, icon patched by `20260812153000_offsite_training_single_codepoint_icon.sql:33-35`; mirrored in `context/foundation/prd.md:107-119`):
 
-| display_order | `name` | bg (`color`) | fg (`text_color`) | icon |
-|---|---|---|---|---|
-| 1 | urlop | `#cceeff` | `#0b5a72` | 🌴 |
-| 2 | szkolenie/wyjście poza miejsce pracy | `#ffcc99` | `#8a4a00` | 🏃 (U+1F3C3) |
-| 3 | szkolenie w miejscu pracy | `#ffe8a8` | `#7a5b00` | 🎓 |
-| 4 | choroba | `#2f578c` | `#ffffff` | 🤒 |
-| 5 | wyjazd zagraniczny | `#f2a3a3` | `#7d0d1c` | 🌍 |
-| 6 | stała nieobecność | `#ccffcc` | `#2c5c2c` | 🚫 |
-| 7 | urlop planowany | `#99ccff` | `#0b3f6b` | 📅 |
+| display_order | `name`                               | bg (`color`) | fg (`text_color`) | icon         |
+| ------------- | ------------------------------------ | ------------ | ----------------- | ------------ |
+| 1             | urlop                                | `#cceeff`    | `#0b5a72`         | 🌴           |
+| 2             | szkolenie/wyjście poza miejsce pracy | `#ffcc99`    | `#8a4a00`         | 🏃 (U+1F3C3) |
+| 3             | szkolenie w miejscu pracy            | `#ffe8a8`    | `#7a5b00`         | 🎓           |
+| 4             | choroba                              | `#2f578c`    | `#ffffff`         | 🤒           |
+| 5             | wyjazd zagraniczny                   | `#f2a3a3`    | `#7d0d1c`         | 🌍           |
+| 6             | stała nieobecność                    | `#ccffcc`    | `#2c5c2c`         | 🚫           |
+| 7             | urlop planowany                      | `#99ccff`    | `#0b3f6b`         | 📅           |
 
 Three caveats. `context/foundation/prd.md:112` still lists the offsite-training icon as the ZWJ sequence 🏃🏼‍♂️‍➡️, which the DB no longer carries — migration `20260812153000` replaced it with the single codepoint 🏃 precisely because the ZWJ sequence decomposed visibly in the browser. The doc is stale; the DB is authoritative, and an exporter reading the catalogue gets the right one. `text_color` is a deliberate catalogue decision, **not** a computed luminance guess — `textColorForBg()` was deleted in S-17 (`context/archive/2026-08-07-huge-ui-ux-improvement/plan.md:513`); read the stored value. And both migrations above are hand-authored data migrations **deliberately absent from `_journal.json`** (per AGENTS.md "Migration discipline"), so a freshly provisioned environment carries the superseded 2026-05 palette instead.
 
 **Cell content rules** (`AbsenceGrid.tsx:496-530`, gated by `src/lib/absence-grid-cell.ts`):
 
-| Cell state | Visible text | Fill |
-|---|---|---|
-| Absence, full-day type | icon only | `type.color`, text `type.text_color` |
-| Absence, partial-day on a whitelisted type | icon + `HH:MM–HH:MM` | same |
-| Absence, partial-day on a non-whitelisted (legacy) type | icon only — `cellTimeRange()` returns `""` (`absence-grid-cell.ts:48-54`) | same |
-| With substitute | overlay `🔁` + initials | same |
-| With comment | `💬` at right edge | same |
-| Empty, clickable | `+` in `#dcdcdc` | row background |
-| Empty, not clickable (weekend / others' column) | nothing | row background |
+| Cell state                                              | Visible text                                                              | Fill                                 |
+| ------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------ |
+| Absence, full-day type                                  | icon only                                                                 | `type.color`, text `type.text_color` |
+| Absence, partial-day on a whitelisted type              | icon + `HH:MM–HH:MM`                                                      | same                                 |
+| Absence, partial-day on a non-whitelisted (legacy) type | icon only — `cellTimeRange()` returns `""` (`absence-grid-cell.ts:48-54`) | same                                 |
+| With substitute                                         | overlay `🔁` + initials                                                   | same                                 |
+| With comment                                            | `💬` at right edge                                                        | same                                 |
+| Empty, clickable                                        | `+` in `#dcdcdc`                                                          | row background                       |
+| Empty, not clickable (weekend / others' column)         | nothing                                                                   | row background                       |
 
 Row backgrounds: weekday rows `#ffffff`, **weekend rows `#f4f4f4`** (`AbsenceGrid.tsx:374`, weekend = `getDay() === 0 || === 6` at `:370`). Header band `#e8e8e8` with black text; a **deactivated** employee's header is `#dcdcdc` with `#6f6f6f` text and a literal `" (nieakt.)"` name suffix (`:58`, `:67`). Grid lines `#c8c8c8` / `#e8e8e8`.
 
@@ -98,7 +98,7 @@ Row backgrounds: weekday rows `#ffffff`, **weekend rows `#f4f4f4`** (`AbsenceGri
 
 **Row cap.** `LIST_LIMIT = 5000` (`src/lib/absence-list.ts:21`), applied as `.limit(LIST_LIMIT + 1)` with the extra row used as a truncation probe and surfaced as the `X-Result-Truncated: 0|1` header (`src/pages/api/absences/index.ts:93-101`). Target scale is ~10 people (`context/foundation/prd.md:28`), theoretical annual max 10 × 366 = 3,660 rows — under the cap, but **an XLSX silently missing December is worse than a truncated JSON list**, so the probe must be honoured.
 
-**The moderator gate is app-level only; RLS is not a safety net.** `DATABASE_URL` is a service-role connection that bypasses RLS entirely (AGENTS.md "Authorization"; re-stated at `src/lib/employees.ts:4-12`, `src/pages/api/absences/bulk.ts:29-31`). The existing `absences_select` policy was in any case widened to *any authenticated user, all rows* (`supabase/migrations/20260529000001_fix_absences_select_rls.sql:7-9`). And `src/pages/api/absences/stats.ts:21-26` warns in-file that current role-scoping is *"scope, not secrecy"* — the same non-moderator can still call `GET /api/absences?year=` and receive the whole team.
+**The moderator gate is app-level only; RLS is not a safety net.** `DATABASE_URL` is a service-role connection that bypasses RLS entirely (AGENTS.md "Authorization"; re-stated at `src/lib/employees.ts:4-12`, `src/pages/api/absences/bulk.ts:29-31`). The existing `absences_select` policy was in any case widened to _any authenticated user, all rows_ (`supabase/migrations/20260529000001_fix_absences_select_rls.sql:7-9`). And `src/pages/api/absences/stats.ts:21-26` warns in-file that current role-scoping is _"scope, not secrecy"_ — the same non-moderator can still call `GET /api/absences?year=` and receive the whole team.
 
 **A moderator-only export is therefore a genuinely new access boundary in this codebase** and must be enforced entirely in the handler.
 
@@ -119,14 +119,16 @@ Separately, `GET /api/employees` orders by `last_name, first_name` only and igno
 **Column membership legitimately differs per month.** `dashboard.astro:175-182`:
 
 ```ts
-gridEmployees = currentEmployee.role === "moderator"
-  ? employeesResult.filter((e) =>
-      e.created_at <= new Date(firstDayNextMonth) &&
-      (e.deleted_at === null || e.deleted_at >= new Date(firstDay)))
-  : allEmployees;
+gridEmployees =
+  currentEmployee.role === "moderator"
+    ? employeesResult.filter(
+        (e) =>
+          e.created_at <= new Date(firstDayNextMonth) && (e.deleted_at === null || e.deleted_at >= new Date(firstDay)),
+      )
+    : allEmployees;
 ```
 
-So a moderator sees an employee in month M iff they existed before M ended and were not deactivated before M started — a now-deactivated employee still appears in past months where they had absences, and a mid-year hire does not appear before their start date. **A 12-sheet export must apply this window per sheet, from the unwindowed list, not once.** The uncommitted `statsYearlyEmployees` change (`dashboard.astro:79`, `:197`) exists for exactly this failure mode; its comment is the warning to heed — *"a colleague hired mid-year would silently drop out of the yearly totals whenever an earlier month is browsed."*
+So a moderator sees an employee in month M iff they existed before M ended and were not deactivated before M started — a now-deactivated employee still appears in past months where they had absences, and a mid-year hire does not appear before their start date. **A 12-sheet export must apply this window per sheet, from the unwindowed list, not once.** The uncommitted `statsYearlyEmployees` change (`dashboard.astro:79`, `:197`) exists for exactly this failure mode; its comment is the warning to heed — _"a colleague hired mid-year would silently drop out of the yearly totals whenever an earlier month is browsed."_
 
 **Public holidays do not exist at any layer.** No table, no column, no migration, no library — verified repo-wide, and independently recorded in `context/archive/2026-08-12-grid-multicheck/research.md:271-272` and `frame.md:120` ("Public holidays (#8) remain out of scope"). "Holiday" in this codebase means `holiday_balances` = vacation entitlement. The only non-working-day concept is **weekend**. Marking Polish public holidays in the export would be new semantics requiring a new data source — not a port.
 
@@ -138,27 +140,27 @@ So a moderator sees an employee in month M iff they existed before M ended and w
 
 **Bundle size is a non-issue.** The CI step (`.github/workflows/ci.yml:45-50`) is `wrangler deploy --dry-run` with no threshold of its own; it relies on the platform limit. Current build measures **3303 KiB raw / 681 KiB gzip**. Against the Worker script limit (3 MB gzip Free, 10 MB Paid) there is ~2.3 MB of headroom — even `exceljs` at ~300 KiB gzip would land near 32% of the Free ceiling.
 
-> **Correction to foundation docs:** `context/foundation/infrastructure.md:69`, `:93` and `:116` all cite a *"25 MB compressed bundle size limit."* That is a Cloudflare **Pages** figure, but this project deploys a standalone Worker (`ci.yml:85`, `wrangler deploy --config dist/server/wrangler.json`). The applicable limits are 3 MB gzip (Free) / 10 MB gzip (Paid). Worth fixing in the same change, per the S-23 precedent of amending foundation docs alongside the work.
+> **Correction to foundation docs:** `context/foundation/infrastructure.md:69`, `:93` and `:116` all cite a _"25 MB compressed bundle size limit."_ That is a Cloudflare **Pages** figure, but this project deploys a standalone Worker (`ci.yml:85`, `wrangler deploy --config dist/server/wrangler.json`). The applicable limits are 3 MB gzip (Free) / 10 MB gzip (Paid). Worth fixing in the same change, per the S-23 precedent of amending foundation docs alongside the work.
 
 **CPU time is the real gate.** Measured warm, in-handler, 32 columns × 2 sheets, in local workerd at this repo's exact compat config:
 
-| Rows | write-excel-file | exceljs | hucre |
-|---|---|---|---|
-| 30 | 10–11 ms | 12–16 ms | 5–8 ms |
-| 500 | ~150 ms | — | 51 ms |
-| 5000 | 1476 ms | — | 444 ms |
+| Rows | write-excel-file | exceljs  | hucre  |
+| ---- | ---------------- | -------- | ------ |
+| 30   | 10–11 ms         | 12–16 ms | 5–8 ms |
+| 500  | ~150 ms          | —        | 51 ms  |
+| 5000 | 1476 ms          | —        | 444 ms |
 
 Workers Free allows **10 ms CPU per request**; Paid allows 30 s by default. A realistic 30-employee monthly export is already at or over the Free limit in every library tested, and a full year is 12× that. **Which plan this project is on could not be established** — `wrangler whoami` reports not logged in. `infrastructure.md:26` sells the platform on its free tier and `:114` describes Workers Paid as a future upgrade, which points to Free, but that is inference, not fact.
 
 **Library comparison** (all rows below were verified by executing the library inside workerd and unzipping the resulting OOXML, except where noted):
 
-| Library | Per-cell fill | Bold | Col width | Frozen panes | Workers | gzip | Maintenance |
-|---|---|---|---|---|---|---|---|
-| **write-excel-file** | ✅ | ✅ | ✅ | ✅ | ✅ (with caveat below) | **19.7 KiB** | 4.1.1, 2026-06-08, active; 1 dep (fflate); bus factor 1 |
-| **exceljs** | ✅ | ✅ | ✅ | ✅ | ✅ | ~263–298 KiB | frozen since 2023-10; 799 open issues |
-| **hucre/xlsx** | ✅ | ✅ | ✅ | ✅ | ✅ | 39.1 KiB | v1.1.0, <6 months old, single-vendor |
-| **SheetJS CE (`xlsx`)** | ❌ **Pro-only** | ❌ Pro-only | ✅ | ❌ **absent from the API** | ✅ | 84–150 KiB | npm frozen at 0.18.5 (2022) |
-| **xlsx-js-style** | ✅ | ✅ | ✅ | ❌ | ✅ | ~142 KiB | 2022-04, SheetJS 0.18.5 base |
+| Library                 | Per-cell fill   | Bold        | Col width | Frozen panes               | Workers                | gzip         | Maintenance                                             |
+| ----------------------- | --------------- | ----------- | --------- | -------------------------- | ---------------------- | ------------ | ------------------------------------------------------- |
+| **write-excel-file**    | ✅              | ✅          | ✅        | ✅                         | ✅ (with caveat below) | **19.7 KiB** | 4.1.1, 2026-06-08, active; 1 dep (fflate); bus factor 1 |
+| **exceljs**             | ✅              | ✅          | ✅        | ✅                         | ✅                     | ~263–298 KiB | frozen since 2023-10; 799 open issues                   |
+| **hucre/xlsx**          | ✅              | ✅          | ✅        | ✅                         | ✅                     | 39.1 KiB     | v1.1.0, <6 months old, single-vendor                    |
+| **SheetJS CE (`xlsx`)** | ❌ **Pro-only** | ❌ Pro-only | ✅        | ❌ **absent from the API** | ✅                     | 84–150 KiB   | npm frozen at 0.18.5 (2022)                             |
+| **xlsx-js-style**       | ✅              | ✅          | ✅        | ❌                         | ✅                     | ~142 KiB     | 2022-04, SheetJS 0.18.5 base                            |
 
 Two findings that close off the obvious choice:
 
@@ -167,7 +169,7 @@ Two findings that close off the obvious choice:
 
 Also worth noting independently of this feature: `npm i xlsx` resolves to 0.18.5 (2022-03-24), carrying GHSA-4r6h-8v6p-xvw6 (fixed in 0.19.3).
 
-> ⚠️ **A silent size cliff on the server path.** `write-excel-file/universal`'s `.toBlob()` routes through fflate's *async* `zip()`, which does `new Worker(URL.createObjectURL(...))`. Workers has no `Worker` constructor, and fflate only falls back to synchronous compression for small entries. Measured: 30×31 rows → OK; 100×31 → OK; **500×31 → `ReferenceError: Worker is not defined`**. This passes every small-scale smoke test and then fails in production — exactly the failure class AGENTS.md warns about. A four-line Vite alias routing async `zip()` to `zipSync` fixes it at every size tested (5000×31 → 1.0 MB in 1476 ms). In a real browser the async path is a *feature*, so this cliff exists only on the server path.
+> ⚠️ **A silent size cliff on the server path.** `write-excel-file/universal`'s `.toBlob()` routes through fflate's _async_ `zip()`, which does `new Worker(URL.createObjectURL(...))`. Workers has no `Worker` constructor, and fflate only falls back to synchronous compression for small entries. Measured: 30×31 rows → OK; 100×31 → OK; **500×31 → `ReferenceError: Worker is not defined`**. This passes every small-scale smoke test and then fails in production — exactly the failure class AGENTS.md warns about. A four-line Vite alias routing async `zip()` to `zipSync` fixes it at every size tested (5000×31 → 1.0 MB in 1476 ms). In a real browser the async path is a _feature_, so this cliff exists only on the server path.
 
 **The hand-rolled fallback is real and modest.** An `.xlsx` is a ZIP of XML parts; the minimum set is `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheetN.xml`, `xl/styles.xml`, with `sharedStrings.xml` skippable via `t="inlineStr"`. Estimate ~400 lines, of which ~150 is a ZIP writer. Excel accepts fully **STORED** (uncompressed) entries — in fact SheetJS's own default — so only CRC-32 (~20 lines) is strictly required; `CompressionStream('deflate-raw')` is available on Workers with no flag if compression is wanted. Known traps: a missing `<Override>` per sheet in `[Content_Types].xml`, rId mismatches, **fill indices 0 and 1 are reserved so custom fills must start at 2**, unescaped XML control characters from DB text, and ZIP offset errors. This matters because the repo's default posture is "dependency-free module in `src/lib/`" and two of the three most recent dependency decisions went that way.
 
@@ -175,15 +177,15 @@ Also worth noting independently of this feature: `npm i xlsx` resolves to 0.18.5
 
 Verified: **every island in this repo uses `client:load`** — no `client:visible`, no `client:idle`, and **zero dynamic `import()` / `React.lazy` anywhere in `src/`**. But Astro already code-splits per island, and `dashboard.astro:286-311` renders them conditionally server-side, so the stats island's JS ships only on `?tab=stats`. Measured client chunks total 655 KiB raw / **209 KiB gzip**, of which `AbsenceStats` is only 3.2 KiB gzip.
 
-| | Server route | Browser island |
-|---|---|---|
-| CPU limit | **blocking on Free, fine on Paid** | irrelevant (user's CPU) |
-| Worker size | +20 KiB gzip vs 2.3 MB headroom — irrelevant | irrelevant |
-| Client weight | zero | +20 KiB gzip on the stats chunk, deferrable to click via `import()` |
-| fflate cliff | **must alias, mandatory** | non-issue (async path is correct in a browser) |
-| Local testing | ⚠️ impossible — Drizzle can't reach Supabase under `wrangler dev` (`CLAUDE.md`) | testable in Playwright + vitest |
-| Data path | already server-side | needs a JSON fetch; `/api/absences?year=` already exists |
-| Auditability | server controls exactly what leaves | client assembles it |
+|               | Server route                                                                    | Browser island                                                      |
+| ------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| CPU limit     | **blocking on Free, fine on Paid**                                              | irrelevant (user's CPU)                                             |
+| Worker size   | +20 KiB gzip vs 2.3 MB headroom — irrelevant                                    | irrelevant                                                          |
+| Client weight | zero                                                                            | +20 KiB gzip on the stats chunk, deferrable to click via `import()` |
+| fflate cliff  | **must alias, mandatory**                                                       | non-issue (async path is correct in a browser)                      |
+| Local testing | ⚠️ impossible — Drizzle can't reach Supabase under `wrangler dev` (`CLAUDE.md`) | testable in Playwright + vitest                                     |
+| Data path     | already server-side                                                             | needs a JSON fetch; `/api/absences?year=` already exists            |
+| Auditability  | server controls exactly what leaves                                             | client assembles it                                                 |
 
 No CSP is set anywhere in the repo (no `_headers`, no meta CSP), so the browser path's blob-URL Web Worker will work.
 
@@ -225,15 +227,15 @@ No CSP is set anywhere in the repo (no `_headers`, no meta CSP), so the browser 
 
 ## Historical Context (from prior changes)
 
-- `context/archive/2026-05-30-details-and-stats/plan-brief.md:32` — *"Out of scope: … export/print …"*, restated at `plan.md:41`. This is the **only** prior mention of the feature. Note the sibling item on that same list, "moderator-only stats views", was later un-parked and shipped as S-23 — so it is a deferral list, not a rejection list.
-- `context/foundation/roadmap.md:38-62` — slices run F-01 … S-23, all done; **no export row, next free ID is S-24**. The backlog (`:417-425`) is empty and "Open Roadmap Questions" (`:428`) is *"Brak."* Export is not in the Parked list (`:432-439`) either — it simply does not exist in the roadmap.
-- `context/foundation/prd.md:24` names the **reporting gap** as half the original pain, and `:46` frames the moderator's job as verifying data *"bez ręcznego uzgadniania danych w Excelu"*. There is no FR covering export (FR-001..FR-008, `:68-90`), and no Non-Goal blocking it. This is the closest PRD anchor available.
-- `context/archive/2026-08-11-grid-adjustment-offsite-training/plan-brief.md:28-30` — *"A grid cell is colour + icon + optional time range, never a type name. … Type names stay discoverable in the legend and the tooltip."* This is the decision that makes "with colors and text" ambiguous.
-- `context/archive/2026-06-08-employee-grid-order/plan-brief.md:63` — dependency **accepted** with a measured figure: *"`@dnd-kit` adds ~30 KB gzipped … the grid is already a React island so this is additive but constrained to users who load the dashboard."*
+- `context/archive/2026-05-30-details-and-stats/plan-brief.md:32` — _"Out of scope: … export/print …"_, restated at `plan.md:41`. This is the **only** prior mention of the feature. Note the sibling item on that same list, "moderator-only stats views", was later un-parked and shipped as S-23 — so it is a deferral list, not a rejection list.
+- `context/foundation/roadmap.md:38-62` — slices run F-01 … S-23, all done; **no export row, next free ID is S-24**. The backlog (`:417-425`) is empty and "Open Roadmap Questions" (`:428`) is _"Brak."_ Export is not in the Parked list (`:432-439`) either — it simply does not exist in the roadmap.
+- `context/foundation/prd.md:24` names the **reporting gap** as half the original pain, and `:46` frames the moderator's job as verifying data _"bez ręcznego uzgadniania danych w Excelu"_. There is no FR covering export (FR-001..FR-008, `:68-90`), and no Non-Goal blocking it. This is the closest PRD anchor available.
+- `context/archive/2026-08-11-grid-adjustment-offsite-training/plan-brief.md:28-30` — _"A grid cell is colour + icon + optional time range, never a type name. … Type names stay discoverable in the legend and the tooltip."_ This is the decision that makes "with colors and text" ambiguous.
+- `context/archive/2026-06-08-employee-grid-order/plan-brief.md:63` — dependency **accepted** with a measured figure: _"`@dnd-kit` adds ~30 KB gzipped … the grid is already a React island so this is additive but constrained to users who load the dashboard."_
 - `context/archive/2026-08-11-radial-timepicker-ux/plan.md:52-55` — dependency **refused** on bundle-size grounds, with "No new dependency added: `git diff package.json` is empty" locked as a success criterion. Both precedents are recent; expect a plan to have to justify an XLSX library against a hand-rolled writer.
-- `context/archive/2026-06-03-deactivated-employee-grid/plan-brief.md:25` — a **known open bug directly in this feature's path**: *"in the yearly view, deactivated employees outside the viewed month render `—` because `gridEmployees` is month-scoped."*
-- `context/foundation/test-plan.md:222-223` — UI snapshot tests for grid colour rendering are **deliberately excluded** (*"snapshot tests would break on every style tweak"*). An export whose value proposition is "colors preserved" has no sanctioned colour-fidelity test layer today.
-- `context/foundation/test-plan.md:49,75` — Risk #4 (*"Regular employee reaches moderator-only endpoints — role check absent from handler"*, Impact High) and its Phase 2 "Authorization coverage" is still **not started**. A new moderator-only endpoint lands squarely on an uncovered risk.
+- `context/archive/2026-06-03-deactivated-employee-grid/plan-brief.md:25` — a **known open bug directly in this feature's path**: _"in the yearly view, deactivated employees outside the viewed month render `—` because `gridEmployees` is month-scoped."_
+- `context/foundation/test-plan.md:222-223` — UI snapshot tests for grid colour rendering are **deliberately excluded** (_"snapshot tests would break on every style tweak"_). An export whose value proposition is "colors preserved" has no sanctioned colour-fidelity test layer today.
+- `context/foundation/test-plan.md:49,75` — Risk #4 (_"Regular employee reaches moderator-only endpoints — role check absent from handler"_, Impact High) and its Phase 2 "Authorization coverage" is still **not started**. A new moderator-only endpoint lands squarely on an uncovered risk.
 
 ## Related Research
 

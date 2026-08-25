@@ -80,7 +80,11 @@ export function AbsenceExportDialog({ employees, absenceTypes, currentEmployeeId
       // Loaded on click, not on page load: the writer is ~39 KiB gzip and only a moderator who
       // actually exports should pay for it. The first dynamic import in this codebase.
       const { writeWorkbook, downloadWorkbook } = await import("@/lib/export-xlsx");
+      // Closing the dialog aborts the run; without these guards a cancelled export still
+      // downloads a file and still drives setOpen on a dialog the user may have reopened.
+      if (controller.signal.aborted) return;
       const bytes = await writeWorkbook(sheets);
+      if (controller.signal.aborted) return;
       // ASCII-only filename — a non-ASCII `download` value is honoured inconsistently.
       downloadWorkbook(bytes, `nieobecnosci-${year}.xlsx`);
 

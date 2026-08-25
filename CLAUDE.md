@@ -38,12 +38,15 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **API routes**: use uppercase `GET`, `POST` exports; validate input with zod.
 - **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies.
 - **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/components/hooks/`.
-- **Services/helpers** go in `src/lib/` (or `src/lib/services/` for extracted business logic).
+- **Services/helpers** go in `src/lib/`. Reserve `src/lib/services/` for modules that take a `Db`
+  and execute queries (e.g. `holiday-balance.ts`, `absence-partial-day.ts`); anything that stays
+  query-free — Drizzle fragments, zod schemas, plain values, `Response` builders — belongs in
+  `src/lib/` directly (e.g. `absence-list.ts`), where it is unit-testable without a database.
 - **Shared types** (entities, DTOs) go in `src/types.ts`.
 
 ### Environment
 
-- Node.js v22.14.0 (see `.nvmrc`)
+- Node.js v24.15.0 (see `.nvmrc`) — `hucre` (XLSX writer) declares `engines: node >=24`
 - Env vars: `SUPABASE_URL`, `SUPABASE_KEY` — `.env` (gitignored) covers both Node tooling and Cloudflare local dev; copy `.env.example` to `.env` and fill in all values.
 - Local Supabase: `npx supabase start` (requires Docker)
 - Cloudflare local dev: secrets go in `.env` (gitignored); `wrangler dev` reads `.env` automatically.
@@ -52,6 +55,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ## CI
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR to `main`:
+
 - **`ci` job**: lint + build + bundle size dry-run. Requires `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` repository secrets.
 - **`deploy` job**: deploys to Cloudflare Workers on push to `main` only (not PRs). Runs a post-deploy health check against `/auth/signin`.
 
@@ -62,6 +66,7 @@ A separate **AI review workflow** (`.github/workflows/ai-review.yml`, `pull_requ
 Production deploy is automated via the `deploy` CI job on every push to `main`.
 
 Manual deploy:
+
 ```bash
 npx wrangler login
 npm run build
@@ -69,6 +74,7 @@ npx wrangler deploy --config dist/server/wrangler.json
 ```
 
 Set production secrets (run once after the Worker exists):
+
 ```bash
 npx wrangler secret put SUPABASE_URL
 npx wrangler secret put SUPABASE_KEY
@@ -84,6 +90,7 @@ and `employees/[id]/password` sub-resources. Verify with `npx wrangler secret li
 `dash.cloudflare.com` → Workers & Pages → urlopy → Deployments → three-dot menu → "Rollback to this deployment"
 
 Or via the REST API:
+
 ```bash
 # List deployments to find target ID
 curl -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -92,7 +99,9 @@ curl -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
 ```
 
 **Log streaming:**
+
 ```bash
 npx wrangler tail urlopy
 ```
+
 Note: `wrangler tail` may drop connections. Re-run if it disconnects. For structured log queries from Claude Code, use the Cloudflare MCP server (`workers_observability` tool).

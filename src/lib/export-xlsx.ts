@@ -83,16 +83,20 @@ export function downloadWorkbook(bytes: Uint8Array, filename: string): void {
   // narrowing is safe; there is no runtime conversion that would avoid the assertion.
   const blob = new Blob([bytes as Uint8Array<ArrayBuffer>], { type: XLSX_MIME });
   const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  // ASCII-only by contract — a non-ASCII `download` value is honoured inconsistently.
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  // Deferred rather than immediate: Safari cancels an in-flight download when the object URL
-  // is revoked in the same tick as the click.
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, 0);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    // ASCII-only by contract — a non-ASCII `download` value is honoured inconsistently.
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    // Deferred rather than immediate: Safari cancels an in-flight download when the object URL
+    // is revoked in the same tick as the click. In `finally` so a throw above cannot leak the
+    // blob URL for the lifetime of the tab.
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
 }

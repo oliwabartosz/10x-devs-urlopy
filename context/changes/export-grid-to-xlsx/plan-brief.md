@@ -5,7 +5,7 @@
 
 ## What & Why
 
-A moderator can currently only view the absence grid one month at a time, in the browser. This gives them a single `.xlsx` for a whole calendar year — twelve sheets, one per month, with the grid's colours preserved — so the year's record can be read, filed or shared outside the app. The PRD names the reporting gap as half the original pain (`prd.md:24`) and frames the moderator's job as verifying data *"bez ręcznego uzgadniania danych w Excelu"* (`:46`); this closes that loop from the other direction.
+A moderator can currently only view the absence grid one month at a time, in the browser. This gives them a single `.xlsx` for a whole calendar year — twelve sheets, one per month, with the grid's colours preserved — so the year's record can be read, filed or shared outside the app. The PRD names the reporting gap as half the original pain (`prd.md:24`) and frames the moderator's job as verifying data _"bez ręcznego uzgadniania danych w Excelu"_ (`:46`); this closes that loop from the other direction.
 
 ## Starting Point
 
@@ -17,28 +17,30 @@ A moderator sees an **"Eksport XLSX"** button in the dashboard's moderator bar. 
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) | Source |
-| --- | --- | --- | --- |
-| Where the file is generated | In the browser | The project is on Workers Free (10 ms CPU/request) and a single *monthly* workbook already measures 10–16 ms, so server-side generation is not viable — and the client path is the only one testable locally. | Plan |
-| What a cell carries | Fill colour + hours only | Type identity comes from colour, decoded via the per-sheet legend; keeps cells compact as on screen. | Plan |
-| Comment and substitute | Excel hover note | Mirrors the in-app tooltip and keeps the cell visually clean. | Plan |
-| Legend placement | One row atop **every** month sheet | The colour key is in view on whichever tab you land on — essential when cells carry no type text. | Plan |
-| Employee column order | On-screen order (`selfFirst`) | The file should match what the exporting moderator sees; drag-reorder persists server-side, so it is stable across loads. | Plan |
-| Columns per sheet | One stable set across all twelve | Sheets line up so months can be compared or consolidated, and it sidesteps the known deactivated-employee yearly-view bug. | Plan |
-| Sheet set | All twelve months, always | Sheet count and tab positions stay identical every year, so the file is predictable. | Plan |
-| Year selection | Button + dialog in the moderator bar | That bar is already server-side moderator-gated, and year selection stays scoped to export instead of introducing a dashboard-wide year concept. | Plan |
-| Writer library | `hucre` | Fills, comments, freeze panes and widths all verified working by execution; 39 KiB gzip tree-shaken with zero dependencies, vs 250 KiB for `exceljs`. | Plan |
-| Type filter | Ignored — always all seven types | The filter is Details-tab-scoped; a "download the whole grid" action that silently omitted types would be a data-integrity trap. | Plan |
+| Decision                    | Choice                               | Why (1 sentence)                                                                                                                                                                                              | Source |
+| --------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Where the file is generated | In the browser                       | The project is on Workers Free (10 ms CPU/request) and a single _monthly_ workbook already measures 10–16 ms, so server-side generation is not viable — and the client path is the only one testable locally. | Plan   |
+| What a cell carries         | Fill colour + hours only             | Type identity comes from colour, decoded via the per-sheet legend; keeps cells compact as on screen.                                                                                                          | Plan   |
+| Comment and substitute      | Excel hover note                     | Mirrors the in-app tooltip and keeps the cell visually clean.                                                                                                                                                 | Plan   |
+| Legend placement            | One row atop **every** month sheet   | The colour key is in view on whichever tab you land on — essential when cells carry no type text.                                                                                                             | Plan   |
+| Employee column order       | On-screen order (`selfFirst`)        | The file should match what the exporting moderator sees; drag-reorder persists server-side, so it is stable across loads.                                                                                     | Plan   |
+| Columns per sheet           | One stable set across all twelve     | Sheets line up so months can be compared or consolidated, and it sidesteps the known deactivated-employee yearly-view bug.                                                                                    | Plan   |
+| Sheet set                   | All twelve months, always            | Sheet count and tab positions stay identical every year, so the file is predictable.                                                                                                                          | Plan   |
+| Year selection              | Button + dialog in the moderator bar | That bar is already server-side moderator-gated, and year selection stays scoped to export instead of introducing a dashboard-wide year concept.                                                              | Plan   |
+| Writer library              | `hucre`                              | Fills, comments, freeze panes and widths all verified working by execution; 39 KiB gzip tree-shaken with zero dependencies, vs 250 KiB for `exceljs`.                                                         | Plan   |
+| Type filter                 | Ignored — always all seven types     | The filter is Details-tab-scoped; a "download the whole grid" action that silently omitted types would be a data-integrity trap.                                                                              | Plan   |
 
 ## Scope
 
 **In scope:**
+
 - Pure workbook-model builder in `src/lib/`, fully unit-tested
 - `hucre` writer adapter, dynamically imported on click, plus the download trigger
 - Moderator-only export dialog with a year dropdown, wired into the dashboard
 - Corrections to `infrastructure.md` and `roadmap.md` that the research falsified
 
 **Out of scope:**
+
 - Server-side generation and any new API route
 - Emoji or type names inside cells
 - Public-holiday marking (no such concept exists anywhere in the codebase)
@@ -61,12 +63,12 @@ Because the export reuses an endpoint the caller could already reach, it introdu
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Workbook model (pure) | `selfFirst` extracted to `src/lib/`; `buildExportWorkbook()` + unit tests | Getting the year-window column rule wrong — a mid-year hire silently dropping out |
-| 2. Writer adapter + download | `hucre` added, model→XLSX mapping, sample-generation script | Excel rejecting the file; `freezePane` misnamed as `freeze` fails silently |
-| 3. Moderator export dialog | The button, year dropdown, fetch, error and progress states | Ignoring `X-Result-Truncated` and shipping a year quietly missing December |
-| 4. Foundation doc corrections | `infrastructure.md` size limits, roadmap S-24, palette caveat | None |
+| Phase                         | What it delivers                                                          | Key risk                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1. Workbook model (pure)      | `selfFirst` extracted to `src/lib/`; `buildExportWorkbook()` + unit tests | Getting the year-window column rule wrong — a mid-year hire silently dropping out |
+| 2. Writer adapter + download  | `hucre` added, model→XLSX mapping, sample-generation script               | Excel rejecting the file; `freezePane` misnamed as `freeze` fails silently        |
+| 3. Moderator export dialog    | The button, year dropdown, fetch, error and progress states               | Ignoring `X-Result-Truncated` and shipping a year quietly missing December        |
+| 4. Foundation doc corrections | `infrastructure.md` size limits, roadmap S-24, palette caveat             | None                                                                              |
 
 **Prerequisites:** none — no schema change, no migration, no new secret. The in-flight rename of `src/lib/services/absence-list.ts` → `src/lib/absence-list.ts` should be committed first, since Phase 3 reads that module's contract.
 **Estimated effort:** ~3 sessions across 4 phases; Phase 1 is the largest.
