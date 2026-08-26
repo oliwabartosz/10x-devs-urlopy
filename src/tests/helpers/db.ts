@@ -1,14 +1,19 @@
-import { createDb } from "@/db/index";
+import { createDb, type Db } from "@/db/index";
+import { migrateAndSeed } from "@/db/migrate";
+import { DATABASE_PATH } from "./astro-env";
 
-export function getTestDb(): ReturnType<typeof createDb> {
-  const url = process.env.DATABASE_URL_DIRECT;
-  if (!url) {
-    throw new Error("DATABASE_URL_DIRECT not set — cannot run DB integration tests. Add it to .env.");
-  }
-  // Bound the pool for the same reason `src/tests/helpers/astro-env.ts` bounds the route-handler
-  // pools: Supabase's session pooler allows 15 clients, and vitest runs suite files in parallel.
-  // At postgres-js's default of 10 connections per pool, a handful of suites exhausts it and
-  // requests come back as 503 "Database error" ((EMAXCONNSESSION) max clients reached), which
-  // reads as a route defect. Every suite issues its queries sequentially, so one is enough.
-  return createDb(`${url}${url.includes("?") ? "&" : "?"}max=1&idle_timeout=1`);
+let ready: Promise<Db> | undefined;
+
+/**
+ * The database for this test file: a freshly migrated and seeded temp file, shared with the
+ * route handlers because they resolve `DATABASE_PATH` through the same stub (`./astro-env`).
+ *
+ * Async because the migrator is; memoised so the `beforeAll` of every suite in a file pays for
+ * it once. Suites no longer self-skip — there is nothing left to configure, so
+ * `describe.skipIf(!process.env.DATABASE_URL_DIRECT)` is gone from all but the two employee
+ * sub-resource suites, which are blocked on Supabase Auth rather than on the database.
+ */
+export function getTestDb(): Promise<Db> {
+  ready ??= migrateAndSeed(DATABASE_PATH).then(() => createDb(DATABASE_PATH));
+  return ready;
 }

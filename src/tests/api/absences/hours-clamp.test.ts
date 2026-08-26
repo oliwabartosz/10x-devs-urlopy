@@ -19,7 +19,7 @@ import { PATCH } from "@/pages/api/absences/[id]";
 // Every assertion is on the **response body**, not on a follow-up SELECT: the body is what
 // makes silent server-side correction observable to a caller, and that visibility is the
 // mitigation the frame required for clamping instead of rejecting.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route level", () => {
+describe("Absence hours clamp — route level", () => {
   let db!: Db;
   let testEmployeeId!: string;
   let authUserId!: string;
@@ -69,7 +69,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
   };
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     testEmployeeId = await createTestEmployee(db);
     authUserId = (
       await db.select({ user_id: employees.user_id }).from(employees).where(eq(employees.id, testEmployeeId))
@@ -88,7 +88,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
 
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId);
-    await db.$client.end();
   });
 
   it("POST floors the start and then caps the duration, in that order", async () => {
@@ -96,9 +95,9 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
 
     expect(res.status).toBe(201);
     const body = (await res.json()) as { id: string; start_time: string; end_time: string };
-    expect(body.start_time).toBe("06:00:00");
+    expect(body.start_time).toBe("06:00");
     // 14:00, not 09:00: capping before flooring would have produced a 3 h absence.
-    expect(body.end_time).toBe("14:00:00");
+    expect(body.end_time).toBe("14:00");
 
     await db.delete(absences).where(eq(absences.id, body.id));
   });
@@ -128,8 +127,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
 
     expect(res.status).toBe(201);
     const body = (await res.json()) as { id: string; start_time: string; end_time: string };
-    expect(body.start_time).toBe("09:00:00");
-    expect(body.end_time).toBe("17:00:00");
+    expect(body.start_time).toBe("09:00");
+    expect(body.end_time).toBe("17:00");
 
     await db.delete(absences).where(eq(absences.id, body.id));
   });
@@ -141,8 +140,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as { start_time: string; end_time: string };
-    expect(body.start_time).toBe("06:00:00");
-    expect(body.end_time).toBe("14:00:00");
+    expect(body.start_time).toBe("06:00");
+    expect(body.end_time).toBe("14:00");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -156,8 +155,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     const body = (await res.json()) as { start_time: string; end_time: string };
     // The stored 09:00 start is what the cap measures from — the widened SELECT is what makes
     // that possible; without it the route has nothing to clamp a partial PATCH against.
-    expect(body.start_time).toBe("09:00:00");
-    expect(body.end_time).toBe("17:00:00");
+    expect(body.start_time).toBe("09:00");
+    expect(body.end_time).toBe("17:00");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -172,8 +171,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(res.status).toBe(200);
     const body = (await res.json()) as { start_time: string; end_time: string };
     // start_time was absent from the body and still had to reach the UPDATE's `set`.
-    expect(body.start_time).toBe("06:00:00");
-    expect(body.end_time).toBe("14:00:00");
+    expect(body.start_time).toBe("06:00");
+    expect(body.end_time).toBe("14:00");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -188,7 +187,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(body.error).toContain(MIN_START_TIME);
 
     const [after] = await db.select({ start_time: absences.start_time }).from(absences).where(eq(absences.id, id));
-    expect(after.start_time, "rejected PATCH must not have applied the range").toBe("09:00:00");
+    expect(after.start_time, "rejected PATCH must not have applied the range").toBe("09:00");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -207,7 +206,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(body.error).toContain("późniejsze niż rozpoczęcie");
 
     const [after] = await db.select({ start_time: absences.start_time }).from(absences).where(eq(absences.id, id));
-    expect(after.start_time, "rejected PATCH must not have applied the start").toBe("09:00:00");
+    expect(after.start_time, "rejected PATCH must not have applied the start").toBe("09:00");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -220,8 +219,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(res.status).toBe(200);
     const body = (await res.json()) as { start_time: string; end_time: string; comment: string };
     expect(body.comment).toBe("bez zmian godzin");
-    expect(body.start_time).toBe("16:27:00");
-    expect(body.end_time).toBe("17:27:00");
+    expect(body.start_time).toBe("16:27");
+    expect(body.end_time).toBe("17:27");
 
     await db.delete(absences).where(eq(absences.id, id));
   });
@@ -238,8 +237,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence hours clamp — route
     expect(res.status).toBe(200);
     const body = (await res.json()) as { comment: string; start_time: string; end_time: string };
     expect(body.comment).toBe("stary wpis, komentarz dodany");
-    expect(body.start_time, "an unclampable stored range must be left alone, not rewritten").toBe("01:22:00");
-    expect(body.end_time).toBe("03:22:00");
+    expect(body.start_time, "an unclampable stored range must be left alone, not rewritten").toBe("01:22");
+    expect(body.end_time).toBe("03:22");
 
     // Supplying a time the caller could have corrected still rejects.
     const rejected = await patchRequest(id, { start_time: "01:00", end_time: "03:00" });

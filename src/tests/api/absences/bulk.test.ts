@@ -4,7 +4,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { absences, absence_types, employees } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, createTestModerator, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { POST } from "@/pages/api/absences/bulk";
 import type { AbsenceBulkCreateResult } from "@/types";
 
@@ -17,10 +17,10 @@ import type { AbsenceBulkCreateResult } from "@/types";
 // employee_id. That is the class of request the route exists to refuse (its header comment:
 // the service-role connection bypasses RLS, so nothing else backstops a hand-crafted body).
 //
-// Harness template: partial-day-guard.test.ts — direct handler import, hand-built APIContext,
-// describe.skipIf on DATABASE_URL_DIRECT. Caller-varying makeContext from korekta-gate.test.ts:32,
-// nullable-locals for the 401 case from employees/email.test.ts:32.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route level)", () => {
+// Harness template: partial-day-guard.test.ts — direct handler import, hand-built APIContext.
+// Caller-varying makeContext from korekta-gate.test.ts:32, nullable-locals for the 401 case from
+// employees/email.test.ts:32.
+describe("Absence bulk create (route level)", () => {
   let db!: Db;
   let employeeId!: string;
   let colleagueId!: string;
@@ -102,11 +102,10 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route le
       .orderBy(asc(absences.date));
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     employeeId = await createTestEmployee(db);
     colleagueId = await createTestEmployee(db);
-    moderatorId = await createTestEmployee(db);
-    await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
+    moderatorId = await createTestModerator(db);
     employeeAuthId = await authIdOf(employeeId);
     moderatorAuthId = await authIdOf(moderatorId);
 
@@ -129,7 +128,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence bulk create (route le
     await teardownTestEmployee(db, employeeId);
     await teardownTestEmployee(db, colleagueId);
     await teardownTestEmployee(db, moderatorId);
-    await db.$client.end();
   });
 
   it("rejects a body containing a weekend, naming the day, and writes none of the run", async () => {

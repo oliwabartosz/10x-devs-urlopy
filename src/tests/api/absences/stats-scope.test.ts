@@ -5,7 +5,7 @@ import type { Db } from "@/db/index";
 import type { Absence } from "@/types";
 import { absences, absence_types, employees } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, createTestModerator, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { GET } from "@/pages/api/absences/stats";
 
 // The access boundary on `GET /api/absences/stats` — the only thing in this change that is a
@@ -16,7 +16,7 @@ import { GET } from "@/pages/api/absences/stats";
 // RLS is bypassed on the service-role Drizzle connection (src/lib/employees.ts:4-12), so both the
 // role scoping and the `is_system` exclusion are app-enforced only. Nothing below asserts against
 // the join fragment; every case goes through the handler.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — role scoping", () => {
+describe("GET /api/absences/stats — role scoping", () => {
   // The route's window is a whole calendar year, so "the moderator sees both rows" would otherwise
   // depend on whatever else happens to be seeded. 2027 is untouched by every other suite under
   // src/tests/ (checked) — but NOT by the repo as a whole: tests/e2e/absence-grid-range.spec.ts
@@ -64,12 +64,11 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
     rows.filter((r) => [employeeId, moderatorId, systemEmployeeId, systemAsEmployeeId].includes(r.employee_id));
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     employeeId = await createTestEmployee(db);
-    moderatorId = await createTestEmployee(db);
+    moderatorId = await createTestModerator(db);
     systemEmployeeId = await createTestEmployee(db);
     systemAsEmployeeId = await createTestEmployee(db);
-    await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
     // `role: moderator` as well as the flag, mirroring how the real admin is seeded (AGENTS.md:55).
     await db.update(employees).set({ role: "moderator", is_system: true }).where(eq(employees.id, systemEmployeeId));
     // Flag only — role stays "employee", which is the whole point of this fixture.
@@ -114,7 +113,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("GET /api/absences/stats — r
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
     await teardownTestEmployee(db, systemAsEmployeeId);
-    await db.$client.end();
   });
 
   it("gives a moderator every visible employee's rows", async () => {

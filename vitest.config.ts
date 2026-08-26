@@ -13,20 +13,14 @@ export default defineConfig({
     include: ["src/tests/**/*.test.ts"],
     passWithNoTests: true,
     env,
-    // The route-level suites talk to remote Supabase, where a single round trip measures
-    // 3-5s. Vitest's 5s default turns that latency into intermittent failures, and a
-    // timed-out test skips its afterEach cleanup, so the NEXT run cascades into 23505
-    // duplicate-key errors that look like real defects. Bound these suites by correctness,
-    // not by network latency.
-    testTimeout: 60_000,
-    hookTimeout: 60_000,
-    // Supabase's session pooler allows 15 clients. Every route-level suite holds a test pool
-    // and every handler invocation opens another (see the note in src/tests/helpers/astro-env.ts),
-    // so running suite files in parallel exhausts the budget and requests come back as 503
-    // "Database error" ((EMAXCONNSESSION) max clients reached) — indistinguishable from a real
-    // route defect, and dependent on how many suites happen to exist. Serialize the files: these
-    // suites are network-bound, so the wall-clock cost is small next to the false failures.
-    fileParallelism: false,
+    // Creates and disposes of one temp SQLite database per test file. Must run before the suite
+    // body so `beforeAll` finds a migrated database; see src/tests/helpers/astro-env.ts.
+    setupFiles: ["./src/tests/helpers/setup.ts"],
+    // The 60s timeouts and `fileParallelism: false` that used to sit here are gone with the
+    // remote pooler that caused them: 3-5s round trips made vitest's 5s default flaky, and
+    // Supabase's 15-client ceiling made parallel suite files return 503s indistinguishable from
+    // route defects. A local file has neither latency nor a connection budget, and each test
+    // file now owns its own database, so the defaults are correct again.
     coverage: {
       provider: "v8",
     },

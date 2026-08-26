@@ -4,7 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { employees, holiday_balances } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, createTestModerator, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { POST } from "@/pages/api/holiday-balances/index";
 
 // RLS is bypassed on the service-role connection (context/changes/admin-bootstrap/plan.md:38),
@@ -13,7 +13,7 @@ import { POST } from "@/pages/api/holiday-balances/index";
 // earlier version of this comment asserted the balance upsert was "the last mutation path in the
 // codebase" without one, which was false when written — POST /api/absences lacked it then and
 // kept lacking it for months behind that claim (context/foundation/lessons.md).
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — is_system guard on POST", () => {
+describe("Holiday balance — is_system guard on POST", () => {
   const YEAR = 2032;
   let db!: Db;
   let employeeId!: string;
@@ -51,11 +51,10 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — is_system
     db.select().from(holiday_balances).where(eq(holiday_balances.employee_id, employee_id));
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     employeeId = await createTestEmployee(db);
-    moderatorId = await createTestEmployee(db);
+    moderatorId = await createTestModerator(db);
     systemEmployeeId = await createTestEmployee(db);
-    await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
     await db.update(employees).set({ is_system: true }).where(eq(employees.id, systemEmployeeId));
     employeeAuthId = await authIdOf(employeeId);
     moderatorAuthId = await authIdOf(moderatorId);
@@ -73,7 +72,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — is_system
     await teardownTestEmployee(db, employeeId);
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
-    await db.$client.end();
   });
 
   it("a moderator cannot write the technical admin's balance", async () => {
