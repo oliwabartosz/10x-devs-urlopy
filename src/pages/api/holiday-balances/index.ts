@@ -7,7 +7,7 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractDbErrorCode, SQLITE_CONSTRAINT_CHECK, SQLITE_CONSTRAINT_FOREIGNKEY } from "@/lib/db-errors";
 import { isProtectedAdmin } from "@/lib/employees";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
@@ -226,10 +226,11 @@ export const POST: APIRoute = async (context) => {
     row = inserted[0];
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
-    if (code === "23503") return json({ error: "Pracownik nie został znaleziony." }, 404);
-    if (code === "23514") return json({ error: "Invalid balance values" }, 400);
+    const code = extractDbErrorCode(err);
+    // The `42501` (insufficient privilege) arm is gone with the port: it came from RLS, which
+    // never applied on the service-role connection and does not exist on a local SQLite file.
+    if (code === SQLITE_CONSTRAINT_FOREIGNKEY) return json({ error: "Pracownik nie został znaleziony." }, 404);
+    if (code === SQLITE_CONSTRAINT_CHECK) return json({ error: "Invalid balance values" }, 400);
     return json({ error: "Database error" }, 500);
   }
 

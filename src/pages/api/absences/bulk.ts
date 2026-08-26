@@ -8,13 +8,13 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, inArray } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
-import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
+import { extractDbErrorCode, SQLITE_CONSTRAINT_CHECK, SQLITE_CONSTRAINT_FOREIGNKEY } from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
 import { json } from "@/lib/absence-list";
-import { resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
+import { assertAbsenceTypeExists, resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
 import type { AbsenceBulkCreateResult } from "@/types";
 
 // Writes N days of one absence in a single atomic statement, overwriting whatever those days
@@ -26,9 +26,10 @@ import type { AbsenceBulkCreateResult } from "@/types";
 // put that proven path at risk for a caller it never serves.
 //
 // **This route re-validates everything the gesture claims to have done** — weekday, calendar
-// validity, partial-day eligibility, hour bounds. Not defensiveness for its own sake: the
-// connection uses the service role key and bypasses RLS (AGENTS.md), so no policy backstops a
-// hand-crafted body, and the server has had no weekday rule at any layer until now.
+// validity, partial-day eligibility, hour bounds. Not defensiveness for its own sake: no database
+// policy backstops a hand-crafted body (RLS was already bypassed on the service-role connection
+// and does not exist at all on SQLite), and the server has had no weekday rule at any layer until
+// now.
 
 /**
  * Ceiling on one request's date list.
@@ -42,9 +43,10 @@ const MAX_BULK_DATES = 31;
 const AbsenceBulkCreateSchema = z
   .object({
     employee_id: z.uuid().optional(),
-    // DateSchema, not the `/^\d{4}-\d{2}-\d{2}$/` regex the create route uses. A bulk body is
-    // exactly where 2026-02-31 would otherwise pass zod and be rejected only by Postgres — as a
-    // 500-shaped failure partway through a list, rather than a 400 naming the bad date.
+    // DateSchema does real calendar validation, which the create route now shares — it used to
+    // carry a bare `/^\d{4}-\d{2}-\d{2}$/` and lean on the Postgres `date` column to reject
+    // 2026-02-31 as a 500-shaped failure. SQLite's TEXT column rejects nothing, so this is the
+    // only layer that stands between an impossible day and a stored row.
     dates: z
       .array(DateSchema)
       .min(1, "Podaj co najmniej jeden dzień.")
@@ -66,10 +68,11 @@ const AbsenceBulkCreateSchema = z
         "Dla całego dnia godziny muszą pozostać puste; dla wpisu godzinowego podaj obie godziny, a zakończenie musi być późniejsze niż rozpoczęcie.",
     },
   )
-  // Rejected, not de-duplicated. A repeated conflict target inside one ON CONFLICT statement
-  // fails with PG 21000 ("cannot affect row a second time"), so it has to be caught before the
-  // insert either way — and the gesture cannot produce a duplicate, so one arriving means a
-  // caller bug worth surfacing rather than quietly papering over.
+  // Rejected, not de-duplicated. A repeated conflict target inside one ON CONFLICT statement is
+  // rejected by the engine either way — Postgres raised 21000 ("cannot affect row a second time"),
+  // SQLite raises a plain SQLITE_ERROR — so it has to be caught before the insert regardless, and
+  // the gesture cannot produce a duplicate, so one arriving means a caller bug worth surfacing
+  // rather than quietly papering over.
   .refine((d) => new Set(d.dates).size === d.dates.length, {
     message: "Lista dni zawiera duplikaty.",
   });
@@ -144,6 +147,14 @@ export const POST: APIRoute = async (context) => {
     return writeTarget;
   }
   const { targetEmployeeId } = writeTarget;
+
+  // The shared absence type must exist. Resolved here rather than left to the FK, which under
+  // SQLite names neither constraint nor column and so cannot be told apart from an unknown
+  // substitute. Once per request, not per row — every row carries the same type.
+  const unknownType = await assertAbsenceTypeExists(db, sharedFields.absence_type_id, "POST /api/absences/bulk");
+  if (unknownType) {
+    return unknownType;
+  }
 
   // 1. Weekday rule. The client drops weekends silently while building a range; a weekend date
   //    that still reaches here can only come from a client bug or a hand-crafted request, so it
@@ -232,17 +243,15 @@ export const POST: APIRoute = async (context) => {
     );
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/absences/bulk" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
-    if (code === "23503") {
-      // 23503 can come from either FK on absences; name the right one.
-      if (extractPgErrorConstraint(err) === "absences_absence_type_id_fkey")
-        return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
-      return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
-    }
-    // No 23505 arm: the upsert makes a unique violation on (employee_id, date) unreachable, which
-    // is the whole point of this route. A duplicate *within* one body is caught by the schema.
-    if (code === "23514") return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    const code = extractDbErrorCode(err);
+    // Both references are resolved above, so a foreign-key error here means the row one of those
+    // lookups found was deleted before this insert landed. SQLite names nothing in the error, so
+    // which one is unknowable — one message rather than the pair the pre-flight checks return.
+    if (code === SQLITE_CONSTRAINT_FOREIGNKEY) return json({ error: "Nie znaleziono powiązanego rekordu." }, 422);
+    // No unique-violation arm: the upsert makes one on (employee_id, date) unreachable, which is
+    // the whole point of this route. A duplicate *within* one body is caught by the schema.
+    if (code === SQLITE_CONSTRAINT_CHECK)
+      return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };

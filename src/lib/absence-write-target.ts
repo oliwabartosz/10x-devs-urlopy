@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/cloudflare";
 import { eq, isNull, and } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db/index";
-import { employees } from "@/db/schema";
+import { absence_types, employees } from "@/db/schema";
 import { isProtectedAdmin } from "@/lib/employees";
 
 /**
@@ -59,10 +59,18 @@ export interface AbsenceWriteTarget {
  *    rather than the body field is what covers both entrances: the admin is seeded
  *    `role: moderator` (AGENTS.md), so it can also reach here as the caller writing its own
  *    column, and a check placed inside the moderator branch would miss that.
- * 4. A supplied `substitute_employee_id` must not be the protected admin, else 403. A
- *    *nonexistent* substitute is deliberately not checked — the FK maps it to 422 via
- *    `extractPgErrorConstraint`, which is the existing contract. A *soft-deleted* substitute stays
- *    allowed: it is plausible on a historical row, and rejecting it would break editing those.
+ * 4. A supplied `substitute_employee_id` must exist, else 422, and must not be the protected
+ *    admin, else 403. A *soft-deleted* substitute stays allowed: it is plausible on a historical
+ *    row, and rejecting it would break editing those.
+ *
+ *    The existence half reverses what this comment said until the SQLite port: *"a nonexistent
+ *    substitute is deliberately not checked — the FK maps it to 422 via
+ *    `extractPgErrorConstraint`, which is the existing contract."* That contract depended on
+ *    Postgres naming the violated FK in its error. SQLite names nothing in a
+ *    `SQLITE_CONSTRAINT_FOREIGNKEY` message, so the two 422s ("unknown type" and "unknown
+ *    substitute") became indistinguishable at the catch site and both collapsed into a 500.
+ *    Resolving the reference before the write is what restores them — the lookup this gate was
+ *    already issuing now answers *both* questions instead of only the `is_system` one.
  *
  * @returns the resolved target, or the `Response` to send when a gate refuses — the contract
  *   `resolveModeratorTarget` already established.
@@ -118,7 +126,8 @@ export async function resolveAbsenceWriteTarget(
  * `null` or `undefined` means the field was not supplied (a PATCH may omit it, and clearing a
  * substitute is always allowed), so no lookup is issued.
  *
- * @returns the `Response` to send when the substitute is the protected admin, otherwise `null`.
+ * @returns the `Response` to send when the substitute does not exist (422) or is the protected
+ *   admin (403), otherwise `null`.
  */
 export async function assertSubstituteAllowed(
   db: Db,
@@ -134,8 +143,9 @@ export async function assertSubstituteAllowed(
 
   let substituteRow: { is_system: boolean } | undefined;
   try {
-    // No `deleted_at` filter: a soft-deleted substitute is allowed (see the doc comment), so the
-    // only question this lookup answers is whether the row is the protected admin.
+    // No `deleted_at` filter: a soft-deleted substitute is allowed (see the doc comment), so this
+    // lookup answers two questions and not three — does the row exist, and is it the protected
+    // admin.
     substituteRow = await db
       .select({ is_system: employees.is_system })
       .from(employees)
@@ -145,8 +155,60 @@ export async function assertSubstituteAllowed(
     Sentry.captureException(err, { tags: { route } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
-  if (substituteRow && isProtectedAdmin(substituteRow)) {
+  // The two arms are mutually exclusive — the admin is a row that exists — so this order changes
+  // no answer. It mirrors the module's "404 before 403" rule anyway, so the next reader does not
+  // have to re-derive that it is safe.
+  if (!substituteRow) {
+    return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
+  }
+  if (isProtectedAdmin(substituteRow)) {
     return json({ error: "Nie można modyfikować tego konta." }, 403);
+  }
+
+  return null;
+}
+
+/**
+ * The absence type an absence write names must exist, else 422.
+ *
+ * The sibling of {@link assertSubstituteAllowed}'s existence half, and the other case the
+ * Postgres FK-name discrimination used to cover. Kept in this module for the same reason the rest
+ * of it is: three routes write absences, and the one that gets added next must not be able to
+ * inherit a missing check.
+ *
+ * Deliberately *not* folded into `isPartialDayViolation`, which also reads `absence_types`: that
+ * guard short-circuits on `isFullDay` before querying at all, so a full-day write naming a
+ * nonexistent type would never reach its lookup. It also answers a different question — its
+ * nonexistent-id fallback ("undefined name → ineligible → violation") returns 400 "hours are only
+ * available for these types", which describes the wrong problem. Running this check first makes
+ * that fallback unreachable rather than merely rare.
+ *
+ * `undefined` means the field was not supplied (a PATCH may omit it), so no lookup is issued.
+ *
+ * @returns the `Response` to send when the type does not exist, otherwise `null`.
+ */
+export async function assertAbsenceTypeExists(
+  db: Db,
+  absenceTypeId: number | undefined,
+  route: string,
+): Promise<Response | null> {
+  if (absenceTypeId === undefined) {
+    return null;
+  }
+
+  let typeRow: { id: number } | undefined;
+  try {
+    typeRow = await db
+      .select({ id: absence_types.id })
+      .from(absence_types)
+      .where(eq(absence_types.id, absenceTypeId))
+      .then((r) => r[0]);
+  } catch (err) {
+    Sentry.captureException(err, { tags: { route } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  if (!typeRow) {
+    return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
   }
 
   return null;

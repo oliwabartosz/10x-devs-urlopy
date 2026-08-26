@@ -7,7 +7,6 @@ import { createDb } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
-import { extractPgErrorCode } from "@/lib/db-errors";
 import { isProtectedAdmin } from "@/lib/employees";
 
 const json = (data: unknown, status: number) =>
@@ -88,8 +87,9 @@ export const DELETE: APIRoute = async (context) => {
     return new Response(null, { status: 204 });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
+    // No code discrimination left: the only arm here was Postgres `42501` (insufficient
+    // privilege), which came from RLS — bypassed on the service-role connection and nonexistent
+    // on a local SQLite file. Every failure reaching here is a real server error.
     return json({ error: "Database error" }, 500);
   }
 };

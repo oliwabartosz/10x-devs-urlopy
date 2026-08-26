@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { createDb, employees } from "@/db/index";
 import { DATABASE_URL } from "astro:env/server";
 import { eq, isNull, and, asc, max } from "drizzle-orm";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractDbErrorCode, SQLITE_CONSTRAINT_UNIQUE } from "@/lib/db-errors";
 import { visibleEmployeesFilter } from "@/lib/employees";
 
 export const GET: APIRoute = async (context) => {
@@ -162,8 +162,8 @@ export const POST: APIRoute = async (context) => {
       // eslint-disable-next-line no-console
       console.error("Failed to rollback auth user:", authData.user.id, compErr);
     });
-    const code = extractPgErrorCode(err);
-    if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);
+    const code = extractDbErrorCode(err);
+    if (code === SQLITE_CONSTRAINT_UNIQUE) return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     return json({ error: "Failed to create employee record" }, 500);
   }
 };

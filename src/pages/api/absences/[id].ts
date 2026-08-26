@@ -8,11 +8,16 @@ import { DATABASE_URL } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
-import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
+import {
+  extractDbErrorCode,
+  SQLITE_CONSTRAINT_CHECK,
+  SQLITE_CONSTRAINT_FOREIGNKEY,
+  SQLITE_CONSTRAINT_UNIQUE,
+} from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
-import { assertSubstituteAllowed } from "@/lib/absence-write-target";
+import { assertAbsenceTypeExists, assertSubstituteAllowed } from "@/lib/absence-write-target";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -126,6 +131,12 @@ export const PATCH: APIRoute = async (context) => {
   );
   if (substituteRefusal) return substituteRefusal;
 
+  // A supplied absence type must exist — the other reference SQLite's foreign-key error can no
+  // longer name. Only when the body supplies one: the stored value is already a valid reference.
+  // Before the partial-day guard for the reason given in `assertAbsenceTypeExists`.
+  const unknownType = await assertAbsenceTypeExists(db, parsed.data.absence_type_id, "PATCH /api/absences/:id");
+  if (unknownType) return unknownType;
+
   // Captured before the clamp merges values into `parsed.data`: from here on, "the body
   // omitted this field" can no longer be read off `parsed.data`, and both the effective-value
   // resolution and the CAS pins below depend on it. Note `null` is a *supplied* value here
@@ -231,16 +242,14 @@ export const PATCH: APIRoute = async (context) => {
     return json(rows[0], 200);
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
-    if (code === "23503") {
-      // 23503 can come from either FK on absences; name the right one.
-      if (extractPgErrorConstraint(err) === "absences_absence_type_id_fkey")
-        return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
-      return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
-    }
-    if (code === "23505") return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
-    if (code === "23514") return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    const code = extractDbErrorCode(err);
+    // Both references are resolved above, so a foreign-key error here means the row one of those
+    // lookups found was deleted before this UPDATE landed. SQLite names nothing in the error, so
+    // which one is unknowable — one message rather than the pair the pre-flight checks return.
+    if (code === SQLITE_CONSTRAINT_FOREIGNKEY) return json({ error: "Nie znaleziono powiązanego rekordu." }, 422);
+    if (code === SQLITE_CONSTRAINT_UNIQUE) return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+    if (code === SQLITE_CONSTRAINT_CHECK)
+      return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };
@@ -285,8 +294,9 @@ export const DELETE: APIRoute = async (context) => {
     return new Response(null, { status: 204 });
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
+    // No code discrimination left: the only arm here was Postgres `42501` (insufficient
+    // privilege), which came from RLS. RLS never applied on the service-role connection and does
+    // not exist on a local SQLite file, so every failure reaching here is a real server error.
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };

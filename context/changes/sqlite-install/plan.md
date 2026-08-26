@@ -742,24 +742,24 @@ storing uuids as TEXT rather than BLOB.
 
 #### Automated
 
-- [x] 2.1 All 13 route suites run rather than skip (10 of 12 un-skipped; employees/{email,password} deferred to Phase 4)
-- [x] 2.2 Full suite passes
-- [x] 2.3 Suite runs with fileParallelism restored to default
-- [x] 2.4 Linting passes
+- [x] 2.1 All 13 route suites run rather than skip (10 of 12 un-skipped; employees/{email,password} deferred to Phase 4) — a675627
+- [x] 2.2 Full suite passes — a675627
+- [x] 2.3 Suite runs with fileParallelism restored to default — a675627
+- [x] 2.4 Linting passes — a675627
 
 #### Manual
 
-- [x] 2.5 Two consecutive runs are clean with no temp-file state leak
-- [x] 2.6 A deliberately broken assertion fails for the right reason
+- [x] 2.5 Two consecutive runs are clean with no temp-file state leak — a675627
+- [x] 2.6 A deliberately broken assertion fails for the right reason — a675627
 
 ### Phase 3: Error mapping and pre-flight checks
 
 #### Automated
 
-- [ ] 3.1 Full test suite passes
-- [ ] 3.2 Route tests prove 409 duplicate, 422 unknown type, 422 unknown substitute, 400 time-check
-- [ ] 3.3 Test proves an impossible calendar date is rejected with 400
-- [ ] 3.4 Type checking and linting pass
+- [x] 3.1 Full test suite passes
+- [x] 3.2 Route tests prove 409 duplicate, 422 unknown type, 422 unknown substitute, 400 time-check
+- [x] 3.3 Test proves an impossible calendar date is rejected with 400
+- [x] 3.4 Type checking and linting pass
 
 #### Manual
 

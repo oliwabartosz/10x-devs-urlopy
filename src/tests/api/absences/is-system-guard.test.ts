@@ -226,17 +226,16 @@ describe("Absence writes — is_system guard on both routes", () => {
       ).toHaveLength(0);
     });
 
-    // The carve-out that keeps the substitute gate from over-reaching: it asks only "is this the
-    // admin", never "does this exist". A nonexistent substitute must still fall through to the FK
-    // and surface as 422 — if the gate ever starts 404-ing or 403-ing here, it has grown a
-    // responsibility the routes already owned.
+    // The carve-out that keeps the substitute gate from over-reaching: a nonexistent substitute is
+    // 422 "not found", never the 403 the admin gets and never the 404 a missing *target* gets. If
+    // the gate ever starts answering one of those here, it has grown a responsibility the routes
+    // already owned.
     //
-    // SKIPPED until Phase 3. The 422 came from `extractPgErrorConstraint` reading the FK
-    // constraint name out of the Postgres error; SQLite names nothing in a
-    // SQLITE_CONSTRAINT_FOREIGNKEY message, so the route falls through to 500 today. Phase 3
-    // item 2 resolves the substitute with a pre-flight lookup and restores this exact message;
-    // delete this `.skip` with it. The carve-out the test guards is unchanged in the meantime.
-    it.skip("leaves a nonexistent substitute to the FK, answering 422 rather than refusing it", async () => {
+    // The 422 used to come from the FK — Postgres named the violated constraint and the catch
+    // block read it. SQLite names nothing, so the gate's own lookup now answers the existence
+    // question too (`assertSubstituteAllowed`); the status and message are unchanged, which is
+    // what this case pins.
+    it("answers 422 for a nonexistent substitute rather than refusing it", async () => {
       const res = await write(moderatorAuthId, dates.missingSubstitute, {
         employee_id: employeeId,
         substitute_employee_id: crypto.randomUUID(),
