@@ -3,14 +3,14 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
-import { sql } from "drizzle-orm";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { DuplicateEmailError, getUserEmail, updateUserEmail } from "@/lib/auth";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
 
 // A sibling of [id]/restore.ts rather than a field on [id].ts, deliberately: the address lives
-// in Supabase Auth, not in the employees table, and [id].ts writes `parsed.data` straight into
-// `db.update(employees)`. An `email` key entering that handler would have to be split back out
-// of the update payload — a trap for the next person to add a field.
+// on the `users` row (it lived in Supabase Auth before that), not in the employees table, and
+// [id].ts writes `parsed.data` straight into `db.update(employees)`. An `email` key entering that
+// handler would have to be split back out of the update payload — a trap for the next person to
+// add a field.
 //
 // This supersedes context/changes/employee-management/plan.md:39 ("No ability to change an
 // employee's email after creation"). That decision rested on there being no read path to
@@ -32,20 +32,17 @@ export const GET: APIRoute = async (context) => {
   const resolved = await resolveModeratorTarget(context, route);
   if (resolved instanceof Response) return resolved;
 
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return json({ error: "Admin client is not configured" }, 503);
-  }
-
   try {
-    const { data, error } = await adminClient.auth.admin.getUserById(resolved.target.user_id);
-    if (error ?? !data.user) {
-      Sentry.captureException(error ?? new Error("Auth user not found"), { tags: { route } });
+    const email = await getUserEmail(resolved.target.user_id);
+    if (email === null) {
+      // An employee row whose `user_id` names no user. The FK makes this unreachable, so if it
+      // ever fires the database has been edited by hand — report it rather than returning "".
+      Sentry.captureException(new Error("Employee row has no matching users row"), { tags: { route } });
       return json({ error: "Database error" }, 503);
     }
-    // Only the address. Never the auth user object, never user_id — an island must not
-    // receive auth identifiers (employee-management/reviews/impl-review-phases-2-4.md F2).
-    return json({ email: data.user.email ?? "" }, 200);
+    // Only the address. Never the user row, never user_id — an island must not receive auth
+    // identifiers (employee-management/reviews/impl-review-phases-2-4.md F2).
+    return json({ email }, 200);
   } catch (err) {
     Sentry.captureException(err, { tags: { route } });
     return json({ error: "Database error" }, 503);
@@ -74,73 +71,28 @@ export const PATCH: APIRoute = async (context) => {
   }
   const { email } = parsed.data;
 
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return json({ error: "Admin client is not configured" }, 503);
-  }
-
-  // Duplicate detection happens HERE, before the write, because the Auth API gives us nothing
-  // to detect it with afterwards.
+  // The pre-check that used to sit here is gone, and its race with it.
   //
-  // The plan specified reusing the `authError.status === 422` → 409 mapping from
-  // employees/index.ts:137-140. That mapping is real, but it belongs to `createUser`.
-  // `updateUserById` returns `{ status: 500, code: "unexpected_failure", message: "Error
-  // updating user" }` for a duplicate address — byte-identical to any other server-side
-  // failure. Verified against the live project. Mapping `unexpected_failure` to "duplicate"
-  // would label unrelated failures as collisions, which is exactly the fragile matching
-  // impl-review-phases-2-4.md F4 warns about.
-  //
-  // So: pre-check by address. This used to read `auth.users` — the one place the app's Drizzle
-  // connection reached outside `src/db/schema.ts` — and now reads the local `users` table, which
-  // is in the same database and in the schema. The `users.email` column is `COLLATE NOCASE`, so
-  // `lower()` on both sides is belt-and-braces rather than load-bearing. Still one row by
-  // address, not `admin.listUsers()`.
-  //
-  // A concurrent insert between this check and the write still lands as the opaque 500 below.
-  // That race is accepted: it needs two moderators claiming the same address in the same
-  // instant, and the fallback is a wrong-but-honest error rather than a wrong success.
-  //
-  // The guard's handle, not a second one — `createDb` memoises per path, so this is the same
-  // connection either way, but taking it from the guard keeps the call sites honest.
-  const { db } = resolved;
+  // It existed because `admin.updateUserById` reported a duplicate address as `{ status: 500,
+  // code: "unexpected_failure", message: "Error updating user" }` — byte-identical to any other
+  // server-side failure — so a collision could only be caught by looking first, and a concurrent
+  // insert between the look and the write landed as an opaque 500. The `UNIQUE` index on
+  // `users.email` answers the question exactly and atomically instead, and `updateUserEmail`
+  // lifts it into `DuplicateEmailError`. Nothing is lost: the message and the 409 are unchanged.
   try {
-    const clash = await db.all(
-      sql`select 1 from users where lower(email) = lower(${email}) and id <> ${resolved.target.user_id} limit 1`,
-    );
-    if (clash.length > 0) {
-      return json({ error: "Konto z tym adresem email już istnieje." }, 409);
-    }
-  } catch (err) {
-    Sentry.captureException(err, { tags: { route } });
-    return json({ error: "Database error" }, 503);
-  }
-
-  try {
-    // `email_confirm: true` is load-bearing: without it the address lands with
-    // `email_verified: false`, which with confirmations enabled locks the worker out.
-    // Mirrors createUser({ email_confirm: true }) at employees/index.ts:128.
+    // Immediate and unconfirmed, which is what the moderator flow wants and what the Supabase
+    // admin API was chosen for: a self-service address change would have entered a double-confirm
+    // e-mail flow, and there is no SMTP on this box to carry it.
     //
-    // admin.updateUserById writes users.email directly and does NOT enter the email_change
-    // double-confirm flow that self-service updateUser({ email }) uses — which is precisely
-    // why the admin API is the right tool for the chosen immediate, no-confirmation
-    // behaviour. No session revocation occurs: the worker's cookie session keeps working
-    // with a stale `email` JWT claim until it refreshes.
-    const { error } = await adminClient.auth.admin.updateUserById(resolved.target.user_id, {
-      email,
-      email_confirm: true,
-    });
-    if (error) {
-      // Kept as belt-and-braces in case Supabase ever starts returning the 422 that
-      // `createUser` returns. Today `updateUserById` does not — see the pre-check above,
-      // which is what actually produces the 409.
-      if (error.status === 422) {
-        return json({ error: "Konto z tym adresem email już istnieje." }, 409);
-      }
-      Sentry.captureException(error, { tags: { route } });
-      return json({ error: "Failed to update auth user" }, 500);
-    }
+    // No session revocation, deliberately. The worker's session is keyed by `users.id`, which does
+    // not change here, so they stay signed in — as they did before, when the address lived in a
+    // JWT claim that simply went stale.
+    await updateUserEmail(resolved.target.user_id, email);
     return json({ email }, 200);
   } catch (err) {
+    if (err instanceof DuplicateEmailError) {
+      return json({ error: "Konto z tym adresem email już istnieje." }, 409);
+    }
     Sentry.captureException(err, { tags: { route } });
     return json({ error: "Failed to update auth user" }, 500);
   }

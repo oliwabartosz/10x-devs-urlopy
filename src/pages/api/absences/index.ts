@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { LIST_LIMIT, YearSchema, absenceListColumns, absenceEmployeeJoin, json, yearWindow } from "@/lib/absence-list";
@@ -44,7 +44,7 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Podaj year=YYYY albo from=YYYY-MM-DD&to=YYYY-MM-DD." }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -141,7 +141,7 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Brak autoryzacji." }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   // `is_system` is selected for the write-target guard below: the technical admin is seeded as a
   // moderator, so the caller's own row is one of the two ways an admin absence could be written.

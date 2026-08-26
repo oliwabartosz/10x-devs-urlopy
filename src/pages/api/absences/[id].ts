@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
@@ -73,7 +73,7 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -264,7 +264,7 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Nieprawidłowy identyfikator." }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {

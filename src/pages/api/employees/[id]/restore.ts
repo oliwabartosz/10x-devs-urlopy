@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, isNotNull, and } from "drizzle-orm";
 import { isProtectedAdmin } from "@/lib/employees";
@@ -22,7 +22,7 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {

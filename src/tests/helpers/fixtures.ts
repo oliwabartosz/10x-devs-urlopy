@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { users, employees, absences, holiday_balances } from "@/db/schema";
+import { hashPassword } from "@/lib/auth/password";
 
 // A user row and an employee row in the same database, instead of a real Supabase Auth account
 // plus a local row that pointed at it. This is what removes `SUPABASE_SERVICE_KEY` from the test
@@ -8,20 +9,21 @@ import { users, employees, absences, holiday_balances } from "@/db/schema";
 // API call that could half-succeed.
 
 /**
- * Placeholder for `users.password_hash`, which is NOT NULL.
+ * The password every fixture employee is seeded with.
  *
- * No fixture verifies a password yet: `hashPassword` arrives in Phase 4 together with the two
- * suites that need it. Deliberately not a valid encoded hash — nothing should be able to sign in
- * as a fixture employee by accident.
+ * One shared value rather than a random one per row, so a suite can assert both directions: that
+ * this password works before a reset and that it stops working after one. It is a real scrypt hash
+ * now — the placeholder that stood here through Phases 1-3 could not be verified against, which is
+ * exactly why the two employee sub-resource suites were skipped until this phase.
  */
-const UNUSABLE_PASSWORD_HASH = "x-not-a-hash-no-credential-flow-in-this-phase";
+export const FIXTURE_PASSWORD = "fixture-Password-123";
 
 async function insertEmployee(db: Db, role: "employee" | "moderator"): Promise<string> {
   const [user] = await db
     .insert(users)
     .values({
       email: `test-${crypto.randomUUID()}@test.invalid`,
-      password_hash: UNUSABLE_PASSWORD_HASH,
+      password_hash: hashPassword(FIXTURE_PASSWORD),
     })
     .returning({ id: users.id });
 

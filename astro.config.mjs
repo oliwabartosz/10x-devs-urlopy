@@ -33,10 +33,14 @@ export default defineConfig({
   adapter: cloudflare({ imageService: "passthrough" }),
   env: {
     schema: {
-      SUPABASE_URL: envField.string({ context: "server", access: "secret", optional: true }),
-      SUPABASE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
-      SUPABASE_SERVICE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
-      DATABASE_URL: envField.string({ context: "server", access: "secret" }),
+      // Filesystem path to the SQLite file, e.g. /var/lib/urlopy/urlopy.db. Required: a missing
+      // value must fail at startup on the VPS rather than at the first query.
+      DATABASE_PATH: envField.string({ context: "server", access: "secret" }),
+      // The origin the browser actually sees, e.g. https://urlopy.internal. Drives the session
+      // cookie's `Secure` flag (src/lib/auth/session.ts) — behind nginx the Node process cannot
+      // observe the scheme itself. Optional so a bare build and the test stub work without it;
+      // Phase 5 derives `site` and `security.allowedDomains` from the same value.
+      PUBLIC_ORIGIN: envField.string({ context: "server", access: "public", optional: true }),
     },
   },
 });

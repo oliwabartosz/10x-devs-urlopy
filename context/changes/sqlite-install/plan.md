@@ -756,10 +756,10 @@ storing uuids as TEXT rather than BLOB.
 
 #### Automated
 
-- [x] 3.1 Full test suite passes
-- [x] 3.2 Route tests prove 409 duplicate, 422 unknown type, 422 unknown substitute, 400 time-check
-- [x] 3.3 Test proves an impossible calendar date is rejected with 400
-- [x] 3.4 Type checking and linting pass
+- [x] 3.1 Full test suite passes — 7e7adea
+- [x] 3.2 Route tests prove 409 duplicate, 422 unknown type, 422 unknown substitute, 400 time-check — 7e7adea
+- [x] 3.3 Test proves an impossible calendar date is rejected with 400 — 7e7adea
+- [x] 3.4 Type checking and linting pass — 7e7adea
 
 #### Manual
 
@@ -770,12 +770,12 @@ storing uuids as TEXT rather than BLOB.
 
 #### Automated
 
-- [ ] 4.1 Full test suite passes
-- [ ] 4.2 Tests prove sign-in, sign-out, and selective session revocation behaviour
-- [ ] 4.3 Test proves the session cookie carries HttpOnly and SameSite=Lax
-- [ ] 4.4 Test proves failed sign-ins are throttled without revealing account existence
-- [ ] 4.5 seed-admin is idempotent — twice yields exactly one is_system employee
-- [ ] 4.6 Type checking and linting pass
+- [x] 4.1 Full test suite passes
+- [x] 4.2 Tests prove sign-in, sign-out, and selective session revocation behaviour
+- [x] 4.3 Test proves the session cookie carries HttpOnly and SameSite=Lax
+- [x] 4.4 Test proves failed sign-ins are throttled without revealing account existence
+- [x] 4.5 seed-admin is idempotent — twice yields exactly one is_system employee
+- [x] 4.6 Type checking and linting pass
 
 #### Manual
 

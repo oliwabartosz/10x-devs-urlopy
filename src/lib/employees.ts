@@ -4,10 +4,10 @@ import { employees } from "@/db/schema";
 /**
  * The single source of truth for the technical-admin (`is_system`) invariant.
  *
- * Supabase RLS is bypassed on the service-role Drizzle connection (AGENTS.md), so
- * "the admin is hidden and immutable" cannot be enforced in the database — it must
- * be re-asserted in every read surface (via {@link visibleEmployeesFilter}) and
- * every write path (via {@link isProtectedAdmin}). Keep these dependency-light so
+ * There is no database-level backstop — RLS never applied on the service-role connection and
+ * does not exist at all on a local SQLite file — so "the admin is hidden and immutable" must be
+ * re-asserted in every read surface (via {@link visibleEmployeesFilter}) and every write path
+ * (via {@link isProtectedAdmin}). Keep these dependency-light so
  * they stay unit-testable with plain mock rows.
  */
 

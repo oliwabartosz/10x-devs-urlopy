@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { isProtectedAdmin } from "@/lib/employees";
@@ -25,7 +25,7 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Invalid id" }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   // Caller must resolve to a non-deleted employees row, and then own the row or be a moderator.
   //

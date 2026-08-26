@@ -27,16 +27,7 @@ mkdirSync(ROOT, { recursive: true });
 
 export const DATABASE_PATH = join(ROOT, `${crypto.randomUUID()}.db`);
 
-// Deprecated alias. Every route still imports `DATABASE_URL` and passes it to `createDb`,
-// whose parameter is a filesystem path since the SQLite port. Phase 4 renames the variable at
-// all 14 import sites along with the `astro.config.mjs` env schema; until then both names must
-// resolve to the same path or the handlers open a second, empty database.
-export const DATABASE_URL = DATABASE_PATH;
-
-export const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
-export const SUPABASE_KEY = process.env.SUPABASE_KEY ?? "";
-// Without this, any route test importing a handler that calls `createAdminClient()` gets
-// `undefined` here, hence a null client, hence a 503 "Admin client is not configured" that
-// reads as a real defect rather than a missing stub export. Phase 4 removes the Supabase
-// exports along with the factories that read them.
-export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
+// Plain HTTP, so `session.ts` issues a cookie without `Secure` — a test client is not a browser
+// over TLS, and a `Secure` cookie would be set but never sent back, which is the login loop the
+// flag exists to avoid in the first place.
+export const PUBLIC_ORIGIN = "http://test.invalid";

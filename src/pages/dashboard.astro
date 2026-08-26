@@ -15,7 +15,7 @@ import {
   holiday_balances as holidayBalancesTable,
 } from "@/db/index";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
@@ -49,7 +49,7 @@ if (!Astro.locals.user) {
   return Astro.redirect("/auth/signin");
 }
 
-const db = createDb(DATABASE_URL);
+const db = createDb(DATABASE_PATH);
 
 let employeeDbError = false;
 let currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role"> | null = null;
@@ -90,7 +90,7 @@ if (currentEmployee) {
 
   const empCols = {
     // No `user_id`: these rows become client:load island props, which Astro serializes into the
-    // page HTML. The Supabase Auth id must not travel to every browser and no component reads
+    // page HTML. The `users`-table id must not travel to every browser and no component reads
     // it — hence EmployeeListItem rather than Employee. GET /api/employees omits it too.
     id: employeesTable.id,
     first_name: employeesTable.first_name,

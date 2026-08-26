@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import type { Db } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, and } from "drizzle-orm";
 import { isProtectedAdmin } from "@/lib/employees";
@@ -35,9 +35,10 @@ export interface ModeratorTarget {
 export interface ResolvedModeratorTarget {
   target: ModeratorTarget;
   /**
-   * The pool this guard already opened. Reuse it — a route that calls `createDb()` again runs
-   * the request on two pools, and postgres-js pools are never `.end()`ed here (correct for
-   * Workers, where the isolate owns the lifetime). Supabase's session pooler caps at 15 clients.
+   * The handle this guard already opened. Reuse it rather than calling `createDb()` again — which
+   * is now a memo lookup returning the same handle either way, so this is about keeping the call
+   * sites honest rather than about resource cost. It stopped being about cost when the
+   * postgres-js pool behind Supabase's 15-client session pooler became a local SQLite file.
    */
   db: Db;
 }
@@ -59,7 +60,7 @@ export async function resolveModeratorTarget(
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -84,7 +85,8 @@ export async function resolveModeratorTarget(
     return json({ error: "Invalid employee ID" }, 400);
   }
 
-  // Service role sees all rows — no isNull filter needed to read soft-deleted employees
+  // No isNull filter: this must resolve soft-deleted employees too, so GET can read a
+  // deactivated worker's address while PATCH refuses to write it.
   let target: ModeratorTarget | undefined;
   try {
     target = await db

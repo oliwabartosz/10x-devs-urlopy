@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { MIN_PASSWORD_LENGTH, setUserPassword } from "@/lib/auth";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
 
 // Moderator-initiated password reset, for the "worker forgot their password" case.
@@ -24,9 +24,9 @@ const json = (data: unknown, status: number) =>
   });
 
 // The 8-character floor matches EmployeeCreateSchema (employees/index.ts:76) and the
-// self-service route, NOT the 6 in supabase/config.toml:175.
+// self-service route. `hashPassword` enforces the same floor again at the boundary.
 const PasswordResetSchema = z.object({
-  password: z.string().min(8),
+  password: z.string().min(MIN_PASSWORD_LENGTH),
 });
 
 export const PATCH: APIRoute = async (context) => {
@@ -50,28 +50,18 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return json({ error: "Admin client is not configured" }, 503);
-  }
-
   try {
-    const { error } = await adminClient.auth.admin.updateUserById(resolved.target.user_id, {
-      password: parsed.data.password,
-    });
-    if (error) {
-      // Never let the password reach Sentry — capture the auth error alone.
-      Sentry.captureException(error, { tags: { route } });
-      return json({ error: "Nie udało się zmienić hasła." }, 500);
-    }
-    // No session revocation, deliberately. The self-service route in Phase 4 signs out the
-    // user's *other* sessions because the actor there is the account owner. Here the actor is
-    // not, so revoking would sign the worker out mid-work with no explanation — and the
-    // forgotten-password case means they have no live session to evict anyway.
+    await setUserPassword(resolved.target.user_id, parsed.data.password);
+    // No session revocation, deliberately. The self-service route signs out the user's *other*
+    // sessions because the actor there is the account owner. Here the actor is not, so revoking
+    // would sign the worker out mid-work with no explanation — and the forgotten-password case
+    // means they have no live session to evict anyway.
     //
     // Never echo the password back.
     return json({ success: true }, 200);
   } catch (err) {
+    // Never let the password reach Sentry — `setUserPassword` hashes before it touches the
+    // database, and the error it can throw carries the statement, not the plaintext.
     Sentry.captureException(err, { tags: { route } });
     return json({ error: "Nie udało się zmienić hasła." }, 500);
   }

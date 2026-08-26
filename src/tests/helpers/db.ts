@@ -9,9 +9,9 @@ let ready: Promise<Db> | undefined;
  * route handlers because they resolve `DATABASE_PATH` through the same stub (`./astro-env`).
  *
  * Async because the migrator is; memoised so the `beforeAll` of every suite in a file pays for
- * it once. Suites no longer self-skip — there is nothing left to configure, so
- * `describe.skipIf(!process.env.DATABASE_URL_DIRECT)` is gone from all but the two employee
- * sub-resource suites, which are blocked on Supabase Auth rather than on the database.
+ * it once. No suite self-skips any more: `describe.skipIf(!process.env.DATABASE_URL_DIRECT)` went
+ * in Phase 2, and the two employee sub-resource suites it left behind — blocked on Supabase Auth
+ * rather than on the database — were un-skipped in Phase 4 when the credential became a local row.
  */
 export function getTestDb(): Promise<Db> {
   ready ??= migrateAndSeed(DATABASE_PATH).then(() => createDb(DATABASE_PATH));

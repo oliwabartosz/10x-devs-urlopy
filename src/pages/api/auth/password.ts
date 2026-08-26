@@ -3,7 +3,14 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase";
+import {
+  destroyOtherSessions,
+  findUserById,
+  MIN_PASSWORD_LENGTH,
+  readSessionId,
+  setUserPassword,
+  verifyPassword,
+} from "@/lib/auth";
 
 // CONVENTION BREAK, deliberate: this route speaks JSON + zod + `{ error }` + status codes,
 // unlike its two neighbours signin.ts and signout.ts, which take FormData and answer with a
@@ -11,9 +18,9 @@ import { createClient } from "@/lib/supabase";
 // a dialog that must render the error inline beside the offending field, and a redirect would
 // destroy the dialog's state. Do not "fix" this back into the neighbours' shape.
 //
-// Self-service only: the caller changes their OWN password, off the existing SSR cookie
-// session — no service key involved. The moderator-initiated reset is a different route
-// (employees/[id]/password.ts) with a different actor and different session semantics.
+// Self-service only: the caller changes their OWN password, off the session cookie. The
+// moderator-initiated reset is a different route (employees/[id]/password.ts) with a different
+// actor and different session semantics.
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -23,9 +30,9 @@ const json = (data: unknown, status: number) =>
 
 const PasswordChangeSchema = z.object({
   current_password: z.string().min(1),
-  // The floor is 8 to match the app's own EmployeeCreateSchema (employees/index.ts:76),
-  // NOT the 6 in supabase/config.toml:175.
-  new_password: z.string().min(8),
+  // The floor is 8, matching EmployeeCreateSchema (employees/index.ts:76) and
+  // `MIN_PASSWORD_LENGTH`, which `hashPassword` enforces again at the boundary.
+  new_password: z.string().min(MIN_PASSWORD_LENGTH),
 });
 
 export const POST: APIRoute = async (context) => {
@@ -52,73 +59,41 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Nowe hasło musi różnić się od obecnego." }, 400);
   }
 
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ error: "Supabase is not configured" }, 503);
-  }
-
-  let updateError: Awaited<ReturnType<typeof supabase.auth.updateUser>>["error"];
   try {
-    // The optional `current_password` argument gives an old-password check without touching
-    // any project setting.
-    ({ error: updateError } = await supabase.auth.updateUser({
-      password: new_password,
-      current_password,
-    }));
+    const user = await findUserById(context.locals.user.id);
+    // The session resolved to a user id that no longer has a row. Nothing to change, and nothing
+    // the caller can do about it — but it is not a wrong-password case, so do not say so.
+    if (!user) {
+      return json({ error: "Nie udało się zmienić hasła." }, 500);
+    }
+
+    // The three Supabase failure codes this used to discriminate on — `reauthentication_needed`,
+    // `weak_password`, `same_password` — were all consequences of rules living in a dashboard we
+    // could not read. Every one of them is now decided here: the equality check above covers
+    // `same_password`, zod covers `weak_password`, and `reauthentication_needed` has no analogue
+    // because there is no second factor and no session age policy.
+    if (!verifyPassword(current_password, user.password_hash)) {
+      return json({ error: "Obecne hasło jest nieprawidłowe." }, 400);
+    }
+
+    await setUserPassword(user.id, new_password);
+
+    // Makes good on the toast at ChangePasswordDialog.tsx:51. The caller's own session is kept —
+    // they are the one who made the change — while every other holder of the old credential is
+    // evicted.
+    //
+    // A failure HERE must not turn a successful password change into an error response: the
+    // password is already changed, and reporting failure would send the user to retry with a
+    // "current password" that is no longer current.
+    try {
+      await destroyOtherSessions(user.id, readSessionId(context.cookies));
+    } catch (err) {
+      Sentry.captureException(err, { level: "warning", tags: { route, action: "sign_out_others" } });
+    }
+
+    return json({ success: true }, 200);
   } catch (err) {
     Sentry.captureException(err, { tags: { route } });
     return json({ error: "Nie udało się zmienić hasła." }, 500);
   }
-
-  if (updateError) {
-    // Match on status/code, never on the English message string — impl-review-phases-2-4.md F4.
-    //
-    // `reauthentication_needed` is what production returns if `secure_password_change` is
-    // enabled there and the session is older than 24 h. That setting lives in the Supabase
-    // dashboard, not in this repo (supabase/config.toml:211 governs `supabase start` only), so
-    // it is unverifiable from here — handling it is what makes this route correct under either
-    // setting instead of surfacing an opaque 500.
-    if (updateError.code === "reauthentication_needed") {
-      return json({ error: "Ze względów bezpieczeństwa zaloguj się ponownie, zanim zmienisz hasło." }, 400);
-    }
-    // The project's password rules (minimum_password_length, password_requirements) live in the
-    // Supabase dashboard, not supabase/config.toml — the same unverifiable-setting problem as
-    // secure_password_change above. weak_password shares the 400/422 statuses with a wrong
-    // current password, so without this branch a rejected NEW password is reported as a wrong
-    // CURRENT one: false and unactionable.
-    if (updateError.code === "weak_password") {
-      return json({ error: "Nowe hasło nie spełnia wymagań bezpieczeństwa. Wybierz inne." }, 400);
-    }
-    // Supabase compares against the stored hash, so this fires where the equality check above
-    // cannot: the new password matches the old one without the client having sent it as current.
-    if (updateError.code === "same_password") {
-      return json({ error: "Nowe hasło musi różnić się od obecnego." }, 400);
-    }
-    if (updateError.status === 400 || updateError.status === 401 || updateError.status === 422) {
-      return json({ error: "Obecne hasło jest nieprawidłowe." }, 400);
-    }
-    Sentry.captureException(updateError, { tags: { route } });
-    return json({ error: "Nie udało się zmienić hasła." }, 500);
-  }
-
-  // What Supabase Studio itself does, so the change actually evicts the user's other sessions
-  // while the caller's own survives.
-  //
-  // A failure HERE must not turn a successful password change into an error response — the
-  // password is already changed, and reporting failure would send the user to retry with a
-  // "current password" that is no longer current. Log and return 200, mirroring the
-  // compensating-delete idiom at employees/index.ts:157-164.
-  try {
-    const { error: signOutError } = await supabase.auth.signOut({ scope: "others" });
-    if (signOutError) {
-      Sentry.captureException(signOutError, {
-        level: "warning",
-        tags: { route, action: "sign_out_others" },
-      });
-    }
-  } catch (err) {
-    Sentry.captureException(err, { level: "warning", tags: { route, action: "sign_out_others" } });
-  }
-
-  return json({ success: true }, 200);
 };

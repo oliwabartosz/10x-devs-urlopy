@@ -13,7 +13,7 @@ interface ChangeEmailDialogProps {
 }
 
 // The Auth write is kept in its own dialog so a single Zapisz never spans two storage rails —
-// the merged edit dialog writes Drizzle tables, this one writes Supabase Auth.
+// the merged edit dialog writes the `employees` row, this one writes the `users` row behind it.
 export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailDialogProps) {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [email, setEmail] = useState("");

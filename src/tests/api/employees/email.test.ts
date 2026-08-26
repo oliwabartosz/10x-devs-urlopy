@@ -12,12 +12,10 @@ import { GET, PATCH } from "@/pages/api/employees/[id]/email";
 // endpoints"). Harness template: korekta-gate.test.ts:32-44 — direct handler import, hand-built
 // APIContext.
 //
-// SKIPPED until Phase 4. The other ten route suites run against a local SQLite file now, but the
-// address these assert on does not live in this database: `email.ts` still reads and writes it
-// through `createAdminClient().auth.admin`, while `createTestEmployee` now seeds a local `users`
-// row that Supabase Auth has never heard of, so every assertion here would collapse to a 503.
-// Phase 4 item 5 swaps those calls for the local users service; delete this `.skip` with it.
-describe.skip("Employee e-mail sub-resource (route level)", () => {
+// Un-skipped in Phase 4: the address these assert on is a column on the local `users` row now,
+// read and written by `@/lib/auth`, so the suite runs against the same temp SQLite file as its
+// ten siblings and needs nothing provisioned remotely.
+describe("Employee e-mail sub-resource (route level)", () => {
   let db!: Db;
   let targetId!: string;
   let employeeId!: string;

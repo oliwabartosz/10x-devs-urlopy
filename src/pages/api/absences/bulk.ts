@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, inArray } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
@@ -96,7 +96,7 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Brak autoryzacji." }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   // `is_system` is selected for the write-target guard below: the technical admin is seeded as a
   // moderator, so the caller's own row is one of the two ways an admin absence could be written.
