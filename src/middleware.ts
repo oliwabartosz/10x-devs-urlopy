@@ -1,5 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { readSession } from "@/lib/auth";
 import { createDb, employees } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";

@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { and, eq, gte, lt } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { absence_types, absences } from "@/db/schema";

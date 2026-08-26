@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { clearSessionCookie, destroySession, readSessionId } from "@/lib/auth";
 
 export const POST: APIRoute = async (context) => {

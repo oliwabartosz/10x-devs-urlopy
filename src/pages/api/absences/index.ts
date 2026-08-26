@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";

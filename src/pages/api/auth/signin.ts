@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import {
   clearSignInFailures,
   clientIp,

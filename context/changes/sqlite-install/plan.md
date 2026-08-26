@@ -770,29 +770,29 @@ storing uuids as TEXT rather than BLOB.
 
 #### Automated
 
-- [x] 4.1 Full test suite passes
-- [x] 4.2 Tests prove sign-in, sign-out, and selective session revocation behaviour
-- [x] 4.3 Test proves the session cookie carries HttpOnly and SameSite=Lax
-- [x] 4.4 Test proves failed sign-ins are throttled without revealing account existence
-- [x] 4.5 seed-admin is idempotent — twice yields exactly one is_system employee
-- [x] 4.6 Type checking and linting pass
+- [x] 4.1 Full test suite passes — 8479882
+- [x] 4.2 Tests prove sign-in, sign-out, and selective session revocation behaviour — 8479882
+- [x] 4.3 Test proves the session cookie carries HttpOnly and SameSite=Lax — 8479882
+- [x] 4.4 Test proves failed sign-ins are throttled without revealing account existence — 8479882
+- [x] 4.5 seed-admin is idempotent — twice yields exactly one is_system employee — 8479882
+- [x] 4.6 Type checking and linting pass — 8479882
 
 #### Manual
 
-- [ ] 4.7 Admin signs in, creates an employee, that employee signs in
-- [ ] 4.8 Password change logs out other sessions but not the caller
-- [ ] 4.9 Moderator changes another employee's email and password; both take effect
-- [ ] 4.10 A non-moderator cannot reach employee-management surfaces
-- [ ] 4.11 The technical admin stays invisible and immutable everywhere
+- [x] 4.7 Admin signs in, creates an employee, that employee signs in — 8479882
+- [x] 4.8 Password change logs out other sessions but not the caller — 8479882
+- [x] 4.9 Moderator changes another employee's email and password; both take effect — 8479882
+- [x] 4.10 A non-moderator cannot reach employee-management surfaces — 8479882
+- [x] 4.11 The technical admin stays invisible and immutable everywhere — 8479882
 
 ### Phase 5: Node runtime
 
 #### Automated
 
-- [ ] 5.1 Build produces entry.mjs and dist/client with no Cloudflare artifacts
-- [ ] 5.2 The built server starts and serves the sign-in page with expected literals
-- [ ] 5.3 No source file imports @sentry/cloudflare
-- [ ] 5.4 Type checking and linting pass
+- [x] 5.1 Build produces entry.mjs and dist/client with no Cloudflare artifacts
+- [x] 5.2 The built server starts and serves the sign-in page with expected literals
+- [x] 5.3 No source file imports @sentry/cloudflare
+- [x] 5.4 Type checking and linting pass
 
 #### Manual
 

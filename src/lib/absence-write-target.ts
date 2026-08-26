@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { eq, isNull, and } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db/index";

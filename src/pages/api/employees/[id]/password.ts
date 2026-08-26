@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
+import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { MIN_PASSWORD_LENGTH, setUserPassword } from "@/lib/auth";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
