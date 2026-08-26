@@ -46,3 +46,8 @@ context/team/digests/*
 
 # dev scratch output (scripts/export-sample.ts writes the sample workbook here)
 .scratch/
+
+# SQLite database files (drizzle.config.ts defaults to ./urlopy.db; WAL adds -wal/-shm sidecars)
+*.db
+*.db-wal
+*.db-shm

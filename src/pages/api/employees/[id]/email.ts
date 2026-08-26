@@ -90,22 +90,22 @@ export const PATCH: APIRoute = async (context) => {
   // would label unrelated failures as collisions, which is exactly the fragile matching
   // impl-review-phases-2-4.md F4 warns about.
   //
-  // So: pre-check against auth.users over the service-role connection (RLS is bypassed;
-  // Supabase lowercases addresses, hence the lower() on both sides). This is a read of one
-  // row by address — not admin.listUsers(), which the plan rejects for pulling every worker's
-  // address on a paginated call.
+  // So: pre-check by address. This used to read `auth.users` — the one place the app's Drizzle
+  // connection reached outside `src/db/schema.ts` — and now reads the local `users` table, which
+  // is in the same database and in the schema. The `users.email` column is `COLLATE NOCASE`, so
+  // `lower()` on both sides is belt-and-braces rather than load-bearing. Still one row by
+  // address, not `admin.listUsers()`.
   //
   // A concurrent insert between this check and the write still lands as the opaque 500 below.
   // That race is accepted: it needs two moderators claiming the same address in the same
   // instant, and the fallback is a wrong-but-honest error rather than a wrong success.
   //
-  // The guard's pool, not a second one: postgres-js pools are never `.end()`ed here (correct for
-  // Workers, where the isolate owns the lifetime), so opening one per call site would run this
-  // request on two of them against a session pooler that caps at 15 clients.
+  // The guard's handle, not a second one — `createDb` memoises per path, so this is the same
+  // connection either way, but taking it from the guard keeps the call sites honest.
   const { db } = resolved;
   try {
-    const clash = await db.execute(
-      sql`select 1 from auth.users where lower(email) = lower(${email}) and id <> ${resolved.target.user_id} limit 1`,
+    const clash = await db.all(
+      sql`select 1 from users where lower(email) = lower(${email}) and id <> ${resolved.target.user_id} limit 1`,
     );
     if (clash.length > 0) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);

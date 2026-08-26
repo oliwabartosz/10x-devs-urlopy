@@ -1,13 +1,15 @@
 /**
  * Seed the technical admin account (role: moderator, is_system: true) from env.
  *
- * Runs in Node (NOT in `wrangler dev`): Drizzle connects over DATABASE_URL_DIRECT
- * (port 5432) and a Supabase service-role client creates the auth user. Mirrors the
- * S-04 create path (`createUser` -> Drizzle insert, compensating `deleteUser` on
- * insert failure; see src/pages/api/employees/index.ts:111-163). Cannot import
- * `@/lib/supabase-admin` or `@/db/index` env wiring here — those read
- * `astro:env/server`, which only resolves inside the Worker — so the clients are
- * built inline from `process.env`.
+ * Runs in Node: Drizzle opens the SQLite file at DATABASE_PATH and a Supabase service-role
+ * client still creates the auth user. Mirrors the S-04 create path (`createUser` -> Drizzle
+ * insert, compensating `deleteUser` on insert failure; see
+ * src/pages/api/employees/index.ts:111-163).
+ *
+ * NOTE (sqlite-install): the database half is ported; the auth half is not. Phase 4 replaces the
+ * Supabase calls below with a local `users` row and a scrypt hash, at which point the
+ * compensating-delete dance goes away too (both rows land in one database). Until then this
+ * script compiles and its idempotency gate is correct, but it cannot complete a run.
  *
  * Idempotent: no-ops if an `is_system` row already exists, and adopts a
  * pre-existing auth user with the same email (recovering a half-finished run).
@@ -15,9 +17,8 @@
  * Usage: `npm run seed:admin` (reads `.env` via `process.loadEnvFile`).
  */
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { eq } from "drizzle-orm";
+import { createDb, closeDb } from "../src/db/index";
 import { employees } from "../src/db/schema";
 
 function requireEnv(name: string): string {
@@ -51,17 +52,13 @@ async function main(): Promise<void> {
   const password = requireEnv("ADMIN_PASSWORD");
   const supabaseUrl = requireEnv("SUPABASE_URL");
   const serviceKey = requireEnv("SUPABASE_SERVICE_KEY");
-  const databaseUrl = requireEnv("DATABASE_URL_DIRECT");
+  const databasePath = requireEnv("DATABASE_PATH");
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Direct connection (5432) requires TLS against remote Supabase; a local
-  // `supabase start` DB does not. `prepare: false` mirrors createDb.
-  const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
-  const sql = postgres(databaseUrl, { prepare: false, ssl: isLocal ? false : "require" });
-  const db = drizzle(sql, { schema: { employees } });
+  const db = createDb(databasePath);
 
   try {
     // Idempotency: exactly one is_system row is the invariant. If present, stop.
@@ -129,7 +126,7 @@ async function main(): Promise<void> {
       throw err;
     }
   } finally {
-    await sql.end();
+    closeDb(databasePath);
   }
 }
 

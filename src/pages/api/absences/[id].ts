@@ -196,19 +196,28 @@ export const PATCH: APIRoute = async (context) => {
   const updateWhere = casConditions.length > 0 ? and(ownershipWhere, ...casConditions) : ownershipWhere;
 
   try {
-    const rows = await db.update(absences).set(parsed.data).where(updateWhere).returning({
-      id: absences.id,
-      employee_id: absences.employee_id,
-      absence_type_id: absences.absence_type_id,
-      date: absences.date,
-      is_full_day: absences.is_full_day,
-      start_time: absences.start_time,
-      end_time: absences.end_time,
-      comment: absences.comment,
-      substitute_employee_id: absences.substitute_employee_id,
-      created_at: absences.created_at,
-      updated_at: absences.updated_at,
-    });
+    // `updated_at` is set explicitly. Postgres had an AFTER UPDATE trigger
+    // (20260526000001_schema.sql:58-70) and this route was its only consumer; the trigger is not
+    // ported, and `parsed.data` carries no `updated_at`, so without this the column would freeze
+    // at insert time — silently, since it is still read back at `:210` and returned at `:222`.
+    // `bulk.ts` and `holiday-balances/index.ts` already set it the same way.
+    const rows = await db
+      .update(absences)
+      .set({ ...parsed.data, updated_at: new Date() })
+      .where(updateWhere)
+      .returning({
+        id: absences.id,
+        employee_id: absences.employee_id,
+        absence_type_id: absences.absence_type_id,
+        date: absences.date,
+        is_full_day: absences.is_full_day,
+        start_time: absences.start_time,
+        end_time: absences.end_time,
+        comment: absences.comment,
+        substitute_employee_id: absences.substitute_employee_id,
+        created_at: absences.created_at,
+        updated_at: absences.updated_at,
+      });
     if (rows.length === 0) {
       // Zero rows means either the target is gone (404) or a concurrent write moved one of
       // the fields we pinned above (409). Only worth a second query on this rare path.
