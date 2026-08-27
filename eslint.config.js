@@ -59,6 +59,20 @@ const reactConfig = tseslint.config({
   },
 });
 
+// Standalone Node scripts: `scripts/build-artifact.mjs` (npm's postbuild hook) and
+// `deploy/backup.mjs` (run by the systemd backup timer on the VPS). Both are plain `.mjs` on
+// purpose — the VPS installs with `--omit=dev` and has no `tsx`, and postbuild must not depend on
+// a build step of its own. That costs them the two things `.ts` files get for free here:
+// `@types/node` supplying the globals (typescript-eslint turns `no-undef` off for `.ts`; eslint's
+// recommended set leaves it on everywhere else), and a reason to route output anywhere but stdout.
+const nodeScriptConfig = tseslint.config({
+  files: ["**/*.mjs"],
+  languageOptions: {
+    globals: { process: "readonly", console: "readonly", URL: "readonly" },
+  },
+  rules: { "no-console": "off" },
+});
+
 const astroConfig = tseslint.config({
   files: ["**/*.astro"],
   languageOptions: {
@@ -85,6 +99,7 @@ export default tseslint.config(
   // new-design/ is deleted (see new-design/README.md).
   { ignores: ["new-design/**"] },
   baseConfig,
+  nodeScriptConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],
   ...eslintPluginAstro.configs["flat/jsx-a11y-recommended"],

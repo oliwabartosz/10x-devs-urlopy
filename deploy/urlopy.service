@@ -1,0 +1,60 @@
+# Urlopy application service.
+#
+# Template: install.sh substitutes @PLACEHOLDERS@ and writes the result to
+# /etc/systemd/system/urlopy.service. Edit this file, not the installed copy — a re-run of
+# install.sh overwrites the installed copy.
+[Unit]
+Description=Urlopy — absence tracking (Astro/Node + SQLite)
+Documentation=file://@APP_ROOT@/current/INSTALL.md
+After=network.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Group=@SERVICE_USER@
+
+# `current` is a symlink to the active release under @APP_ROOT@/releases/. systemd resolves it at
+# each start, so a rollback is: re-point the symlink, `systemctl restart urlopy`.
+WorkingDirectory=@APP_ROOT@/current
+ExecStart=@NODE_BIN@ @APP_ROOT@/current/dist/server/entry.mjs
+
+# HOST/PORT (loopback only — nginx is the sole public listener), DATABASE_PATH and PUBLIC_ORIGIN
+# all live here. Mode 0640, root:@SERVICE_USER@ — it carries no secret today, but the admin
+# credentials pass through it on a first install.
+EnvironmentFile=@ENV_FILE@
+
+Restart=on-failure
+RestartSec=5s
+
+# --- Hardening -------------------------------------------------------------------------------
+# The process needs to write to exactly one directory (the database) and to talk to nobody but
+# the local nginx. Everything else is denied.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# ProtectSystem=strict makes the whole filesystem read-only; this is the one hole. WAL means the
+# `-wal` and `-shm` sidecars are created next to the database, so the *directory* must be
+# writable, not just the file.
+ReadWritePaths=@DB_DIR@
+# Loopback TCP to nginx and AF_UNIX for the runtime's own plumbing. No AF_NETLINK, no raw sockets.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# NOT set: MemoryDenyWriteExecute. V8 maps JIT pages W+X; enabling it makes node abort on start.
+# This is a deliberate omission, not an oversight — do not "harden" it in.
+
+[Install]
+WantedBy=multi-user.target

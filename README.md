@@ -1,170 +1,124 @@
-# 10x Astro Starter
+# Urlopy — absence tracking
 
-![](./public/template.png)
+An internal absence-tracking app for a single department (~10 people): a monthly grid of days ×
+employees, a details table, monthly and yearly statistics, holiday-balance tracking, and an XLSX
+export of the whole year. The UI is Polish and branded "Nieobecności".
 
-A modern, opinionated starter template for building fast, accessible web applications.
+Self-hosted: one Node process, one SQLite file, nginx in front. No database server, no cloud
+account, no network access required on the host.
+
+> **Branch note.** `main` still deploys to Cloudflare Workers against Supabase. The
+> `sqlite-install` branch — described here — is the self-hosted target. Supabase and Cloudflare
+> packages remain in `package.json` but are unused on this branch.
 
 ## Tech Stack
 
-- [Astro](https://astro.build/) v6 - Modern web framework with server-first rendering
-- [React](https://react.dev/) v19 - UI library for interactive components
-- [TypeScript](https://www.typescriptlang.org/) v5 - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) v4 - Utility-first CSS framework
-- [Supabase](https://supabase.com/) - Authentication and backend-as-a-service
-- [Cloudflare Workers](https://workers.cloudflare.com/) - Edge deployment runtime
+- [Astro](https://astro.build/) v6 — server-first rendering, `output: "server"`
+- [React](https://react.dev/) v19 — islands, only where interactivity is needed
+- [TypeScript](https://www.typescriptlang.org/) v5
+- [Tailwind CSS](https://tailwindcss.com/) v4 + [shadcn/ui](https://ui.shadcn.com/) (new-york)
+- [Drizzle ORM](https://orm.drizzle.team/) over `node:sqlite` — no compiled dependency
+- `node:crypto` scrypt + opaque server-side sessions — no auth provider
+- [`@astrojs/node`](https://docs.astro.build/en/guides/integrations-guide/node/) standalone, behind nginx
 
 ## Prerequisites
 
-- Node.js v22.14.0 (as specified in `.nvmrc`)
+- **Node.js 24.15.0** (see `.nvmrc`). Node 24 is a hard floor, not a preference: the database layer is `node:sqlite`, and `hucre` (the XLSX writer) declares `engines: node >=24`.
 - npm (comes with Node.js)
 
 ## Getting Started
 
-1. Clone the repository:
-
 ```bash
-git clone https://github.com/przeprogramowani/10x-astro-starter.git
-cd 10x-astro-starter
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Set up Supabase and configure environment variables — see [Supabase Configuration](#supabase-configuration) below.
-
-4. Run the development server:
-
-```bash
+nvm use
+npm ci
+cp .env.example .env      # set DATABASE_PATH; PUBLIC_ORIGIN can stay on localhost
+npm run db:bootstrap      # create + migrate the database, seed types and the admin
 npm run dev
 ```
 
+`npm run db:bootstrap` reads `ADMIN_LOGIN` and `ADMIN_PASSWORD` from `.env` and creates the hidden
+technical admin. It is idempotent — re-running is a no-op. Sign in as that admin to create
+employees; there is no self-registration.
+
 ## Available Scripts
 
-- `npm run dev` - Start development server (Cloudflare workerd runtime)
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint with type-checked rules
-- `npm run lint:fix` - Auto-fix ESLint issues
-- `npm run format` - Run Prettier
+| Script                  | What it does                                                          |
+| ----------------------- | --------------------------------------------------------------------- |
+| `npm run dev`           | Astro dev server                                                      |
+| `npm run build`         | Production build + the artifact `postbuild` step                      |
+| `npm run preview`       | Preview the production build                                          |
+| `npm run pack`          | Archive the offline install artifact (after `npm prune --omit=dev`)   |
+| `npm run lint`          | ESLint with type-checked rules                                        |
+| `npm run lint:fix`      | Auto-fix lint issues                                                  |
+| `npm run lint:sh`       | shellcheck `install.sh`                                               |
+| `npm run format`        | Prettier                                                              |
+| `npm test`              | Vitest (watch)                                                        |
+| `npm run test:run`      | Vitest (once)                                                         |
+| `npm run db:generate`   | Generate a migration from schema changes                              |
+| `npm run db:bootstrap`  | Migrate + seed catalogue + seed admin                                 |
+| `npm run seed:admin`    | Just the admin seed                                                   |
+| `npm run e2e`           | Playwright (still targets the deployed Workers app — see `AGENTS.md`) |
 
 ## Project Structure
 
-```md
+```
 .
 ├── src/
-│ ├── layouts/ # Astro layouts
-│ ├── pages/ # Astro pages
-│ │ └── api/ # API endpoints
-│ ├── components/ # UI components (Astro & React)
-│ └── assets/ # Static assets
-├── public/ # Public assets
-├── wrangler.jsonc # Cloudflare Workers config
+│   ├── db/            # Drizzle schema, sqlite-proxy driver, migrate + seed
+│   ├── lib/
+│   │   ├── auth/      # password hashing, sessions, rate limiting
+│   │   └── services/  # modules that take a Db and run queries
+│   ├── layouts/
+│   ├── pages/
+│   │   └── api/       # API endpoints
+│   ├── components/    # Astro + React
+│   └── tests/         # Vitest; each file owns a temp SQLite database
+├── drizzle/           # generated migrations
+├── deploy/            # systemd units, backup script, nginx template
+├── scripts/           # build-artifact, pack-artifact, bootstrap, seed-admin
+└── install.sh         # VPS installer
 ```
 
-## Supabase Configuration
+## Environment
 
-This project uses [Supabase](https://supabase.com/) for authentication. Environment variables are declared via Astro's `astro:env` schema and are treated as **server-only secrets** — they are never exposed to the client.
+Copy `.env.example` to `.env`. Two variables matter:
 
-### First-time setup (local, no cloud project needed)
+| Variable        | Purpose                                                                    |
+| --------------- | -------------------------------------------------------------------------- |
+| `DATABASE_PATH` | Filesystem path to the SQLite file. Created on first run.                  |
+| `PUBLIC_ORIGIN` | The origin the browser sees. Drives the session cookie's `Secure` flag.    |
 
-Requires [Docker](https://www.docker.com/) and ~7 GB RAM.
+**`PUBLIC_ORIGIN` is half a build-time value.** `astro.config.mjs` bakes it into `site` and
+`security.allowedDomains`, so changing the origin needs a rebuild, not a restart. A mismatch shows
+up as a 403 on sign-in and sign-out while every other route works normally.
 
-1. Create your `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-2. Initialize the local Supabase project (creates a `supabase/` config folder):
-
-```bash
-npx supabase init
-```
-
-3. Start the local stack (downloads Docker images on first run):
-
-```bash
-npx supabase start
-```
-
-4. Copy the credentials printed by the CLI into your `.env`:
-
-```
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_KEY=<anon key from CLI output>
-```
-
-5. To stop the stack when done:
-
-```bash
-npx supabase stop
-```
-
-The local Studio UI is available at `http://localhost:54323`.
-
-No database tables or migrations are required — this project uses Supabase Auth's built-in `auth.users` table only.
-
-### Using a cloud Supabase project instead
-
-If you prefer to use a hosted Supabase project, add these variables to your `.env` file:
-
-| Variable       | Description                                                |
-| -------------- | ---------------------------------------------------------- |
-| `SUPABASE_URL` | Project URL from Supabase dashboard → Settings → API       |
-| `SUPABASE_KEY` | `anon` public key from Supabase dashboard → Settings → API |
-
-```
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_KEY=<anon-key>
-```
-
-### Email confirmation in local development
-
-By default Supabase requires email confirmation before a user can sign in. To skip this during local development:
-
-1. Open the Supabase dashboard for your project
-2. Go to **Authentication → Email → Confirm email**
-3. Toggle it **off**
-
-Users can then sign in immediately after sign-up without clicking a confirmation link.
-
-### Auth routes
-
-| Route                 | Description                                                             |
-| --------------------- | ----------------------------------------------------------------------- |
-| `/auth/signin`        | Email/password sign-in form                                             |
-| `/auth/signup`        | Email/password sign-up form                                             |
-| `/auth/confirm-email` | Post-signup "check your inbox" page                                     |
-| `/dashboard`          | Example protected page (redirects to `/auth/signin` if unauthenticated) |
-
-Route protection is handled in `src/middleware.ts`. Add paths to the `PROTECTED_ROUTES` array there to require authentication.
+`ADMIN_LOGIN` / `ADMIN_PASSWORD` are consumed once, by the admin seed. `SENTRY_DSN` is optional and
+unreachable from an offline host — leaving it unset disables the SDK cleanly.
 
 ## Deployment
 
-This project deploys to [Cloudflare Workers](https://workers.cloudflare.com/).
-
-1. Build the project:
-
-```bash
-npm run build
-```
-
-2. Deploy with Wrangler:
+See **[INSTALL.md](./INSTALL.md)** for the full procedure: building the artifact, copying it to an
+offline VPS, `install.sh`, the nginx block, backups, restore, upgrade and rollback.
 
 ```bash
-npx wrangler deploy
+export PUBLIC_ORIGIN=https://urlopy.internal
+npm ci && npm run build && npm prune --omit=dev && npm run pack
+# copy the tarball across, extract, then:
+sudo ./install.sh --db /var/lib/urlopy/urlopy.db --origin https://urlopy.internal
 ```
-
-Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or via `npx wrangler secret put`.
 
 ## CI
 
-GitHub Actions runs lint + build on every push and PR to `master`. Configure `SUPABASE_URL` and `SUPABASE_KEY` as repository secrets in GitHub for the build step.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and PR to `main`: lint, shellcheck,
+tests, build, a smoke test against a locally-started server, and the offline artifact pack. There
+is no deploy job — the VPS is unreachable from CI by design.
+
+## Documentation
+
+- `AGENTS.md` / `CLAUDE.md` — conventions for AI agents working in this repo
+- `INSTALL.md` — self-hosted install and operations
+- `context/foundation/` — PRD, roadmap, tech stack, infrastructure, lessons
 
 ## License
 
 MIT
-# 10x-devs-urlopy

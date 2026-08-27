@@ -51,3 +51,6 @@ context/team/digests/*
 *.db
 *.db-wal
 *.db-shm
+
+# offline install artifact (scripts/pack-artifact.mjs)
+urlopy-*.tar.gz

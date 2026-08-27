@@ -1,0 +1,42 @@
+# One-shot SQLite snapshot. Fired by urlopy-backup.timer, never enabled directly.
+#
+# Template: install.sh substitutes @PLACEHOLDERS@ and writes the result to
+# /etc/systemd/system/urlopy-backup.service.
+#
+# Run it by hand with: systemctl start urlopy-backup.service
+[Unit]
+Description=Urlopy — SQLite backup
+Documentation=file://@APP_ROOT@/current/deploy/backup.mjs
+
+[Service]
+Type=oneshot
+User=@SERVICE_USER@
+Group=@SERVICE_USER@
+WorkingDirectory=@APP_ROOT@/current
+
+# DATABASE_PATH comes from the same env file the app uses, so the two can never drift apart.
+EnvironmentFile=@ENV_FILE@
+ExecStart=@NODE_BIN@ @APP_ROOT@/current/deploy/backup.mjs
+
+# Same posture as the app, with one more writable path: the backup directory. The snapshot is
+# taken through SQLite's online-backup API, which needs to *read* the live database and its WAL —
+# hence @DB_DIR@ stays writable here too (opening a WAL database touches the -shm file).
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadWritePaths=@DB_DIR@ @BACKUP_DIR@
+# Backups touch no network at all.
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX

@@ -719,6 +719,66 @@ storing uuids as TEXT rather than BLOB.
 - The warning this plan is written against: `context/archive/2026-06-01-drizzle-migration/reviews/impl-review-phase-2.md:29`
 - Lesson applied throughout: `context/foundation/lessons.md` — "Repo-wide claims are load-bearing"
 
+## Deviations from the plan
+
+Recorded during Phase 6 implementation. Each one is a place where the plan's contract met a fact
+that contradicted it.
+
+**D1 — the bootstrap needed a bundled entry that the plan did not anticipate.**
+Phase 6's contract says `install.sh` "runs migrations and the admin seed". Nothing on the VPS can
+run `scripts/seed-admin.ts`: `tsx` and `drizzle-kit` are `devDependencies` and are gone after
+`npm prune --omit=dev`, and Node 24's own type stripping cannot load the repo's TypeScript either,
+because every internal import is extensionless and Node's ESM resolver will not add `.ts`
+(verified: `ERR_MODULE_NOT_FOUND` on `src/db/index`). Added `scripts/bootstrap.ts` plus
+`scripts/build-artifact.mjs`, an npm `postbuild` hook that bundles it to `dist/bootstrap.mjs` with
+esbuild and copies `drizzle/` into `dist/drizzle/` so the migrations ship with the artifact.
+`import.meta.main` is folded to `false` at bundle time, or `seed-admin.ts`'s CLI block would fire
+inside the bundle and call `process.loadEnvFile()` on a box with no `.env`.
+
+**D2 — success criterion 6.4 was false as written; the property had to be built, not observed.**
+The criterion expects the archive to contain "zero `.node` binaries" as a natural consequence of
+the `node:sqlite` choice. Measured against a real `npm ci --omit=dev` tree: **728 MB and ten
+compiled native binaries** — sharp, rollup, lightningcss, `@tailwindcss/oxide` — because the Astro
+starter declares `astro`, `@tailwindcss/vite`, `@astrojs/cloudflare` and `wrangler` as
+`dependencies`. All ten are build-time only; the runtime genuinely needs none of them, which was
+confirmed by removing all fourteen packages and watching the server still serve the sign-in page.
+Added `scripts/pack-artifact.mjs` (`npm run pack`) carrying the hand-maintained exclusion list and
+a check that greps the finished tarball. Result: 98 MiB, zero `.node`, verified by extracting the
+archive to a clean directory and running bootstrap + server + backup out of it. The plan's
+underlying claim ("no native modules in the tree") is true of what ships; it was not true of what
+`npm prune --omit=dev` produces, and the difference is now the pack step.
+
+**D3 — shellcheck covers `install.sh` only.**
+Criterion 6.3 names "install.sh and the backup script". The backup script is `deploy/backup.mjs`,
+not shell — `node:sqlite`'s `backup()` has no shell equivalent without a `sqlite3` binary the VPS
+does not have, which is the whole reason the plan chose that API. It is linted by ESLint instead;
+`eslint.config.js` gained an `**/*.mjs` block, because typescript-eslint disables `no-undef` for
+`.ts` only and these are the repo's first standalone `.mjs` files.
+
+**D4 — added a build-time/install-time origin guard (not in the plan).**
+The plan's own Critical Implementation Details flag the `checkOrigin` 403 as the one failure that
+looks like something else entirely. Since `PUBLIC_ORIGIN` is baked into the build, a wrong
+`--origin` at install time cannot be fixed on the box. `build-artifact.mjs` now records the built
+origin in `dist/build-info.json` and `install.sh` refuses to continue on a mismatch.
+
+**D5 — nginx sets `X-Forwarded-For` to `$remote_addr`, not `$proxy_add_x_forwarded_for`.**
+The idiomatic variable appends to whatever the client sent, and `clientIp()`
+(`src/lib/auth/rate-limit.ts:47-54`) reads the *first* entry — so a client could set its own header
+and rotate it per request to walk past the sign-in throttle. nginx is the edge here, so it
+overwrites.
+
+**D6 — README.md was rewritten, not spot-corrected.**
+The plan lists only `README.md:18` (the stale Node version). The file was still the unmodified
+10x-astro-starter template — wrong project name, wrong stack, a Supabase setup walkthrough, and
+Cloudflare deploy instructions. Correcting one line would have left every other line wrong.
+`AGENTS.md` and `CLAUDE.md` were likewise rewritten in the sections the port invalidated rather
+than patched line by line.
+
+**D7 — `context/foundation/infrastructure.md` was annotated, not rewritten.**
+It is a dated research artifact (2026-05-24) recording a real decision. It got a SUPERSEDED banner
+and an inline correction to the item the plan names (the `astro:env` portability claim), so the
+reasoning survives and the false claim does not.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
@@ -789,10 +849,10 @@ storing uuids as TEXT rather than BLOB.
 
 #### Automated
 
-- [x] 5.1 Build produces entry.mjs and dist/client with no Cloudflare artifacts
-- [x] 5.2 The built server starts and serves the sign-in page with expected literals
-- [x] 5.3 No source file imports @sentry/cloudflare
-- [x] 5.4 Type checking and linting pass
+- [x] 5.1 Build produces entry.mjs and dist/client with no Cloudflare artifacts — 9fc4db3
+- [x] 5.2 The built server starts and serves the sign-in page with expected literals — 9fc4db3
+- [x] 5.3 No source file imports @sentry/cloudflare — 9fc4db3
+- [x] 5.4 Type checking and linting pass — 9fc4db3
 
 #### Manual
 
@@ -805,9 +865,9 @@ storing uuids as TEXT rather than BLOB.
 #### Automated
 
 - [ ] 6.1 Lint and test suite pass on the branch
-- [ ] 6.2 Build succeeds with no Cloudflare tooling in the pipeline
-- [ ] 6.3 shellcheck passes on install.sh and the backup script
-- [ ] 6.4 Archive contains dist, node_modules, package.json, deploy — and zero .node binaries
+- [x] 6.2 Build succeeds with no Cloudflare tooling in the pipeline
+- [x] 6.3 shellcheck passes on install.sh and the backup script (backup script is .mjs — ESLint; see D3)
+- [x] 6.4 Archive contains dist, node_modules, package.json, deploy — and zero .node binaries (needed an explicit prune step; see D2)
 
 #### Manual
 
