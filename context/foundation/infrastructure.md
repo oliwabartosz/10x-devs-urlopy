@@ -12,6 +12,20 @@ tech_stack:
   auth_db: Supabase (external)
 ---
 
+> **SUPERSEDED (2026-08-26, `sqlite-install`).** This document records the platform research done
+> on 2026-05-24 and the decision it produced. That decision has been reversed: a new constraint —
+> the app must run on an **offline internal Linux VPS** with no network access — rules out every
+> platform evaluated here. Urlopy now runs as a Node process behind nginx against a local SQLite
+> file; see `INSTALL.md` and `context/changes/sqlite-install/`.
+>
+> The research is kept because the reasoning, the anti-bias cross-check and the risk register are
+> still worth reading, and several risks below were later *observed* rather than merely predicted
+> (the `wrangler dev` TLS failure, the `astro dev` / `wrangler dev` divergence). One claim in the
+> Devil's Advocate section turned out to be wrong and is corrected inline — see item 5.
+>
+> `main` continues to deploy to Cloudflare Workers until the `sqlite-install` branch merges, so
+> everything below still describes the live production path for now.
+
 ## Recommendation
 
 **Deploy on Cloudflare Workers + Pages.**
@@ -72,7 +86,15 @@ Netlify has a confirmed `llms.txt` (February 2025 GA) and the `@astrojs/netlify`
 
    The limits are **3 MB gzip on Workers Free, 10 MB gzip on Workers Paid**, with a 64 MB uncompressed ceiling on both ([Workers platform limits](https://developers.cloudflare.com/workers/platform/limits)). This document previously cited a Cloudflare **Pages** compressed-bundle figure (see git history); this project deploys a standalone Worker (`.github/workflows/ci.yml:85` runs `wrangler deploy --config dist/server/wrangler.json`), so the Pages number never applied. Measured on 2026-08-24 after the XLSX export change: **3580 KiB raw / 740 KiB gzip**, i.e. about a quarter of the Free-plan budget (3303 KiB / 681 KiB before that change).
 
-5. **Vendor lock-in via Cloudflare env binding model.** `astro:env/server` secrets map to Cloudflare Worker `env` bindings, not `process.env`. Both `.env` (local dev) and `wrangler secret put` (production) must be populated with matching names. If this project ever moves platforms, env handling must be rewritten — it is not a portable pattern.
+5. **Vendor lock-in via Cloudflare env binding model.** `astro:env/server` secrets map to Cloudflare Worker `env` bindings, not `process.env`. Both `.env` (local dev) and `wrangler secret put` (production) must be populated with matching names.
+
+   > **Correction (2026-08-26).** The last sentence of this item originally read "If this project
+   > ever moves platforms, env handling must be rewritten — it is not a portable pattern." That was
+   > wrong, and the `sqlite-install` migration disproved it directly. Astro's `astro:env` getter
+   > falls back to `process.env` by default (`node_modules/astro/dist/env/runtime.js:4`); the
+   > adapter supplies the binding-backed getter only under Workers. Swapping `@astrojs/cloudflare`
+   > for `@astrojs/node` left **all 14 secret-import sites untouched** — not one line changed. The
+   > two-stores-must-match problem was real; the non-portability conclusion drawn from it was not.
 
 ### Pre-Mortem — How This Could Fail
 

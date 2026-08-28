@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { employees, holiday_balances } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, createTestModerator, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { POST } from "@/pages/api/holiday-balances/index";
 import type { HolidayBalanceView } from "@/types";
 
@@ -18,7 +18,7 @@ import type { HolidayBalanceView } from "@/types";
 // The other two fields stay open to both roles (S-15,
 // context/archive/2026-06-22-urlop-balance/plan.md:34) — that is asserted here too, so a
 // future over-correction to a route-level gate fails.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta moderator gate (route level)", () => {
+describe("Holiday balance — Korekta moderator gate (route level)", () => {
   const YEAR = 2031;
   let db!: Db;
   let employeeId!: string;
@@ -61,10 +61,9 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
     )[0];
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     employeeId = await createTestEmployee(db);
-    moderatorId = await createTestEmployee(db);
-    await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
+    moderatorId = await createTestModerator(db);
     employeeAuthId = await authIdOf(employeeId);
     moderatorAuthId = await authIdOf(moderatorId);
   });
@@ -76,7 +75,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Korekta m
   afterAll(async () => {
     await teardownTestEmployee(db, employeeId);
     await teardownTestEmployee(db, moderatorId);
-    await db.$client.end();
   });
 
   it("non-moderator changing used_adjustment_days gets 200 and the stored value is unchanged", async () => {

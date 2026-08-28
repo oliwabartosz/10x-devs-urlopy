@@ -25,7 +25,7 @@ const guardHook = vi.mocked(isPartialDayViolation);
 // `crud.test.ts` exercises the `isPartialDayViolation` service directly; these tests invoke
 // the exported route handlers and assert the HTTP contract (status + body), so removing the
 // guard call from either route fails here even though the service keeps working.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence partial-day guard — route level", () => {
+describe("Absence partial-day guard — route level", () => {
   let db!: Db;
   let testEmployeeId!: string;
   let authUserId!: string;
@@ -59,7 +59,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence partial-day guard —
   const patchRequest = (id: string, body: unknown) => PATCH(makeContext("PATCH", `/api/absences/${id}`, body, { id }));
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     testEmployeeId = await createTestEmployee(db);
     authUserId = (
       await db.select({ user_id: employees.user_id }).from(employees).where(eq(employees.id, testEmployeeId))
@@ -72,7 +72,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence partial-day guard —
 
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId);
-    await db.$client.end();
   });
 
   const baseBody = (overrides: Record<string, unknown>) => ({
@@ -119,8 +118,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence partial-day guard —
     expect(res.status).toBe(201);
     const body = (await res.json()) as { id: string; start_time: string; end_time: string; is_full_day: boolean };
     expect(body.is_full_day).toBe(false);
-    expect(body.start_time).toBe("09:00:00");
-    expect(body.end_time).toBe("11:00:00");
+    expect(body.start_time).toBe("09:00");
+    expect(body.end_time).toBe("11:00");
 
     await db.delete(absences).where(eq(absences.id, body.id));
   });

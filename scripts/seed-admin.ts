@@ -1,24 +1,25 @@
 /**
  * Seed the technical admin account (role: moderator, is_system: true) from env.
  *
- * Runs in Node (NOT in `wrangler dev`): Drizzle connects over DATABASE_URL_DIRECT
- * (port 5432) and a Supabase service-role client creates the auth user. Mirrors the
- * S-04 create path (`createUser` -> Drizzle insert, compensating `deleteUser` on
- * insert failure; see src/pages/api/employees/index.ts:111-163). Cannot import
- * `@/lib/supabase-admin` or `@/db/index` env wiring here — those read
- * `astro:env/server`, which only resolves inside the Worker — so the clients are
- * built inline from `process.env`.
+ * Runs in Node against the SQLite file at DATABASE_PATH: a `users` row carrying a local scrypt
+ * hash, then the `employees` row that points at it. Both land in one transaction, which is what
+ * removes the compensating-delete dance this script used to need when the credential lived in a
+ * remote service — and which is safe HERE, unlike in a request handler, because nothing else is
+ * touching the handle while a one-shot script runs.
  *
- * Idempotent: no-ops if an `is_system` row already exists, and adopts a
- * pre-existing auth user with the same email (recovering a half-finished run).
+ * Idempotent: no-ops if an `is_system` row already exists, and adopts a pre-existing `users` row
+ * with the same address (recovering a half-finished run).
  *
  * Usage: `npm run seed:admin` (reads `.env` via `process.loadEnvFile`).
+ *
+ * The work lives in the exported `seedAdmin` rather than in `main`, so the idempotency invariant
+ * this script exists to uphold can be asserted directly by a test instead of by spawning a
+ * subprocess that would need a `.env` on disk to start at all.
  */
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { eq } from "drizzle-orm";
-import { employees } from "../src/db/schema";
+import { createDb, closeDb, getRawHandle } from "../src/db/index";
+import { employees, users } from "../src/db/schema";
+import { hashPassword, MIN_PASSWORD_LENGTH } from "../src/lib/auth/password";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -30,38 +31,17 @@ function requireEnv(name: string): string {
   return value;
 }
 
-/** Find an existing auth user by email. `listUsers` is paginated; scan until found. */
-async function findUserByEmail(admin: SupabaseClient, email: string): Promise<User | null> {
-  const target = email.toLowerCase();
-  const perPage = 1000;
-  for (let page = 1; page <= 50; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const match = data.users.find((u) => u.email?.toLowerCase() === target);
-    if (match) return match;
-    if (data.users.length < perPage) break;
-  }
-  return null;
+export interface SeedAdminOptions {
+  email: string;
+  password: string;
+  databasePath: string;
+  /** Leave the handle open. The CLI closes it; a test sharing its file with other suites must not. */
+  keepOpen?: boolean;
 }
 
-async function main(): Promise<void> {
-  process.loadEnvFile();
-
-  const email = requireEnv("ADMIN_LOGIN");
-  const password = requireEnv("ADMIN_PASSWORD");
-  const supabaseUrl = requireEnv("SUPABASE_URL");
-  const serviceKey = requireEnv("SUPABASE_SERVICE_KEY");
-  const databaseUrl = requireEnv("DATABASE_URL_DIRECT");
-
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  // Direct connection (5432) requires TLS against remote Supabase; a local
-  // `supabase start` DB does not. `prepare: false` mirrors createDb.
-  const isLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
-  const sql = postgres(databaseUrl, { prepare: false, ssl: isLocal ? false : "require" });
-  const db = drizzle(sql, { schema: { employees } });
+export async function seedAdmin({ email, password, databasePath, keepOpen = false }: SeedAdminOptions): Promise<void> {
+  const db = createDb(databasePath);
+  const handle = getRawHandle(databasePath);
 
   try {
     // Idempotency: exactly one is_system row is the invariant. If present, stop.
@@ -76,35 +56,30 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Create the auth user, or adopt a pre-existing one with the same email
-    // (recovers from a half-run where the auth user landed but the row did not).
-    let userId: string;
-    let createdThisRun = false;
-    const { data, error } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (error) {
-      if (error.status === 422) {
-        const found = await findUserByEmail(admin, email);
-        if (!found) {
-          // eslint-disable-next-line no-console
-          console.error(`✖ Auth reports ${email} exists, but the user could not be found.`);
-          process.exit(1);
-        }
-        userId = found.id;
-        // eslint-disable-next-line no-console
-        console.log(`• Auth user for ${email} already exists; adopting it.`);
-      } else {
-        throw error;
-      }
-    } else {
-      userId = data.user.id;
-      createdThisRun = true;
-    }
+    // A `users` row with this address but no is_system employee means a previous run died between
+    // the two inserts. Adopt it rather than colliding with the UNIQUE index, and reset its hash so
+    // the ADMIN_PASSWORD in the environment is the one that actually works.
+    const priorUser = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
 
+    handle.exec("BEGIN");
     try {
+      let userId: string;
+      if (priorUser.length > 0) {
+        userId = priorUser[0].id;
+        await db
+          .update(users)
+          .set({ password_hash: hashPassword(password), updated_at: new Date() })
+          .where(eq(users.id, userId));
+        // eslint-disable-next-line no-console
+        console.log(`• User row for ${email} already exists; adopting it and resetting the password.`);
+      } else {
+        const [created] = await db
+          .insert(users)
+          .values({ email, password_hash: hashPassword(password) })
+          .returning({ id: users.id });
+        userId = created.id;
+      }
+
       const [row] = await db
         .insert(employees)
         .values({
@@ -115,26 +90,39 @@ async function main(): Promise<void> {
           is_system: true,
         })
         .returning({ id: employees.id });
+      handle.exec("COMMIT");
       // eslint-disable-next-line no-console
-      console.log(`✔ Seeded admin employee ${row.id} (auth user ${userId}).`);
+      console.log(`✔ Seeded admin employee ${row.id} (user ${userId}).`);
     } catch (err) {
-      // Compensating delete only when we created the user this run — never delete
-      // a pre-existing account we merely adopted.
-      if (createdThisRun) {
-        await admin.auth.admin.deleteUser(userId).catch((compErr: unknown) => {
-          // eslint-disable-next-line no-console
-          console.error("✖ Failed to roll back auth user", userId, compErr);
-        });
-      }
+      handle.exec("ROLLBACK");
       throw err;
     }
   } finally {
-    await sql.end();
+    if (!keepOpen) closeDb(databasePath);
   }
 }
 
-main().catch((err: unknown) => {
-  // eslint-disable-next-line no-console
-  console.error("✖ seed:admin failed:", err);
-  process.exit(1);
-});
+async function main(): Promise<void> {
+  process.loadEnvFile();
+
+  const email = requireEnv("ADMIN_LOGIN");
+  const password = requireEnv("ADMIN_PASSWORD");
+  const databasePath = requireEnv("DATABASE_PATH");
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    // eslint-disable-next-line no-console
+    console.error(`✖ ADMIN_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+    process.exit(1);
+  }
+
+  await seedAdmin({ email, password, databasePath });
+}
+
+// `import.meta.main` is false when a test imports this module, so the CLI does not fire on import.
+if (import.meta.main) {
+  main().catch((err: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error("✖ seed:admin failed:", err);
+    process.exit(1);
+  });
+}

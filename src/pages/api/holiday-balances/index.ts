@@ -1,16 +1,16 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractDbErrorCode, SQLITE_CONSTRAINT_CHECK, SQLITE_CONSTRAINT_FOREIGNKEY } from "@/lib/db-errors";
 import { isProtectedAdmin } from "@/lib/employees";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
+import { reportError } from "@/lib/report";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -51,13 +51,13 @@ export const GET: APIRoute = async (context) => {
     return json({ error: "Invalid employee_id" }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
     caller = await resolveCaller(db, context.locals.user.id);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/holiday-balances" } });
+    reportError(err, { tags: { route: "GET /api/holiday-balances" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -80,7 +80,7 @@ export const GET: APIRoute = async (context) => {
         .where(targetCond)
         .then((r) => r[0]);
     } catch (err) {
-      Sentry.captureException(err, { tags: { route: "GET /api/holiday-balances" } });
+      reportError(err, { tags: { route: "GET /api/holiday-balances" } });
       return json({ error: "Database error" }, 503);
     }
     if (!targetRow) {
@@ -98,7 +98,7 @@ export const GET: APIRoute = async (context) => {
     const view = await buildBalanceView(db, targetEmployeeId, year, row ?? null);
     return json(view, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/holiday-balances" } });
+    reportError(err, { tags: { route: "GET /api/holiday-balances" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -119,13 +119,13 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
     caller = await resolveCaller(db, context.locals.user.id);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances" } });
+    reportError(err, { tags: { route: "POST /api/holiday-balances" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -164,7 +164,7 @@ export const POST: APIRoute = async (context) => {
       .where(targetCond)
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances" } });
+    reportError(err, { tags: { route: "POST /api/holiday-balances" } });
     return json({ error: "Database error" }, 503);
   }
   if (!targetRow) {
@@ -225,11 +225,12 @@ export const POST: APIRoute = async (context) => {
       .returning();
     row = inserted[0];
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Forbidden" }, 403);
-    if (code === "23503") return json({ error: "Pracownik nie został znaleziony." }, 404);
-    if (code === "23514") return json({ error: "Invalid balance values" }, 400);
+    reportError(err, { tags: { route: "POST /api/holiday-balances" } });
+    const code = extractDbErrorCode(err);
+    // The `42501` (insufficient privilege) arm is gone with the port: it came from RLS, which
+    // never applied on the service-role connection and does not exist on a local SQLite file.
+    if (code === SQLITE_CONSTRAINT_FOREIGNKEY) return json({ error: "Pracownik nie został znaleziony." }, 404);
+    if (code === SQLITE_CONSTRAINT_CHECK) return json({ error: "Invalid balance values" }, 400);
     return json({ error: "Database error" }, 500);
   }
 
@@ -241,7 +242,7 @@ export const POST: APIRoute = async (context) => {
     const view = await buildBalanceView(db, employee_id, year, row);
     return json(view, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/holiday-balances (post-write view)" } });
+    reportError(err, { tags: { route: "POST /api/holiday-balances (post-write view)" } });
     const usedFallback = row.used_adjustment_days;
     return json(
       {

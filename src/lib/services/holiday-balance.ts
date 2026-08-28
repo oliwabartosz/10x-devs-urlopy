@@ -1,9 +1,10 @@
-import * as Sentry from "@sentry/cloudflare";
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import * as Sentry from "@sentry/astro";
+import { and, eq, gte, lt } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { absence_types, absences } from "@/db/schema";
 import type { HolidayBalance, HolidayBalanceView } from "@/types";
 import { hoursToDays } from "@/lib/hours";
+import { getAbsenceHours } from "@/lib/absence-stats";
 
 /**
  * Count Used vacation days for an employee in a calendar year.
@@ -35,11 +36,16 @@ export async function computeUsedDays(
     return usedAdjustmentDays;
   }
 
-  // count()/sum() come back as strings from postgres-js (bigint/numeric) — cast to number below.
-  const [agg] = await db
+  // Aggregated in JS rather than in SQL. SQLite has no interval arithmetic, so the old
+  // `extract(epoch from (end_time - start_time))` has no equivalent — and `start_time`/`end_time`
+  // are now TEXT 'HH:MM', which is exactly what `getAbsenceHours` already parses for the
+  // statistics matrix. The row set is bounded by one employee's absences of one type in one
+  // year, so reading it costs nothing and both figures fall out of a single query.
+  const rows = await db
     .select({
-      fullDays: sql<string>`count(*) filter (where ${absences.is_full_day})`,
-      partialHours: sql<string>`coalesce(sum(extract(epoch from (${absences.end_time} - ${absences.start_time})) / 3600) filter (where not ${absences.is_full_day}), 0)`,
+      is_full_day: absences.is_full_day,
+      start_time: absences.start_time,
+      end_time: absences.end_time,
     })
     .from(absences)
     .where(
@@ -51,9 +57,10 @@ export async function computeUsedDays(
       ),
     );
 
-  // An aggregate query always returns exactly one row; count()/coalesce(sum()) are never null.
-  const fullDays = Number(agg.fullDays);
-  const partialHours = Number(agg.partialHours);
+  // Whole days and partial hours stay separate all the way to the sum: `hoursToDays` is applied
+  // only to the partial hours, as it was when Postgres computed the two columns.
+  const fullDays = rows.filter((r) => r.is_full_day).length;
+  const partialHours = rows.filter((r) => !r.is_full_day).reduce((total, r) => total + getAbsenceHours(r), 0);
 
   return fullDays + hoursToDays(partialHours) + usedAdjustmentDays;
 }

@@ -6,6 +6,7 @@ import { medalRanks } from "@/lib/medals";
 import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
+import { withBase } from "@/lib/base-path";
 
 interface AbsenceStatsProps {
   monthlyAbsences: Absence[];
@@ -355,7 +356,7 @@ export default function AbsenceStats({
     fetchedYear.current = year;
     // The scoped counterpart to GET /api/absences, which stays team-wide for the grid and
     // Szczegóły. Both roles call it; the server decides what comes back.
-    fetch(`/api/absences/stats?year=${year}`, { signal: controller.signal })
+    fetch(withBase(`/api/absences/stats?year=${year}`), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         setTruncated(r.headers.get("X-Result-Truncated") === "1");

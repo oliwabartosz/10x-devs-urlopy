@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface ResetPasswordDialogProps {
   open: boolean;
@@ -34,7 +42,7 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: ResetPassw
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/employees/${employee.id}/password`, {
+      const res = await fetch(withBase(`/api/employees/${employee.id}/password`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -60,6 +68,9 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: ResetPassw
           <DialogTitle className="text-primary text-xl">
             Zmień hasło — {employee.first_name} {employee.last_name}
           </DialogTitle>
+          <DialogDescription>
+            Ustaw nowe hasło dla tego pracownika. Jego pozostałe sesje zostaną wylogowane.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

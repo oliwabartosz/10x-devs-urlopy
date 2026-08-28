@@ -4,10 +4,10 @@ import { eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { employees, holiday_balances } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, createTestModerator, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { DELETE } from "@/pages/api/holiday-balances/[id]";
 
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — DELETE (integration)", () => {
+describe("Holiday balance — DELETE (integration)", () => {
   const YEAR = 2031;
   let db!: Db;
   // The owner of every fixture balance row below, and the caller in the ownership cases.
@@ -41,12 +41,11 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — DELETE (i
   };
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     testEmployeeId = await createTestEmployee(db);
     otherEmployeeId = await createTestEmployee(db);
-    moderatorId = await createTestEmployee(db);
+    moderatorId = await createTestModerator(db);
     systemEmployeeId = await createTestEmployee(db);
-    await db.update(employees).set({ role: "moderator" }).where(eq(employees.id, moderatorId));
     await db.update(employees).set({ is_system: true }).where(eq(employees.id, systemEmployeeId));
     testAuthId = await authIdOf(testEmployeeId);
     otherAuthId = await authIdOf(otherEmployeeId);
@@ -67,7 +66,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — DELETE (i
     await teardownTestEmployee(db, otherEmployeeId);
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
-    await db.$client.end();
   });
 
   // Mirrors the DELETE /api/holiday-balances/:id semantics at the DB level (the route adds

@@ -1,10 +1,11 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees } from "@/db/index";
-import { eq, isNull, and, sql } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
+import { reorderEmployeesStatement } from "@/lib/employee-reorder";
+import { reportError } from "@/lib/report";
 
 export const prerender = false;
 
@@ -31,7 +32,7 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -41,7 +42,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
+    reportError(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -64,23 +65,12 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   try {
-    const idList = sql.join(
-      parsed.data.order.map((item) => sql`${item.id}::uuid`),
-      sql`, `,
-    );
-    const ordList = sql.join(
-      parsed.data.order.map((item) => sql`${item.display_order}::int`),
-      sql`, `,
-    );
-    // `AND employees.is_system = false` keeps the technical admin out of the update
-    // set: a crafted payload carrying the admin id reorders everyone else but no-ops
-    // on the admin (RLS is bypassed, so this guard must live in the statement).
-    await db.execute(
-      sql`UPDATE employees SET display_order = v.ord FROM (SELECT UNNEST(ARRAY[${idList}]) AS id, UNNEST(ARRAY[${ordList}]) AS ord) AS v WHERE employees.id = v.id AND employees.is_system = false`,
-    );
+    // The statement — including the `is_system` guard that keeps the technical admin out of the
+    // update set — lives in `@/lib/employee-reorder` so it is covered by a test directly.
+    await db.run(reorderEmployeesStatement(parsed.data.order));
     return json({ ok: true }, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
+    reportError(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 500);
   }
 };

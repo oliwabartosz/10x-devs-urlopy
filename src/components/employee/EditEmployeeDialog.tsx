@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem, HolidayBalanceView, UserRole } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface EditEmployeeDialogProps {
   open: boolean;
@@ -41,7 +49,9 @@ export function EditEmployeeDialog({ open, onOpenChange, employee, year, current
   // is that remount, never a resetting effect — the lint config rejects the latter.
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/holiday-balances?employee_id=${employee.id}&year=${String(year)}`, { signal: controller.signal })
+    fetch(withBase(`/api/holiday-balances?employee_id=${employee.id}&year=${String(year)}`), {
+      signal: controller.signal,
+    })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         return r.json() as Promise<HolidayBalanceView>;
@@ -89,7 +99,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee, year, current
     setError(null);
     setIsSubmitting(true);
     try {
-      const identityRes = await fetch(`/api/employees/${employee.id}`, {
+      const identityRes = await fetch(withBase(`/api/employees/${employee.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ first_name: firstName, last_name: lastName, role }),
@@ -112,7 +122,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee, year, current
       // Full replace of all three fields, matching the dialog contract that protects Korekta.
       // Deliberately not skipped when nothing in the section changed — those semantics are what
       // keep a non-moderator's save from zeroing the stored adjustment.
-      const balanceRes = await fetch("/api/holiday-balances", {
+      const balanceRes = await fetch(withBase("/api/holiday-balances"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -146,6 +156,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee, year, current
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Edytuj pracownika</DialogTitle>
+          <DialogDescription>Dane pracownika, rola i wymiar urlopu na wybrany rok.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

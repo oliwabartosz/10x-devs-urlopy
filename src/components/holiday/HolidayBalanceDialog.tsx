@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -9,6 +16,7 @@ import { cn } from "@/lib/utils";
 // One rounding rule for day counts, shared with the statistics matrices — see hours.ts.
 import { formatDayCount } from "@/lib/hours";
 import type { HolidayBalanceView, UserRole } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface HolidayBalanceDialogProps {
   open: boolean;
@@ -94,7 +102,7 @@ export function HolidayBalanceDialog({
     if (!window.confirm("Usunąć wprowadzony wymiar urlopu na ten rok?")) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/holiday-balances/${balance.balance_id}`, { method: "DELETE" });
+      const res = await fetch(withBase(`/api/holiday-balances/${balance.balance_id}`), { method: "DELETE" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -111,7 +119,7 @@ export function HolidayBalanceDialog({
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/holiday-balances", {
+      const res = await fetch(withBase("/api/holiday-balances"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -140,6 +148,9 @@ export function HolidayBalanceDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Edytuj wymiar urlopu — {year}</DialogTitle>
+          <DialogDescription>
+            Przysługujący wymiar i korekty. Wykorzystanie liczone jest automatycznie z nieobecności.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dbe4ee] bg-[#f4f7fa] px-4 py-3.5">

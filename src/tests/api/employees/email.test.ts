@@ -10,11 +10,12 @@ import { GET, PATCH } from "@/pages/api/employees/[id]/email";
 // First route-level coverage for the employee endpoint family, and the first real exercise of
 // test-plan.md:49 Risk #4 ("Regular employee reaches moderator-only employee management
 // endpoints"). Harness template: korekta-gate.test.ts:32-44 — direct handler import, hand-built
-// APIContext, describe.skipIf on DATABASE_URL_DIRECT.
+// APIContext.
 //
-// These tests mutate real Supabase Auth records. Teardown discipline is what keeps a second
-// consecutive run green: a leaked address would 409 the duplicate case.
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee e-mail sub-resource (route level)", () => {
+// Un-skipped in Phase 4: the address these assert on is a column on the local `users` row now,
+// read and written by `@/lib/auth`, so the suite runs against the same temp SQLite file as its
+// ten siblings and needs nothing provisioned remotely.
+describe("Employee e-mail sub-resource (route level)", () => {
   let db!: Db;
   let targetId!: string;
   let employeeId!: string;
@@ -50,7 +51,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee e-mail sub-resource 
   };
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     targetId = await createTestEmployee(db);
     employeeId = await createTestEmployee(db);
     moderatorId = await createTestEmployee(db);
@@ -70,7 +71,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee e-mail sub-resource 
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
     await teardownTestEmployee(db, deactivatedId);
-    await db.$client.end();
   });
 
   it("an unauthenticated caller gets 401 on both verbs", async () => {

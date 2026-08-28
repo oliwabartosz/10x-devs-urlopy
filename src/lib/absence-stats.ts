@@ -9,8 +9,13 @@ import { FULL_DAY_HOURS, hoursToDays } from "@/lib/hours";
 //
 // Dependency-light on purpose: safe to import from both React islands and server routes.
 
-/** Absence duration in hours: a full day is FULL_DAY_HOURS, a partial day its time span. */
-export function getAbsenceHours(a: Absence): number {
+/**
+ * Absence duration in hours: a full day is FULL_DAY_HOURS, a partial day its time span.
+ *
+ * Takes only the three columns it reads, so a caller that selected just those — as
+ * `computeUsedDays` does — can pass its row without widening the query or casting.
+ */
+export function getAbsenceHours(a: Pick<Absence, "is_full_day" | "start_time" | "end_time">): number {
   if (a.is_full_day) return FULL_DAY_HOURS;
   const [sh, sm] = (a.start_time ?? "00:00").slice(0, 5).split(":").map(Number);
   const [eh, em] = (a.end_time ?? "00:00").slice(0, 5).split(":").map(Number);

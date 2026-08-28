@@ -1,10 +1,10 @@
 ---
 change_id: small-stats-ui-improvment
 title: Split absence-type breakdown into year and month views; rename Sign out to Wyloguj
-status: implemented
+status: archived
 created: 2026-08-24
 updated: 2026-08-25
-archived_at: null
+archived_at: 2026-08-25T12:10:02Z
 ---
 
 ## Notes

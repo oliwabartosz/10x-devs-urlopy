@@ -1,7 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CircleHelp, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -19,6 +26,7 @@ import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
 import type { Absence, AbsenceBulkCreateCommand, AbsenceType, EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 /**
  * Accessible name of the single dial trigger. Named once because the E2E suite locates the button
@@ -377,7 +385,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
       // One request for the whole range, against the route whose conflict behaviour is overwrite.
       // The single-day arms keep their exact previous behaviour, POST and PATCH alike.
       const res = isRange
-        ? await fetch("/api/absences/bulk", {
+        ? await fetch(withBase("/api/absences/bulk"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -387,12 +395,12 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
             } satisfies AbsenceBulkCreateCommand),
           })
         : existingAbsence
-          ? await fetch(`/api/absences/${existingAbsence.id}`, {
+          ? await fetch(withBase(`/api/absences/${existingAbsence.id}`), {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...sharedFields, date: dateStr }),
             })
-          : await fetch("/api/absences", {
+          : await fetch(withBase("/api/absences"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields, date: dateStr }),
@@ -443,7 +451,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
     if (!existingAbsence) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/absences/${existingAbsence.id}`, { method: "DELETE" });
+      const res = await fetch(withBase(`/api/absences/${existingAbsence.id}`), { method: "DELETE" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -474,6 +482,9 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
           <DialogTitle className="text-primary text-xl">
             {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
           </DialogTitle>
+          <DialogDescription>
+            Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny.
+          </DialogDescription>
           {/* `capitalize` only on the single-day heading, which starts with a weekday name. The
               range heading starts with a digit, and capitalizing it would title-case the month. */}
           <p className={cn("text-muted-foreground text-[13px]", !isRange && "capitalize")}>{dateHeading}</p>

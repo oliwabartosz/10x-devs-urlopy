@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { KeyRound, Mail, Users } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
@@ -12,6 +12,7 @@ import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface EmployeeManagementSheetProps {
   employees: EmployeeListItem[];
@@ -81,7 +82,7 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
 
   const handleRestore = async (employee: EmployeeListItem) => {
     try {
-      const res = await fetch(`/api/employees/${employee.id}/restore`, { method: "POST" });
+      const res = await fetch(withBase(`/api/employees/${employee.id}/restore`), { method: "POST" });
       if (res.ok) {
         toast.success("Pracownik przywrócony");
         window.location.reload();
@@ -110,6 +111,12 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
         <SheetContent className="w-full overflow-y-auto sm:max-w-[560px]">
           <SheetHeader className="flex flex-row items-center justify-between px-6 py-4 pr-12">
             <SheetTitle className="text-primary text-lg">Zarządzaj pracownikami</SheetTitle>
+            {/* sr-only: this header is a flex row holding the title and the add button, so a
+                visible description would sit between them and break the layout. Radix needs the
+                element to exist and be referenced by aria-describedby, not to be seen. */}
+            <SheetDescription className="sr-only">
+              Lista pracowników z możliwością edycji, dezaktywacji i przywrócenia.
+            </SheetDescription>
             <Button
               size="sm"
               onClick={() => {

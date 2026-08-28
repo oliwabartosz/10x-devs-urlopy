@@ -1,13 +1,15 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  dialect: "postgresql",
+  dialect: "sqlite",
   schema: "./src/db/schema.ts",
-  // Generated migrations land here alongside Supabase CLI migrations — always manually review diffs before applying
-  out: "./supabase/migrations",
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  dbCredentials: { url: process.env.DATABASE_URL_DIRECT! },
-  migrations: { prefix: "supabase" },
+  // Own directory now: the Supabase CLI's three-legged provisioning ritual is gone, so nothing
+  // else writes here. Always manually review a generated diff — the DB-level CHECK constraints
+  // and the `COLLATE NOCASE` on users.email are not representable in Drizzle and are hand-added
+  // to the migration (SQLite has no ALTER TABLE ADD CONSTRAINT, so they must sit inside CREATE
+  // TABLE; a regenerated table definition drops them silently).
+  out: "./drizzle",
+  dbCredentials: { url: process.env.DATABASE_PATH ?? "./urlopy.db" },
   verbose: true,
   strict: true,
 });

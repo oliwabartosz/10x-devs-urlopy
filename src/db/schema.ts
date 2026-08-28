@@ -1,37 +1,77 @@
-import {
-  pgEnum,
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  date,
-  time,
-  boolean,
-  integer,
-  serial,
-  unique,
-} from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, unique } from "drizzle-orm/sqlite-core";
 
-export const userRoleEnum = pgEnum("user_role", ["employee", "moderator"]);
+// SQLite port of the former pg-core schema. The TypeScript types the rest of the app
+// consumes are preserved exactly, so no call site changes:
+//   uuid().defaultRandom()          → text().$defaultFn(crypto.randomUUID)
+//   pgEnum("user_role", …)          → text({ enum: [...] })
+//   timestamp({withTimezone:true})  → integer({ mode: "timestamp" })  (still a `Date` in JS —
+//                                     src/pages/dashboard.astro:180-181 compares these as Dates)
+//   date()                          → text()   (already 'YYYY-MM-DD' in and out)
+//   time()                          → text()   ('HH:MM' / 'HH:MM:SS' strings)
+//   boolean()                       → integer({ mode: "boolean" })
+//   serial()                        → integer().primaryKey({ autoIncrement: true })
 
-export const employees = pgTable("employees", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  user_id: uuid("user_id").notNull().unique(),
-  role: userRoleEnum("role").notNull(),
-  first_name: text("first_name").notNull(),
-  last_name: text("last_name").notNull(),
-  deleted_at: timestamp("deleted_at", { withTimezone: true }),
-  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  display_order: integer("display_order").notNull().default(0),
-  // Technical-admin marker. App-enforced (RLS is bypassed on the service-role connection):
-  // exactly one row is true; hidden from every user-facing list and immutable via every API path.
-  is_system: boolean("is_system").notNull().default(false),
+// Local credential store — replaces Supabase's auth.users. Phase 4 drives it.
+export const users = sqliteTable("users", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  // COLLATE NOCASE gives case-insensitive uniqueness on the address. SQLite's NOCASE is
+  // ASCII-only, which is fine for the address forms in use.
+  email: text("email").notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  created_at: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updated_at: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
-export const absence_types = pgTable("absence_types", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  // DB-level CHECK: color ~ '^#[0-9a-fA-F]{6}$' — not represented in Drizzle; re-add manually after any db:generate diff
+// Opaque server-side sessions — the only design that can honour the "log out other
+// sessions" promise ChangePasswordDialog.tsx already makes.
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  user_id: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  created_at: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  expires_at: integer("expires_at", { mode: "timestamp" }).notNull(),
+});
+
+export const employees = sqliteTable("employees", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  // Now a real FK into the local users table (it referenced auth.users under Supabase, which
+  // Drizzle could not express). node:sqlite enforces foreign keys by default, so creation and
+  // seed order both matter: users before employees.
+  user_id: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["employee", "moderator"] }).notNull(),
+  first_name: text("first_name").notNull(),
+  last_name: text("last_name").notNull(),
+  deleted_at: integer("deleted_at", { mode: "timestamp" }),
+  created_at: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  display_order: integer("display_order").notNull().default(0),
+  // Technical-admin marker. App-enforced (there is no RLS to lean on):
+  // exactly one row is true; hidden from every user-facing list and immutable via every API path.
+  is_system: integer("is_system", { mode: "boolean" }).notNull().default(false),
+});
+
+export const absence_types = sqliteTable("absence_types", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  // UNIQUE: src/lib/absence-types.ts gates the partial-day feature on exact name strings,
+  // so a duplicate row would silently break it.
+  name: text("name").notNull().unique(),
+  // DB-level CHECK: color GLOB '#[0-9a-fA-F]…' — not representable in Drizzle; re-add manually
+  // after any db:generate diff. (Postgres used `~ '^#[0-9a-fA-F]{6}$'`; SQLite has no regex.)
   color: text("color").notNull(),
   // Presentation metadata. Types stay data, never a name-keyed code map: adding an
   // eighth type is a seed row, not a code change.
@@ -41,35 +81,44 @@ export const absence_types = pgTable("absence_types", {
   display_order: integer("display_order").notNull().default(0),
 });
 
-export const absences = pgTable(
+export const absences = sqliteTable(
   "absences",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    employee_id: uuid("employee_id")
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    employee_id: text("employee_id")
       .notNull()
       .references(() => employees.id),
     absence_type_id: integer("absence_type_id")
       .notNull()
       .references(() => absence_types.id),
-    date: date("date").notNull(),
-    is_full_day: boolean("is_full_day").notNull().default(true),
+    date: text("date").notNull(),
+    is_full_day: integer("is_full_day", { mode: "boolean" }).notNull().default(true),
     // DB-level CHECK: absences_time_check — not represented in Drizzle; re-add manually after any db:generate diff
-    start_time: time("start_time"),
-    end_time: time("end_time"),
+    start_time: text("start_time"),
+    end_time: text("end_time"),
     comment: text("comment"),
-    substitute_employee_id: uuid("substitute_employee_id").references(() => employees.id),
-    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    // DB sets this via DEFAULT NOW() + AFTER UPDATE trigger; .defaultNow() here covers $inferInsert type correctness
-    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    substitute_employee_id: text("substitute_employee_id").references(() => employees.id),
+    created_at: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    // The Postgres AFTER UPDATE trigger is not ported — PATCH /api/absences/:id sets this
+    // column explicitly, as bulk.ts and holiday-balances/index.ts already did.
+    updated_at: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (table) => [unique().on(table.employee_id, table.date)],
 );
 
-export const holiday_balances = pgTable(
+export const holiday_balances = sqliteTable(
   "holiday_balances",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    employee_id: uuid("employee_id")
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    employee_id: text("employee_id")
       .notNull()
       .references(() => employees.id),
     year: integer("year").notNull(),
@@ -79,8 +128,12 @@ export const holiday_balances = pgTable(
     carryover_days: integer("carryover_days").notNull().default(0),
     // Reconciliation baseline for pre-app usage; keeps Left correct on mid-year adoption.
     used_adjustment_days: integer("used_adjustment_days").notNull().default(0),
-    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    created_at: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updated_at: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   // DB-level CHECK constraints (year range; the three day-columns >= 0) are hand-added to the
   // generated migration — Drizzle cannot express them. Re-add manually after any db:generate diff.

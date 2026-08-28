@@ -1,18 +1,23 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
 import { createDb } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
-import { extractPgErrorCode, extractPgErrorConstraint } from "@/lib/db-errors";
+import {
+  extractDbErrorCode,
+  SQLITE_CONSTRAINT_CHECK,
+  SQLITE_CONSTRAINT_FOREIGNKEY,
+  SQLITE_CONSTRAINT_UNIQUE,
+} from "@/lib/db-errors";
 import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
-import { assertSubstituteAllowed } from "@/lib/absence-write-target";
+import { assertAbsenceTypeExists, assertSubstituteAllowed } from "@/lib/absence-write-target";
+import { reportError } from "@/lib/report";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -68,7 +73,7 @@ export const PATCH: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -78,7 +83,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -110,7 +115,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(ownershipWhere)
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!existing) return json({ error: "Nie znaleziono." }, 404);
@@ -125,6 +130,12 @@ export const PATCH: APIRoute = async (context) => {
     "PATCH /api/absences/:id",
   );
   if (substituteRefusal) return substituteRefusal;
+
+  // A supplied absence type must exist — the other reference SQLite's foreign-key error can no
+  // longer name. Only when the body supplies one: the stored value is already a valid reference.
+  // Before the partial-day guard for the reason given in `assertAbsenceTypeExists`.
+  const unknownType = await assertAbsenceTypeExists(db, parsed.data.absence_type_id, "PATCH /api/absences/:id");
+  if (unknownType) return unknownType;
 
   // Captured before the clamp merges values into `parsed.data`: from here on, "the body
   // omitted this field" can no longer be read off `parsed.data`, and both the effective-value
@@ -146,7 +157,7 @@ export const PATCH: APIRoute = async (context) => {
   try {
     partialDayViolation = await isPartialDayViolation(db, effectiveTypeId, effectiveIsFullDay);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
@@ -196,19 +207,28 @@ export const PATCH: APIRoute = async (context) => {
   const updateWhere = casConditions.length > 0 ? and(ownershipWhere, ...casConditions) : ownershipWhere;
 
   try {
-    const rows = await db.update(absences).set(parsed.data).where(updateWhere).returning({
-      id: absences.id,
-      employee_id: absences.employee_id,
-      absence_type_id: absences.absence_type_id,
-      date: absences.date,
-      is_full_day: absences.is_full_day,
-      start_time: absences.start_time,
-      end_time: absences.end_time,
-      comment: absences.comment,
-      substitute_employee_id: absences.substitute_employee_id,
-      created_at: absences.created_at,
-      updated_at: absences.updated_at,
-    });
+    // `updated_at` is set explicitly. Postgres had an AFTER UPDATE trigger
+    // (20260526000001_schema.sql:58-70) and this route was its only consumer; the trigger is not
+    // ported, and `parsed.data` carries no `updated_at`, so without this the column would freeze
+    // at insert time — silently, since it is still read back at `:210` and returned at `:222`.
+    // `bulk.ts` and `holiday-balances/index.ts` already set it the same way.
+    const rows = await db
+      .update(absences)
+      .set({ ...parsed.data, updated_at: new Date() })
+      .where(updateWhere)
+      .returning({
+        id: absences.id,
+        employee_id: absences.employee_id,
+        absence_type_id: absences.absence_type_id,
+        date: absences.date,
+        is_full_day: absences.is_full_day,
+        start_time: absences.start_time,
+        end_time: absences.end_time,
+        comment: absences.comment,
+        substitute_employee_id: absences.substitute_employee_id,
+        created_at: absences.created_at,
+        updated_at: absences.updated_at,
+      });
     if (rows.length === 0) {
       // Zero rows means either the target is gone (404) or a concurrent write moved one of
       // the fields we pinned above (409). Only worth a second query on this rare path.
@@ -221,17 +241,15 @@ export const PATCH: APIRoute = async (context) => {
     }
     return json(rows[0], 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
-    if (code === "23503") {
-      // 23503 can come from either FK on absences; name the right one.
-      if (extractPgErrorConstraint(err) === "absences_absence_type_id_fkey")
-        return json({ error: "Nie znaleziono wybranego typu nieobecności." }, 422);
-      return json({ error: "Nie znaleziono pracownika na zastępstwo." }, 422);
-    }
-    if (code === "23505") return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
-    if (code === "23514") return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
+    const code = extractDbErrorCode(err);
+    // Both references are resolved above, so a foreign-key error here means the row one of those
+    // lookups found was deleted before this UPDATE landed. SQLite names nothing in the error, so
+    // which one is unknowable — one message rather than the pair the pre-flight checks return.
+    if (code === SQLITE_CONSTRAINT_FOREIGNKEY) return json({ error: "Nie znaleziono powiązanego rekordu." }, 422);
+    if (code === SQLITE_CONSTRAINT_UNIQUE) return json({ error: "Masz już wpis nieobecności na ten dzień." }, 409);
+    if (code === SQLITE_CONSTRAINT_CHECK)
+      return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };
@@ -246,7 +264,7 @@ export const DELETE: APIRoute = async (context) => {
     return json({ error: "Nieprawidłowy identyfikator." }, 400);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let employeeRow: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -256,7 +274,7 @@ export const DELETE: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -275,9 +293,10 @@ export const DELETE: APIRoute = async (context) => {
     if (deleted.length === 0) return json({ error: "Nie znaleziono." }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
-    const code = extractPgErrorCode(err);
-    if (code === "42501") return json({ error: "Brak dostępu." }, 403);
+    reportError(err, { tags: { route: "DELETE /api/absences/:id" } });
+    // No code discrimination left: the only arm here was Postgres `42501` (insufficient
+    // privilege), which came from RLS. RLS never applied on the service-role connection and does
+    // not exist on a local SQLite file, so every failure reaching here is a real server error.
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };

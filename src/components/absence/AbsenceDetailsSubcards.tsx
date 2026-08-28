@@ -5,6 +5,7 @@ import { AbsenceFormDialog } from "@/components/absence/AbsenceFormDialog";
 import { entryCountLabel } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import { toggleHidden, clearHidden, isFilterActive, visibleByType } from "@/lib/type-filter";
+import { withBase } from "@/lib/base-path";
 
 interface AbsenceDetailsSubcardsProps {
   absences: Absence[];
@@ -138,7 +139,7 @@ export default function AbsenceDetailsSubcards({
     // already true by then and blocks any further attempt.
     setWeekError(null);
     setWeekLoading(true);
-    fetch(`/api/absences?from=${weekRange.from}&to=${weekRange.to}`, { signal: controller.signal })
+    fetch(withBase(`/api/absences?from=${weekRange.from}&to=${weekRange.to}`), { signal: controller.signal })
       .then((r) => {
         if (r.ok) return r.json() as Promise<Absence[]>;
         throw new Error(String(r.status));
@@ -168,7 +169,7 @@ export default function AbsenceDetailsSubcards({
     // See the today effect: a stale error would outlive a successful retry.
     setYearlyError(null);
     setYearlyLoading(true);
-    fetch(`/api/absences?year=${year}`, { signal: controller.signal })
+    fetch(withBase(`/api/absences?year=${year}`), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         setYearlyTruncated(r.headers.get("X-Result-Truncated") === "1");

@@ -1,21 +1,21 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/cloudflare";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { createUser, deleteUser, DuplicateEmailError } from "@/lib/auth";
 import { createDb, employees } from "@/db/index";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and, asc, max } from "drizzle-orm";
-import { extractPgErrorCode } from "@/lib/db-errors";
+import { extractDbErrorCode, SQLITE_CONSTRAINT_UNIQUE } from "@/lib/db-errors";
 import { visibleEmployeesFilter } from "@/lib/employees";
+import { reportError } from "@/lib/report";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
+    reportError(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -57,7 +57,7 @@ export const GET: APIRoute = async (context) => {
             .orderBy(asc(employees.last_name), asc(employees.first_name));
     return json(rows, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
+    reportError(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -81,7 +81,7 @@ export const POST: APIRoute = async (context) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const db = createDb(DATABASE_URL);
+  const db = createDb(DATABASE_PATH);
 
   let caller: { id: string; role: "employee" | "moderator" } | undefined;
   try {
@@ -91,7 +91,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
+    reportError(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -113,31 +113,16 @@ export const POST: APIRoute = async (context) => {
     return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
   }
 
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return json({ error: "Admin client is not configured" }, 503);
-  }
-
   const { first_name, last_name, email, role, password } = parsed.data;
 
-  let createUserResult: Awaited<ReturnType<typeof adminClient.auth.admin.createUser>>;
+  let user: { id: string };
   try {
-    createUserResult = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
+    user = await createUser(email, password);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
-    return json({ error: "Failed to create auth user" }, 500);
-  }
-
-  const { data: authData, error: authError } = createUserResult;
-
-  if (authError) {
-    if (authError.status === 422) {
+    if (err instanceof DuplicateEmailError) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     }
+    reportError(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Failed to create auth user" }, 500);
   }
 
@@ -148,22 +133,30 @@ export const POST: APIRoute = async (context) => {
     const nextOrder = (maxOrder ?? -1) + 1;
     const [employee] = await db
       .insert(employees)
-      .values({ user_id: authData.user.id, first_name, last_name, role, display_order: nextOrder })
+      .values({ user_id: user.id, first_name, last_name, role, display_order: nextOrder })
       .returning();
     return json(employee, 201);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
-    // compensating delete: prevent orphaned auth user when the DB insert fails
-    await adminClient.auth.admin.deleteUser(authData.user.id).catch((compErr: unknown) => {
-      Sentry.captureException(compErr, {
+    reportError(err, { tags: { route: "POST /api/employees" } });
+    // Compensating delete, kept — but now a local statement rather than a remote admin call.
+    //
+    // The plan expected both rows to land in one transaction, since they are finally in the same
+    // database. They cannot be, safely: `createDb` memoises one `DatabaseSync` handle per path and
+    // shares it across concurrent requests, so a `BEGIN` held across an `await` would enclose
+    // whatever statements another request issued in the meantime and roll them back too. The
+    // migrator can use a transaction (src/db/migrate.ts:32) precisely because nothing else is
+    // running at boot. Here the delete is the honest tool, and unlike the Supabase call it
+    // replaces it cannot half-succeed against a remote service.
+    await deleteUser(user.id).catch((compErr: unknown) => {
+      reportError(compErr, {
         level: "warning",
         tags: { route: "POST /api/employees", action: "compensating_delete" },
       });
       // eslint-disable-next-line no-console
-      console.error("Failed to rollback auth user:", authData.user.id, compErr);
+      console.error("Failed to roll back user row:", user.id, compErr);
     });
-    const code = extractPgErrorCode(err);
-    if (code === "23505") return json({ error: "Konto z tym adresem email już istnieje." }, 409);
+    const code = extractDbErrorCode(err);
+    if (code === SQLITE_CONSTRAINT_UNIQUE) return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     return json({ error: "Failed to create employee record" }, 500);
   }
 };

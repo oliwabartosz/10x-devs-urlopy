@@ -1,21 +1,33 @@
 # Rules for AI
 
-This file provides guidance to AI Agent when working with code in this repository. Extended project conventions (database layer, Drizzle ORM, migration discipline, UI) are documented in `AGENTS.md` — read it alongside this file.
+This file provides guidance to AI Agent when working with code in this repository. Extended project
+conventions (database layer, Drizzle ORM, migration discipline, UI) are documented in `AGENTS.md` —
+read it alongside this file. The install and operations story is in `INSTALL.md`.
+
+> **Branch note.** `main` still deploys to Cloudflare Workers against Supabase. The
+> `sqlite-install` branch — what this file describes — runs a Node server against a local SQLite
+> file on a self-hosted VPS. `@supabase/*`, `@astrojs/cloudflare`, `wrangler`, `@sentry/cloudflare`,
+> `wrangler.jsonc` and `supabase/` are still on disk but unused here; removing them is a follow-up
+> change after the demo.
 
 ## Commands
 
-- `npm run dev` — start dev server via `wrangler dev` (Cloudflare workerd runtime). Do NOT use `astro dev` directly — it does not emulate the Workers runtime, does not read `.env` for Worker runtime, and can produce behavior that differs from production. Run `npm run build` once before `npm run dev` to generate the `dist/` directory. **Drizzle database queries will fail in `wrangler dev`** — workerd's C++ TLS layer rejects Supabase's certificate regardless of the `ssl` option; auth and static pages still work. Test Drizzle-backed API routes against the production deployment.
-- `npm run build` — production build (SSR via `@astrojs/cloudflare`)
+- `npm run dev` — Astro dev server. Drizzle queries work locally now; the SQLite file named by `DATABASE_PATH` is opened directly, so there is no longer any reason to verify against a deployment.
+- `npm run build` — production build (SSR via `@astrojs/node`, standalone). Its `postbuild` hook runs `scripts/build-artifact.mjs`, which bundles `dist/bootstrap.mjs`, copies `drizzle/` into `dist/`, and records the build's origin in `dist/build-info.json`.
+- `npm run pack` — build the offline install tarball. Run after `npm prune --omit=dev`.
 - `npm run preview` — preview production build
 - `npm run lint` — ESLint with type-checked rules
 - `npm run lint:fix` — auto-fix lint issues
+- `npm run lint:sh` — shellcheck `install.sh`
 - `npm run format` — Prettier (includes prettier-plugin-astro + prettier-plugin-tailwindcss)
+- `npm run db:bootstrap` — migrate, seed the absence-type catalogue, seed the admin
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
 
 ## Architecture
 
-**Astro 6 SSR app** with React 19 islands, Tailwind 4, Supabase auth, and shadcn/ui components. Deployed to Cloudflare Workers.
+**Astro 6 SSR app** with React 19 islands, Tailwind 4, local credential auth, and shadcn/ui
+components. Runs as a Node process behind nginx on a Linux VPS.
 
 ### Rendering mode
 
@@ -23,11 +35,14 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 ### Auth flow
 
-- `src/lib/supabase.ts` — creates a Supabase SSR client using `@supabase/ssr` with cookie-based sessions. Uses `astro:env/server` for `SUPABASE_URL` and `SUPABASE_KEY` (server-only secrets declared in astro.config.mjs `env.schema`).
-- `src/middleware.ts` — runs on every request, resolves the current user, attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`.
-- API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`
-- Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
-- Protected page example: `src/pages/dashboard.astro`
+Authentication is entirely local — there is no auth provider.
+
+- `src/lib/auth/password.ts` — scrypt hashing over `node:crypto`. Self-describing hash format, so cost parameters can be raised without a migration.
+- `src/lib/auth/session.ts` — opaque server-side sessions in the `sessions` table. Cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` iff `PUBLIC_ORIGIN` starts with `https://`.
+- `src/lib/auth/rate-limit.ts` — sign-in throttling, bucketed by e-mail and by client IP.
+- `src/middleware.ts` — resolves the session on every request, attaches `context.locals.user` and `context.locals.userRole`, and redirects unauthenticated users away from `PROTECTED_ROUTES`.
+- API endpoints: `src/pages/api/auth/{signin,signout,password}.ts`
+- Self-registration does not exist: moderators create employees. `src/pages/auth/confirm-email.astro` is orphaned and no SMTP-dependent flow is live.
 
 ### Key conventions
 
@@ -36,7 +51,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **Tailwind class merging**: use the `cn()` helper from `@/lib/utils` (clsx + tailwind-merge) for conditional/merged class names. Do not concatenate class strings manually.
 - **shadcn/ui**: components live in `src/components/ui/`, "new-york" style variant. Install new ones with `npx shadcn@latest add [name]`.
 - **API routes**: use uppercase `GET`, `POST` exports; validate input with zod.
-- **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies.
+- **Migrations**: `drizzle/`, generated by `drizzle-kit`. Review every generated diff — SQLite cannot `ALTER TABLE ADD CONSTRAINT`, so CHECK constraints and `COLLATE NOCASE` live inside `CREATE TABLE` and a regenerated definition drops them silently. There is no RLS; authorization is enforced in handler code.
 - **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/components/hooks/`.
 - **Services/helpers** go in `src/lib/`. Reserve `src/lib/services/` for modules that take a `Db`
   and execute queries (e.g. `holiday-balance.ts`, `absence-partial-day.ts`); anything that stays
@@ -46,62 +61,54 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 ### Environment
 
-- Node.js v24.15.0 (see `.nvmrc`) — `hucre` (XLSX writer) declares `engines: node >=24`
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` — `.env` (gitignored) covers both Node tooling and Cloudflare local dev; copy `.env.example` to `.env` and fill in all values.
-- Local Supabase: `npx supabase start` (requires Docker)
-- Cloudflare local dev: secrets go in `.env` (gitignored); `wrangler dev` reads `.env` automatically.
-- Deploy: `npx wrangler pages deploy dist --project-name urlopy` (requires Cloudflare account + `wrangler login`)
+- Node.js v24.15.0 (see `.nvmrc`). **Node 24 is a hard floor**: the database layer is `node:sqlite`, and `hucre` (XLSX writer) declares `engines: node >=24`.
+- Env vars: `DATABASE_PATH` (required) and `PUBLIC_ORIGIN` — copy `.env.example` to `.env` and fill them in.
+- **`PUBLIC_ORIGIN` is half a build-time value.** `astro.config.mjs` bakes it into `site` and `security.allowedDomains`; `session.ts` reads it at runtime for the cookie's `Secure` flag. Changing the origin requires a rebuild. A mismatch shows up as a 403 on sign-in and sign-out only — every JSON route keeps working, so it reads as a credentials problem.
+- On the VPS these live in `/etc/urlopy/env`, written by `install.sh` and loaded by the systemd unit. The Node adapter does **not** read `.env` at runtime.
 
 ## CI
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR to `main`:
 
-- **`ci` job**: lint + build + bundle size dry-run. Requires `SUPABASE_URL`, `SUPABASE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` repository secrets.
-- **`deploy` job**: deploys to Cloudflare Workers on push to `main` only (not PRs). Runs a post-deploy health check against `/auth/signin`.
+- **`ci` job**: lint → shellcheck → test → build → smoke-test a locally-started server → pack the offline artifact. The test step is a real gate now; the suites create their own temp SQLite databases and no longer self-skip.
+- **No deploy job.** The VPS is offline and no runner can reach it. Deployment is a documented manual copy (`INSTALL.md`). The `CLOUDFLARE_*` secrets are unused on this branch but left in place because `main` still needs them.
 
 A separate **AI review workflow** (`.github/workflows/ai-review.yml`, `pull_request_target`) runs on every PR to `main`: it scores the PR against six criteria via `packages/code-reviewer`, posts a sticky comment, and applies exactly one of the `ai-cr:passed`/`ai-cr:failed` labels. Adding the `ai-cr:review` label re-runs the review. The check is always green when the review completes — the verdict is advisory (label + comment only); only infrastructure errors fail the job. Requires the `OPENROUTER_API_KEY` repository secret. The workflow never checks out PR-head code (`pull_request_target` safety) — keep it that way.
 
 ## Deployment
 
-Production deploy is automated via the `deploy` CI job on every push to `main`.
-
-Manual deploy:
-
-```bash
-npx wrangler login
-npm run build
-npx wrangler deploy --config dist/server/wrangler.json
-```
-
-Set production secrets (run once after the Worker exists):
+Manual and deliberate — the target VPS has no network access. Full procedure, including upgrade,
+rollback, backup and restore, is in `INSTALL.md`. In short:
 
 ```bash
-npx wrangler secret put SUPABASE_URL
-npx wrangler secret put SUPABASE_KEY
-npx wrangler secret put SUPABASE_SERVICE_KEY
+# Developer machine
+export PUBLIC_ORIGIN=https://urlopy.internal
+npm ci && npm run build && npm prune --omit=dev && npm run pack
+
+# VPS
+tar -xzf urlopy-*.tar.gz -C /tmp/urlopy-install && cd /tmp/urlopy-install
+sudo ./install.sh --db /var/lib/urlopy/urlopy.db --origin https://urlopy.internal
 ```
 
-`SUPABASE_SERVICE_KEY` is declared `optional: true` in `astro.config.mjs`, so a missing value fails at
-runtime rather than at build time: every route that calls `createAdminClient()` returns 503
-`"Admin client is not configured"`. That covers employee creation and the `employees/[id]/email`
-and `employees/[id]/password` sub-resources. Verify with `npx wrangler secret list --name urlopy`.
+`install.sh` is idempotent: re-running it upgrades in place, keeping the database and the existing
+env values. nginx is configured by hand from `deploy/nginx/urlopy.conf` — the template's `Host` and
+`X-Forwarded-Proto` headers are load-bearing, and it carries the security headers that Cloudflare's
+edge used to supply for free.
 
-**Rollback** — use the Cloudflare dashboard:
-`dash.cloudflare.com` → Workers & Pages → urlopy → Deployments → three-dot menu → "Rollback to this deployment"
-
-Or via the REST API:
+**Rollback** — releases are kept under `/opt/urlopy/releases/`, so it is a symlink swap:
 
 ```bash
-# List deployments to find target ID
-curl -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/urlopy/deployments" \
-  | jq '.result[] | {id, created_on}'
+sudo ln -sfn /opt/urlopy/releases/<previous> /opt/urlopy/.current.new
+sudo mv -T /opt/urlopy/.current.new /opt/urlopy/current
+sudo systemctl restart urlopy
 ```
 
-**Log streaming:**
+A rollback does not undo a migration; restore the pre-upgrade backup too if one was applied.
+
+**Logs and status:**
 
 ```bash
-npx wrangler tail urlopy
+systemctl status urlopy
+journalctl -u urlopy -f
+systemctl list-timers urlopy-backup
 ```
-
-Note: `wrangler tail` may drop connections. Re-run if it disconnects. For structured log queries from Claude Code, use the Cloudflare MCP server (`workers_observability` tool).

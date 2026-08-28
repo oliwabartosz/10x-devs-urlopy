@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { withBase } from "@/lib/base-path";
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -40,7 +48,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/password", {
+      const res = await fetch(withBase("/api/auth/password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
@@ -68,6 +76,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Zmień hasło</DialogTitle>
+          <DialogDescription>Podaj obecne hasło i nowe. Zmiana wyloguje pozostałe sesje.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

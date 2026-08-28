@@ -1,11 +1,11 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import type { APIContext } from "astro";
-import { createClient } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 import type { Db } from "@/db/index";
 import { employees } from "@/db/schema";
 import { getTestDb } from "@/tests/helpers/db";
-import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
+import { createTestEmployee, teardownTestEmployee, FIXTURE_PASSWORD } from "@/tests/helpers/fixtures";
+import { findUserByEmail, verifyPassword } from "@/lib/auth";
 import { PATCH } from "@/pages/api/employees/[id]/password";
 import { GET as GET_EMAIL } from "@/pages/api/employees/[id]/email";
 
@@ -13,7 +13,11 @@ import { GET as GET_EMAIL } from "@/pages/api/employees/[id]/email";
 // proves the reset actually works by signing in with the new password through a fresh anon
 // client — a 200 from the route alone would not distinguish "password changed" from "call
 // silently no-opped".
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee password sub-resource (route level)", () => {
+//
+// Un-skipped in Phase 4: both halves are local now — the route sets the hash on the `users` row
+// through `@/lib/auth`, and the credential check below verifies against that same row instead of
+// signing in to a remote service.
+describe("Employee password sub-resource (route level)", () => {
   let db!: Db;
   let targetId!: string;
   let employeeId!: string;
@@ -53,14 +57,22 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee password sub-resourc
     return ((await res.json()) as { email: string }).email;
   };
 
-  /** A fresh anon client, so the sign-in is a real end-to-end credential check. */
-  const signIn = (email: string, password: string) =>
-    createClient(process.env.SUPABASE_URL ?? "", process.env.SUPABASE_KEY ?? "", {
-      auth: { autoRefreshToken: false, persistSession: false },
-    }).auth.signInWithPassword({ email, password });
+  /**
+   * The credential check a sign-in would run, against the stored hash — the same
+   * `findUserByEmail` + `verifyPassword` pair `POST /api/auth/signin` uses.
+   *
+   * Deliberately not a call into the signin route: that route is rate-limited, and five failed
+   * attempts here would throttle the address and make a later assertion fail for the wrong
+   * reason. What this suite needs to prove is that the route actually rewrote the stored
+   * credential, which is exactly this.
+   */
+  const canSignIn = async (email: string, password: string): Promise<boolean> => {
+    const user = await findUserByEmail(email);
+    return user !== null && verifyPassword(password, user.password_hash);
+  };
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     targetId = await createTestEmployee(db);
     employeeId = await createTestEmployee(db);
     moderatorId = await createTestEmployee(db);
@@ -80,7 +92,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee password sub-resourc
     await teardownTestEmployee(db, moderatorId);
     await teardownTestEmployee(db, systemEmployeeId);
     await teardownTestEmployee(db, deactivatedId);
-    await db.$client.end();
   });
 
   it("an unauthenticated caller gets 401", async () => {
@@ -102,16 +113,15 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Employee password sub-resourc
     // The password must never be echoed back.
     expect(await res.json()).toEqual({ success: true });
 
-    const { data, error } = await signIn(email, NEW_PASSWORD);
-    expect(error).toBeNull();
-    expect(data.user?.email).toBe(email);
+    expect(await canSignIn(email, NEW_PASSWORD)).toBe(true);
   });
 
   it("the fixture's original password no longer works", async () => {
     const email = await emailOf(targetId);
-    // createTestEmployee seeds a random uuid password; any other value must be rejected now.
-    const { error } = await signIn(email, crypto.randomUUID());
-    expect(error).not.toBeNull();
+    // The reset above replaced the hash createTestEmployee seeded, so the shared fixture password
+    // must now be rejected for this employee — and still accepted for one that was not reset.
+    expect(await canSignIn(email, FIXTURE_PASSWORD)).toBe(false);
+    expect(await canSignIn(await emailOf(employeeId), FIXTURE_PASSWORD)).toBe(true);
   });
 
   it("a password under 8 characters is 400", async () => {

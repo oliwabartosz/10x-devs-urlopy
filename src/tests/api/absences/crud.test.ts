@@ -7,8 +7,9 @@ import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtur
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { ONSITE_TRAINING_TYPE_NAME, OFFSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
 
-// Requires: 20260526000002_seed_absence_types.sql applied (absence_type_id: 1 must exist)
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration", () => {
+// Requires the seeded absence-type catalogue (absence_type_id: 1 must exist). The test
+// harness applies it: getTestDb() runs migrate + seed on a fresh file — src/db/seed.ts.
+describe("Absence CRUD — integration", () => {
   let db!: Db;
   let testEmployeeId!: string;
   let onsiteTypeId!: number;
@@ -16,7 +17,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
   let nonTrainingTypeId!: number;
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     testEmployeeId = await createTestEmployee(db);
     onsiteTypeId = (
       await db
@@ -37,7 +38,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId);
-    await db.$client.end();
   });
 
   it("INSERT — RETURNING contains submitted field values", async () => {
@@ -62,7 +62,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
     await db.delete(absences).where(eq(absences.id, row.id));
   });
 
-  it("INSERT — start_time and end_time are returned as HH:MM:SS strings (postgres-js TIME behavior)", async () => {
+  it("INSERT — start_time and end_time round-trip verbatim as HH:MM strings", async () => {
     const [row] = await db
       .insert(absences)
       .values({
@@ -77,8 +77,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
     expect(typeof row.start_time).toBe("string");
     expect(typeof row.end_time).toBe("string");
-    expect(row.start_time).toBe("09:00:00");
-    expect(row.end_time).toBe("11:30:00");
+    expect(row.start_time).toBe("09:00");
+    expect(row.end_time).toBe("11:30");
 
     await db.delete(absences).where(eq(absences.id, row.id));
   });
@@ -124,8 +124,8 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
 
     expect(updated.comment).toBe("updated comment");
     expect(updated.is_full_day).toBe(false);
-    expect(updated.start_time).toBe("09:00:00");
-    expect(updated.end_time).toBe("13:00:00");
+    expect(updated.start_time).toBe("09:00");
+    expect(updated.end_time).toBe("13:00");
 
     await db.delete(absences).where(eq(absences.id, inserted.id));
   });
@@ -147,7 +147,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
     expect(rows).toHaveLength(0);
   });
 
-  it("INSERT with reversed times (end_time < start_time) — DB CHECK constraint rejects with 23514", async () => {
+  it("INSERT with reversed times (end_time < start_time) — DB CHECK constraint rejects with SQLITE_CONSTRAINT_CHECK", async () => {
     await expect(
       db.insert(absences).values({
         employee_id: testEmployeeId,
@@ -159,11 +159,11 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
       }),
     ).rejects.toSatisfy((err: unknown) => {
       const e = err as { cause?: { code?: string } };
-      return e.cause?.code === "23514";
+      return e.cause?.code === "275";
     });
   });
 
-  it("INSERT with equal times (end_time === start_time) — DB CHECK constraint rejects with 23514", async () => {
+  it("INSERT with equal times (end_time === start_time) — DB CHECK constraint rejects with SQLITE_CONSTRAINT_CHECK", async () => {
     await expect(
       db.insert(absences).values({
         employee_id: testEmployeeId,
@@ -175,11 +175,11 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
       }),
     ).rejects.toSatisfy((err: unknown) => {
       const e = err as { cause?: { code?: string } };
-      return e.cause?.code === "23514";
+      return e.cause?.code === "275";
     });
   });
 
-  it("Duplicate INSERT — error has PG code 23505 accessible via cause.code", async () => {
+  it("Duplicate INSERT — error has SQLITE_CONSTRAINT_UNIQUE accessible via cause.code", async () => {
     await db.insert(absences).values({
       employee_id: testEmployeeId,
       absence_type_id: 1,
@@ -196,7 +196,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Absence CRUD — integration"
       }),
     ).rejects.toSatisfy((err: unknown) => {
       const e = err as { cause?: { code?: string } };
-      return e.cause?.code === "23505";
+      return e.cause?.code === "2067";
     });
 
     await db.delete(absences).where(eq(absences.employee_id, testEmployeeId));

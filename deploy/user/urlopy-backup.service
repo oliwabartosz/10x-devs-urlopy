@@ -1,0 +1,26 @@
+# One-shot SQLite snapshot — rootless (systemd --user) variant.
+#
+# Template: install-user.sh substitutes @PLACEHOLDERS@ and writes the result to
+# ~/.config/systemd/user/urlopy-backup.service. Fired by urlopy-backup.timer, never enabled
+# directly. Run one by hand with: systemctl --user start urlopy-backup.service
+[Unit]
+Description=Urlopy — SQLite backup, rootless
+Documentation=file://@APP_ROOT@/current/deploy/backup.mjs
+
+[Service]
+Type=oneshot
+WorkingDirectory=@APP_ROOT@/current
+
+# DATABASE_PATH comes from the same env file the app uses, so the two can never drift apart.
+EnvironmentFile=@ENV_FILE@
+ExecStart=@NODE_BIN@ @APP_ROOT@/current/deploy/backup.mjs
+
+NoNewPrivileges=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# Backups touch no network at all.
+RestrictAddressFamilies=AF_UNIX

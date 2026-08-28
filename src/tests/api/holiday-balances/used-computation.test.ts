@@ -6,8 +6,8 @@ import { getTestDb } from "@/tests/helpers/db";
 import { createTestEmployee, teardownTestEmployee } from "@/tests/helpers/fixtures";
 import { buildBalanceView, computeUsedDays } from "@/lib/services/holiday-balance";
 
-// Requires: 20260526000002_seed_absence_types.sql applied ('urlop' type must exist).
-describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used computation (integration)", () => {
+// Requires the seeded absence-type catalogue ('urlop' must exist), which getTestDb() applies.
+describe("Holiday balance — Used computation (integration)", () => {
   const YEAR = 2030;
   let db!: Db;
   let testEmployeeId!: string;
@@ -16,7 +16,7 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used comp
   let createdPlannedType = false;
 
   beforeAll(async () => {
-    db = getTestDb();
+    db = await getTestDb();
     testEmployeeId = await createTestEmployee(db);
 
     const urlop = await db.select({ id: absence_types.id }).from(absence_types).where(eq(absence_types.name, "urlop"));
@@ -49,7 +49,6 @@ describe.skipIf(!process.env.DATABASE_URL_DIRECT)("Holiday balance — Used comp
   afterAll(async () => {
     await teardownTestEmployee(db, testEmployeeId); // deletes this employee's absences first
     if (createdPlannedType) await db.delete(absence_types).where(eq(absence_types.id, plannedTypeId));
-    await db.$client.end();
   });
 
   const fullDayUrlop = (date: string) => ({

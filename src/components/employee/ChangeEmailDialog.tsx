@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface ChangeEmailDialogProps {
   open: boolean;
@@ -13,7 +21,7 @@ interface ChangeEmailDialogProps {
 }
 
 // The Auth write is kept in its own dialog so a single Zapisz never spans two storage rails —
-// the merged edit dialog writes Drizzle tables, this one writes Supabase Auth.
+// the merged edit dialog writes the `employees` row, this one writes the `users` row behind it.
 export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailDialogProps) {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -28,7 +36,7 @@ export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailD
   // runs once per employee and reset-on-close is that remount, not an effect.
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/employees/${employee.id}/email`, { signal: controller.signal })
+    fetch(withBase(`/api/employees/${employee.id}/email`), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         return r.json() as Promise<{ email: string }>;
@@ -54,7 +62,7 @@ export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailD
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/employees/${employee.id}/email`, {
+      const res = await fetch(withBase(`/api/employees/${employee.id}/email`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
@@ -81,6 +89,7 @@ export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailD
           <DialogTitle className="text-primary text-xl">
             Zmień e-mail — {employee.first_name} {employee.last_name}
           </DialogTitle>
+          <DialogDescription>Nowy adres zacznie obowiązywać od razu, bez potwierdzania mailem.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

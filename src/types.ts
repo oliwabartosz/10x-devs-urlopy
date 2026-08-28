@@ -6,7 +6,7 @@ export type Employee = typeof employees.$inferSelect;
  * An employee row as a `client:load` island may receive it: everything except `user_id`.
  *
  * Astro serializes island props into the page HTML, so anything in a prop is readable by every
- * signed-in browser. `user_id` is the Supabase Auth identifier and no component reads it, so it
+ * signed-in browser. `user_id` is the `users`-table identifier and no component reads it, so it
  * must not travel — the same rule `GET /api/employees` already follows by omitting the column
  * from its select (employees/index.ts:35-43), and the one
  * `employee-management/reviews/impl-review-phases-2-4.md` F2 records.

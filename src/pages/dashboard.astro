@@ -6,7 +6,6 @@ import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import HolidayBalanceCard from "@/components/holiday/HolidayBalanceCard";
-import * as Sentry from "@sentry/cloudflare";
 import {
   createDb,
   employees as employeesTable,
@@ -15,12 +14,14 @@ import {
   holiday_balances as holidayBalancesTable,
 } from "@/db/index";
 import { buildBalanceView } from "@/lib/services/holiday-balance";
-import { DATABASE_URL } from "astro:env/server";
+import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
+import { withBase } from "@/lib/base-path";
+import { reportError } from "@/lib/report";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
@@ -46,10 +47,10 @@ const currentSubcard: "today" | "monthly" | "yearly" =
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
-  return Astro.redirect("/auth/signin");
+  return Astro.redirect(withBase("/auth/signin"));
 }
 
-const db = createDb(DATABASE_URL);
+const db = createDb(DATABASE_PATH);
 
 let employeeDbError = false;
 let currentEmployee: Pick<EmployeeListItem, "id" | "first_name" | "last_name" | "role"> | null = null;
@@ -67,7 +68,7 @@ try {
     .then((r) => r.at(0) ?? null);
   currentEmployee = row;
 } catch (error) {
-  Sentry.captureException(error, { tags: { page: "dashboard", phase: "employee-lookup" } });
+  reportError(error, { tags: { page: "dashboard", phase: "employee-lookup" } });
   employeeDbError = true;
 }
 
@@ -90,7 +91,7 @@ if (currentEmployee) {
 
   const empCols = {
     // No `user_id`: these rows become client:load island props, which Astro serializes into the
-    // page HTML. The Supabase Auth id must not travel to every browser and no component reads
+    // page HTML. The `users`-table id must not travel to every browser and no component reads
     // it — hence EmployeeListItem rather than Employee. GET /api/employees omits it too.
     id: employeesTable.id,
     first_name: employeesTable.first_name,
@@ -198,7 +199,7 @@ if (currentEmployee) {
     statsYearlyEmployees = isModerator ? employeesResult : statsEmployees;
     statsAbsences = isModerator ? absencesResult : absencesResult.filter((a) => a.employee_id === selfId);
   } catch (error) {
-    Sentry.captureException(error, { tags: { page: "dashboard", phase: "data-fetch" } });
+    reportError(error, { tags: { page: "dashboard", phase: "data-fetch" } });
     dataDbError = true;
   }
 }

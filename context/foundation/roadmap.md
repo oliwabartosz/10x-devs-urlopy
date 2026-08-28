@@ -407,6 +407,11 @@ Zmiany bez wartości użytkowej per se, więc bez numeru slice'a — ale realne 
 tak samo. Śledzone tu, żeby archiwum dało się odczytać wstecz. Rollout testów ma własny
 dokument: `context/foundation/test-plan.md`.
 
+`sqlite-install` jest największą pozycją w tej tabeli i jedyną, która zmienia platformę
+uruchomieniową: żaden slice jej nie pokrywa, bo nie wynika z PRD — wynika z nowego ograniczenia
+(docelowy VPS nie ma dostępu do sieci). Dla użytkownika końcowego nie zmienia się nic poza
+mechanizmem logowania. Szczegóły: `context/changes/sqlite-install/plan.md`, `INSTALL.md`.
+
 | Change ID              | Czego dotyczy                                                            | Status                        |
 | ---------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | ci-cd-code-review      | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)     | archived 2026-07-06           |
@@ -417,6 +422,7 @@ dokument: `context/foundation/test-plan.md`.
 | e2e-auth-locators      | Naprawa lokatorów logowania w `tests/e2e/setup/auth.setup.ts`            | archived 2026-08-12           |
 | dev-vars-rename        | (ma slice S-10) — konsolidacja `.dev.vars` → `.env.dev`                  | archived 2026-08-17           |
 | bootstrap-verification | Log weryfikacji ze scaffoldingu (`/10x-bootstrapper`) — nie jest zmianą  | artefakt, nie do archiwizacji |
+| sqlite-install         | Instalacja self-hosted na offline'owym VPS: SQLite zamiast Supabase, własna autoryzacja zamiast Supabase Auth, Node za nginx, `install.sh` | in progress (branch `sqlite-install`) |
 
 ## Backlog Handoff
 
