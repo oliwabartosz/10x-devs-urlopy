@@ -91,6 +91,30 @@ export default defineConfig({
     // only when it matches a pattern's protocol, which is why nginx must send it when PUBLIC_ORIGIN
     // is https.
     allowedDomains,
+
+    // Astro owns the Content-Security-Policy, emitting it as a <meta http-equiv> in every page's
+    // <head>. It has to: island hydration ships inline <script> and inline <style>, and only the
+    // build knows their hashes. nginx cannot — deploy/nginx/urlopy.conf carried
+    // `script-src 'self'` with a comment claiming this build emits no inline scripts, which was
+    // simply wrong. The symptom was every interactive control silently dead, with the reason only
+    // in the browser console.
+    //
+    // script-src and style-src are added by Astro with the hashes; everything below is ours.
+    // `unsafe-inline` is deliberately absent and must stay absent — browsers ignore it in any
+    // directive that also carries a hash, so adding it would not even work.
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self' data:",
+        // No third-party origin is reachable from an offline VPS, and none is wanted on any other
+        // host either. This is also what stops a stray Sentry client from phoning home.
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ],
+    },
   },
   env: {
     schema: {
