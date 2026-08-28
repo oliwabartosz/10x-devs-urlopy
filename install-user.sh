@@ -218,6 +218,19 @@ if [[ "$PORT" != "80" && "$PORT" != "443" && "$PUBLIC_ORIGIN" != *":${PORT}" ]];
   warn "in the URL. Sign-in still works — Astro's origin check ignores the port — but 'site' is wrong."
 fi
 
+# A box that already runs other services is the normal case for this variant — you are a guest on
+# it, not its owner. Binding a port something else holds fails inside systemd, where the error
+# surfaces as a restart loop in the journal rather than on this terminal, so check it here while
+# there is still somebody reading. Skipped on an upgrade: the port is ours, held by the running
+# instance we are about to replace.
+if command -v ss >/dev/null 2>&1 && [[ "$FIRST_INSTALL" == "yes" ]]; then
+  if ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE "(^|:)${PORT}\$"; then
+    die "Port ${PORT} is already in use on this host. Pick a free one with --port N (and rebuild
+     the artifact with a matching PUBLIC_ORIGIN if nothing proxies to it). Currently listening:
+$(ss -ltn 2>/dev/null | awk 'NR>1 {print "       " $4}' | sort -u)"
+  fi
+fi
+
 BUILD_INFO="${ARTIFACT_DIR}/dist/build-info.json"
 if [[ -f "$BUILD_INFO" ]]; then
   BUILT_ORIGIN="$(sed -n 's/.*"publicOrigin"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$BUILD_INFO")"
