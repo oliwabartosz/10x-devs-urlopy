@@ -33,7 +33,7 @@ const { user, userRole } = Astro.locals;
             deliberately stay English. The bar is mixed-language on purpose — do not "restore
             consistency" in either direction without checking back.
           */}
-          <form method="POST" action="/api/auth/signout">
+          <form method="POST" action={withBase("/api/auth/signout")}>
             <button type="submit" class="hover:text-accent cursor-pointer transition-colors">
               Wyloguj
             </button>

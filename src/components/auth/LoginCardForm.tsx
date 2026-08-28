@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { User, Lock, ShieldCheck, CircleCheck, CircleX, Eye, EyeOff, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { withBase } from "@/lib/base-path";
 
 interface Props {
   serverError?: string | null;
@@ -73,7 +74,7 @@ export default function LoginCardForm({ serverError }: Props) {
   }
 
   return (
-    <form method="POST" action="/api/auth/signin" className="space-y-6" onSubmit={handleSubmit} noValidate>
+    <form method="POST" action={withBase("/api/auth/signin")} className="space-y-6" onSubmit={handleSubmit} noValidate>
       <div className="space-y-2">
         <label htmlFor="email" className="ml-1 block text-sm font-semibold text-slate-700">
           Użytkownik / ID
