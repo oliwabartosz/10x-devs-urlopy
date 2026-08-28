@@ -1,7 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CircleHelp, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -475,6 +482,9 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
           <DialogTitle className="text-primary text-xl">
             {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
           </DialogTitle>
+          <DialogDescription>
+            Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny.
+          </DialogDescription>
           {/* `capitalize` only on the single-day heading, which starts with a weekday name. The
               range heading starts with a digit, and capitalizing it would title-case the month. */}
           <p className={cn("text-muted-foreground text-[13px]", !isRange && "capitalize")}>{dateHeading}</p>

@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,6 +156,7 @@ export function EditEmployeeDialog({ open, onOpenChange, employee, year, current
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Edytuj pracownika</DialogTitle>
+          <DialogDescription>Dane pracownika, rola i wymiar urlopu na wybrany rok.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

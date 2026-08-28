@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -141,6 +148,9 @@ export function HolidayBalanceDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Edytuj wymiar urlopu — {year}</DialogTitle>
+          <DialogDescription>
+            Przysługujący wymiar i korekty. Wykorzystanie liczone jest automatycznie z nieobecności.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dbe4ee] bg-[#f4f7fa] px-4 py-3.5">

@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +57,9 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">Dodaj pracownika</DialogTitle>
+          <DialogDescription>
+            Konto powstanie od razu — pracownik zaloguje się podanym adresem i hasłem.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
