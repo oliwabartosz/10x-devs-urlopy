@@ -12,6 +12,7 @@ import { initialsOf } from "@/lib/initials";
 import { avatarColor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface EmployeeManagementSheetProps {
   employees: EmployeeListItem[];
@@ -81,7 +82,7 @@ export function EmployeeManagementSheet({ employees, currentEmployee, balanceYea
 
   const handleRestore = async (employee: EmployeeListItem) => {
     try {
-      const res = await fetch(`/api/employees/${employee.id}/restore`, { method: "POST" });
+      const res = await fetch(withBase(`/api/employees/${employee.id}/restore`), { method: "POST" });
       if (res.ok) {
         toast.success("Pracownik przywrócony");
         window.location.reload();

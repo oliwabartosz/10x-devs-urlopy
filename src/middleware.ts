@@ -4,8 +4,13 @@ import { readSession } from "@/lib/auth";
 import { createDb, employees } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and } from "drizzle-orm";
+import { withBase } from "@/lib/base-path";
 
-const PROTECTED_ROUTES = ["/dashboard"];
+// Compared against `context.url.pathname`, which carries the mount prefix when the app is served
+// under one (`/urlopy/dashboard`, not `/dashboard`). Written through withBase so the guard cannot
+// silently stop matching — an unprotected /dashboard fails open, which is the one direction this
+// list must never fail in.
+const PROTECTED_ROUTES = [withBase("/dashboard")];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   let user: { id: string; email: string } | null;
@@ -42,7 +47,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (PROTECTED_ROUTES.some((route) => context.url.pathname.startsWith(route))) {
     if (!context.locals.user) {
-      return context.redirect("/");
+      return context.redirect(withBase("/"));
     }
   }
 

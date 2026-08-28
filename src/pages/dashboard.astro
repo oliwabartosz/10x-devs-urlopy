@@ -21,6 +21,7 @@ import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagemen
 import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
@@ -46,7 +47,7 @@ const currentSubcard: "today" | "monthly" | "yearly" =
 
 // Middleware guarantees user is non-null on this route; guard satisfies TypeScript.
 if (!Astro.locals.user) {
-  return Astro.redirect("/auth/signin");
+  return Astro.redirect(withBase("/auth/signin"));
 }
 
 const db = createDb(DATABASE_PATH);

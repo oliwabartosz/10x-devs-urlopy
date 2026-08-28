@@ -10,6 +10,7 @@ import {
   setSessionCookie,
   verifyPassword,
 } from "@/lib/auth";
+import { withBase } from "@/lib/base-path";
 
 /**
  * The app's own messages, in Polish, replacing `?error=${error.message}` — which reflected
@@ -35,7 +36,7 @@ export const POST: APIRoute = async (context) => {
     const password = field("password");
     const ip = clientIp(context.request.headers);
 
-    const reject = () => context.redirect(`/?error=${encodeURIComponent(INVALID_CREDENTIALS)}`);
+    const reject = () => context.redirect(withBase(`/?error=${encodeURIComponent(INVALID_CREDENTIALS)}`));
 
     if (!email || !password) return reject();
     if (isSignInThrottled(email, ip)) return reject();
@@ -53,7 +54,7 @@ export const POST: APIRoute = async (context) => {
 
     clearSignInFailures(email);
     setSessionCookie(context.cookies, await createSession(user.id));
-    return context.redirect("/");
+    return context.redirect(withBase("/"));
   } catch (err) {
     Sentry.captureException(err, { tags: { route: "POST /api/auth/signin" } });
     return new Response("Internal Server Error", { status: 500 });

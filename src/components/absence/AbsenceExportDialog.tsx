@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { buildExportWorkbook, exportYearOptions } from "@/lib/export-workbook";
 import type { Absence, AbsenceType, EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface AbsenceExportDialogProps {
   /** `allEmployees` in server order — deactivated rows included. */
@@ -51,7 +52,7 @@ export function AbsenceExportDialog({ employees, absenceTypes, currentEmployeeId
     // generated would point them at the wrong thing entirely.
     let absences: Absence[];
     try {
-      const res = await fetch(`/api/absences?year=${year}`, { signal: controller.signal });
+      const res = await fetch(withBase(`/api/absences?year=${year}`), { signal: controller.signal });
       if (!res.ok) {
         setError(`Nie udało się pobrać danych (błąd ${res.status}). Spróbuj ponownie.`);
         setBusy(null);

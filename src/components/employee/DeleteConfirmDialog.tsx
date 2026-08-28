@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -18,7 +19,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, employee }: DeleteConf
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/employees/${employee.id}`, { method: "DELETE" });
+      const res = await fetch(withBase(`/api/employees/${employee.id}`), { method: "DELETE" });
       if (res.ok) {
         toast.success("Pracownik dezaktywowany");
         onOpenChange(false);

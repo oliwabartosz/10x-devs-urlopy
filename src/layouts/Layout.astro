@@ -3,6 +3,7 @@ import "../styles/global.css";
 import Banner from "@/components/Banner.astro";
 import { Toaster } from "@/components/ui/sonner";
 import { getMissingConfigs } from "@/lib/config-status";
+import { withBase } from "@/lib/base-path";
 
 interface Props {
   title?: string;
@@ -20,7 +21,7 @@ const missingConfigs = await getMissingConfigs();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href={withBase("/favicon.png")} />
     <title>{title}</title>
   </head>
   <body>

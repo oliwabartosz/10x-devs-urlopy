@@ -59,6 +59,8 @@ const viteEnv = loadEnv(process.env.NODE_ENV ?? "production", process.cwd(), "")
 // hand on the empty string.
 const configuredOrigin = process.env.PUBLIC_ORIGIN ?? viteEnv.PUBLIC_ORIGIN;
 const publicOrigin = configuredOrigin ? configuredOrigin : null;
+const configuredBase = process.env.PUBLIC_BASE_PATH ?? viteEnv.PUBLIC_BASE_PATH;
+const basePath = configuredBase ? configuredBase.trim() : null;
 await writeFile(
   `${dist}/build-info.json`,
   `${JSON.stringify(
@@ -68,6 +70,11 @@ await writeFile(
       // symptom otherwise is a 403 on sign-in only — every JSON route keeps working, so it reads
       // as a password problem rather than a build problem.
       publicOrigin,
+      // The sub-path the app was mounted under, or null for the root. Recorded for the same
+      // reason as the origin: it is baked into every asset URL and every redirect, so an
+      // artifact built for one mount point and served at another 404s its own JavaScript while
+      // the first HTML response looks perfectly fine.
+      basePath,
       node: process.version,
       builtAt: new Date().toISOString(),
     },
@@ -77,5 +84,5 @@ await writeFile(
 );
 
 console.log(
-  `✔ artifact ready: dist/bootstrap.mjs, dist/drizzle/, dist/build-info.json (origin: ${publicOrigin ?? "unset"})`,
+  `✔ artifact ready: dist/bootstrap.mjs, dist/drizzle/, dist/build-info.json (origin: ${publicOrigin ?? "unset"}, base: ${basePath ?? "/"})`,
 );

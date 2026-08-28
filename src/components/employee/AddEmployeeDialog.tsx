@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { withBase } from "@/lib/base-path";
 
 interface AddEmployeeDialogProps {
   open: boolean;
@@ -24,7 +25,7 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/employees", {
+      const res = await fetch(withBase("/api/employees"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ first_name: firstName, last_name: lastName, email, role, password }),

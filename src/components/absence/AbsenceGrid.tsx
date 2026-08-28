@@ -27,6 +27,7 @@ import {
 } from "@/lib/absence-range";
 import type { DragSelection, OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
 import { cn } from "@/lib/utils";
+import { withBase } from "@/lib/base-path";
 
 interface AbsenceGridProps {
   employees: EmployeeListItem[];
@@ -264,7 +265,7 @@ export default function AbsenceGrid({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    fetch("/api/employees/order", {
+    fetch(withBase("/api/employees/order"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order: next.map((e, i) => ({ id: e.id, display_order: i })) }),

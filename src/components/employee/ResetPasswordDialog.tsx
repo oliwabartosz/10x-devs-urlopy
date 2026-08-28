@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface ResetPasswordDialogProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: ResetPassw
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/employees/${employee.id}/password`, {
+      const res = await fetch(withBase(`/api/employees/${employee.id}/password`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

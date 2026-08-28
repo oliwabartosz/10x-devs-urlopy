@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface ChangeEmailDialogProps {
   open: boolean;
@@ -28,7 +29,7 @@ export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailD
   // runs once per employee and reset-on-close is that remount, not an effect.
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/employees/${employee.id}/email`, { signal: controller.signal })
+    fetch(withBase(`/api/employees/${employee.id}/email`), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
         return r.json() as Promise<{ email: string }>;
@@ -54,7 +55,7 @@ export function ChangeEmailDialog({ open, onOpenChange, employee }: ChangeEmailD
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/employees/${employee.id}/email`, {
+      const res = await fetch(withBase(`/api/employees/${employee.id}/email`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),

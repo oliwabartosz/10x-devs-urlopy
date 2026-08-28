@@ -240,6 +240,15 @@ if [[ -f "$BUILD_INFO" ]]; then
   elif [[ "$BUILT_ORIGIN" != "$PUBLIC_ORIGIN" ]]; then
     die "Origin mismatch: the artifact was built for '${BUILT_ORIGIN}' but --origin says '${PUBLIC_ORIGIN}'. The origin is compiled into the build, so rebuild with PUBLIC_ORIGIN=${PUBLIC_ORIGIN} — changing it here would leave sign-in returning 403."
   fi
+
+  # The mount path is baked in just as hard, and there is nothing on this side to compare it
+  # against — the proxy that routes to it is nginx's business, not the installer's. Report it, so
+  # whoever edits the nginx block is reading the value from the artifact rather than remembering
+  # it. A mismatch here serves the first page and then 404s every asset and every fetch.
+  BUILT_BASE="$(sed -n 's/.*"basePath"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$BUILD_INFO")"
+  if [[ -n "$BUILT_BASE" ]]; then
+    info "This artifact is built to be served under ${BUILT_BASE}/ — the nginx location must match, and proxy_pass must carry NO trailing slash (see deploy/nginx/urlopy-location.conf)."
+  fi
 fi
 
 if [[ "$FIRST_INSTALL" == "yes" && -z "$ADMIN_LOGIN" ]]; then

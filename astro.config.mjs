@@ -36,6 +36,23 @@ if (!configuredOrigin) {
   );
 }
 
+// The sub-path the app is mounted under, when it does not own the root of its hostname. Empty
+// (the default) means "/", which is what CI, `npm run dev` and every test assume — so a build that
+// does not set this behaves exactly as it always has.
+//
+// Build-time, like PUBLIC_ORIGIN and for the same reason: Astro bakes it into every emitted asset
+// URL and into `import.meta.env.BASE_URL`, which `src/lib/base-path.ts` reads to prefix the
+// client's fetches, the server's redirects and the session cookie's Path. Changing where the app
+// is mounted therefore needs a rebuild, not an env-file edit.
+const rawBase = process.env.PUBLIC_BASE_PATH ?? viteEnv.PUBLIC_BASE_PATH;
+const configuredBase = rawBase ? rawBase.trim() : "";
+
+if (configuredBase && !/^\/[A-Za-z0-9._~-]+(\/[A-Za-z0-9._~-]+)*$/.test(configuredBase)) {
+  throw new Error(
+    `PUBLIC_BASE_PATH must be a leading-slash path with no trailing slash, e.g. /urlopy (got: ${configuredBase})`,
+  );
+}
+
 // Patterns carry hostname + protocol but deliberately no port: the port Astro ends up using comes
 // from the host header anyway, and pinning it here only creates a trap where serving on a
 // different port silently falls back to `localhost` and 403s the form routes. When PUBLIC_ORIGIN
@@ -51,6 +68,7 @@ const allowedDomains = configuredOrigin
 export default defineConfig({
   output: "server",
   site: publicUrl.origin,
+  base: configuredBase || "/",
   integrations: [
     react(),
     sitemap(),

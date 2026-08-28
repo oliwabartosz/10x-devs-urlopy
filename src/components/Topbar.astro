@@ -1,5 +1,6 @@
 ---
 import { AccountMenu } from "@/components/account/AccountMenu";
+import { withBase } from "@/lib/base-path";
 
 // `role` used to arrive as a prop from dashboard.astro while middleware.ts:31 already computed
 // `locals.userRole` on every request and nothing read it. That is exactly the case
@@ -22,7 +23,7 @@ const { user, userRole } = Astro.locals;
           )}
         </div>
         <div class="flex items-center gap-6">
-          <a href="/dashboard" class="hover:text-accent transition-colors">
+          <a href={withBase("/dashboard")} class="hover:text-accent transition-colors">
             Dashboard
           </a>
           {/*
@@ -43,7 +44,7 @@ const { user, userRole } = Astro.locals;
       <>
         <span>Not signed in</span>
         <div class="flex gap-6">
-          <a href="/auth/signin" class="hover:text-accent transition-colors">
+          <a href={withBase("/auth/signin")} class="hover:text-accent transition-colors">
             Sign in
           </a>
         </div>

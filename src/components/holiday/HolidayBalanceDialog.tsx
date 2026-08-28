@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 // One rounding rule for day counts, shared with the statistics matrices — see hours.ts.
 import { formatDayCount } from "@/lib/hours";
 import type { HolidayBalanceView, UserRole } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 interface HolidayBalanceDialogProps {
   open: boolean;
@@ -94,7 +95,7 @@ export function HolidayBalanceDialog({
     if (!window.confirm("Usunąć wprowadzony wymiar urlopu na ten rok?")) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/holiday-balances/${balance.balance_id}`, { method: "DELETE" });
+      const res = await fetch(withBase(`/api/holiday-balances/${balance.balance_id}`), { method: "DELETE" });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -111,7 +112,7 @@ export function HolidayBalanceDialog({
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/holiday-balances", {
+      const res = await fetch(withBase("/api/holiday-balances"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

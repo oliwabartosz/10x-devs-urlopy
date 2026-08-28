@@ -19,6 +19,7 @@ import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
 import type { Absence, AbsenceBulkCreateCommand, AbsenceType, EmployeeListItem } from "@/types";
+import { withBase } from "@/lib/base-path";
 
 /**
  * Accessible name of the single dial trigger. Named once because the E2E suite locates the button
@@ -377,7 +378,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
       // One request for the whole range, against the route whose conflict behaviour is overwrite.
       // The single-day arms keep their exact previous behaviour, POST and PATCH alike.
       const res = isRange
-        ? await fetch("/api/absences/bulk", {
+        ? await fetch(withBase("/api/absences/bulk"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -387,12 +388,12 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
             } satisfies AbsenceBulkCreateCommand),
           })
         : existingAbsence
-          ? await fetch(`/api/absences/${existingAbsence.id}`, {
+          ? await fetch(withBase(`/api/absences/${existingAbsence.id}`), {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...sharedFields, date: dateStr }),
             })
-          : await fetch("/api/absences", {
+          : await fetch(withBase("/api/absences"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ employee_id: targetEmployee.id, ...sharedFields, date: dateStr }),
@@ -443,7 +444,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
     if (!existingAbsence) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/absences/${existingAbsence.id}`, { method: "DELETE" });
+      const res = await fetch(withBase(`/api/absences/${existingAbsence.id}`), { method: "DELETE" });
       if (res.ok) {
         window.location.reload();
       } else {

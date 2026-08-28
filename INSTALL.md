@@ -215,6 +215,44 @@ Without the first, the app answers only from the box itself. Without the second,
 starts at boot. `install-user.sh` tries `enable-linger` itself (some hosts ship a polkit rule that
 permits it) and tells you plainly if it could not.
 
+### Sharing a hostname: mounting under a sub-path
+
+The rootless case usually comes with a second constraint — nginx already answers for the hostname
+and already serves other applications, so Urlopy cannot have `/`. It can be mounted under a
+prefix instead:
+
+```bash
+export PUBLIC_ORIGIN=http://host.internal      # scheme + host only, no path
+export PUBLIC_BASE_PATH=/urlopy                # the mount point
+npm run build
+```
+
+`PUBLIC_BASE_PATH` is build-time and unforgiving: Astro bakes it into every asset URL, and
+`src/lib/base-path.ts` reads it back out of `import.meta.env.BASE_URL` to prefix the client's
+fetches, the server's redirects, the middleware's protected-route list and the session cookie's
+`Path`. Build for one mount point and serve at another and the first HTML response looks perfect
+while every asset and every fetch 404s. `dist/build-info.json` records the value and
+`install-user.sh` prints it, so the nginx block can be written from the artifact rather than from
+memory.
+
+Then paste `deploy/nginx/urlopy-location.conf` into the existing `server { … }` block — not into a
+new one, or nginx warns about a conflicting server name and silently keeps only one. The file
+carries the security headers, the two headers `checkOrigin` depends on, and the rate limiter's
+`X-Forwarded-For`.
+
+**The single most important line is `proxy_pass http://127.0.0.1:PORT;` with no trailing slash.**
+With one, nginx strips the prefix and hands the app `/dashboard` when it expects
+`/urlopy/dashboard`. Note that a `/metabase/`-style block _wants_ the stripping form — Metabase
+does not know where it is mounted and Urlopy does, so the two look similar and behave oppositely.
+
+Scoping the cookie to the mount point is not cosmetic. A `Path=/` session cookie on a shared
+hostname is sent to every other application on it, so Urlopy's session token would arrive at
+their request handlers on every request. Under a base path it is `Path=/urlopy` instead.
+
+A second link to the same app (`/nieobecnosci` alongside `/urlopy`) is a 301, not a second mount:
+`base` is one value baked into every emitted URL, so an app served under two prefixes hands out
+links for one of them whichever door you came in by, and the cookie matches only one.
+
 ### The sandbox drop-ins
 
 The hardening that needs a mount namespace (`ProtectSystem=strict`, `PrivateTmp`, the `Protect*`

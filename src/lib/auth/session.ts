@@ -3,6 +3,7 @@ import type { AstroCookies } from "astro";
 import { and, eq, lt, ne } from "drizzle-orm";
 import { createDb, sessions, users } from "@/db/index";
 import { DATABASE_PATH, PUBLIC_ORIGIN } from "astro:env/server";
+import { BASE_PATH } from "@/lib/base-path";
 
 /**
  * Opaque server-side sessions backed by the `sessions` table.
@@ -53,14 +54,18 @@ export function setSessionCookie(cookies: AstroCookies, sessionId: string): void
   cookies.set(SESSION_COOKIE, sessionId, {
     httpOnly: true,
     sameSite: "lax",
-    path: "/",
+    // Scoped to the mount point, not the host. Urlopy shares its hostname with other
+    // applications, and a Path=/ cookie would be sent to every one of them on every request —
+    // handing this app's session token to software that has no business seeing it. Falls back to
+    // "/" when the app owns the root, which is the only case where the two are the same thing.
+    path: BASE_PATH || "/",
     secure: wantsSecureCookie(),
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
   });
 }
 
 export function clearSessionCookie(cookies: AstroCookies): void {
-  cookies.delete(SESSION_COOKIE, { path: "/" });
+  cookies.delete(SESSION_COOKIE, { path: BASE_PATH || "/" });
 }
 
 /** The session id the request carries, or null. */
