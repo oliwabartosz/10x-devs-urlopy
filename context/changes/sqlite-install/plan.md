@@ -823,8 +823,8 @@ reasoning survives and the false claim does not.
 
 #### Manual
 
-- [ ] 3.5 No route still references a five-digit SQLSTATE constant
-- [ ] 3.6 The two 422 messages remain distinguishable in the UI
+- [x] 3.5 No route still references a five-digit SQLSTATE constant — 7e7adea
+- [x] 3.6 The two 422 messages remain distinguishable in the UI — 7e7adea
 
 ### Phase 4: Auth replacement
 
@@ -856,18 +856,18 @@ reasoning survives and the false claim does not.
 
 #### Manual
 
-- [ ] 5.5 Sign-in works against the local production build (checkOrigin satisfied)
-- [ ] 5.6 Unset SENTRY_DSN starts cleanly
-- [ ] 5.7 Static assets served correctly by the Node server alone
+- [x] 5.5 Sign-in works against the local production build (checkOrigin satisfied) — 9fc4db3
+- [x] 5.6 Unset SENTRY_DSN starts cleanly — 9fc4db3
+- [x] 5.7 Static assets served correctly by the Node server alone — 9fc4db3
 
 ### Phase 6: Install, operate, document
 
 #### Automated
 
-- [ ] 6.1 Lint and test suite pass on the branch
-- [x] 6.2 Build succeeds with no Cloudflare tooling in the pipeline
-- [x] 6.3 shellcheck passes on install.sh and the backup script (backup script is .mjs — ESLint; see D3)
-- [x] 6.4 Archive contains dist, node_modules, package.json, deploy — and zero .node binaries (needed an explicit prune step; see D2)
+- [x] 6.1 Lint and test suite pass on the branch — 831a8a4
+- [x] 6.2 Build succeeds with no Cloudflare tooling in the pipeline — 831a8a4
+- [x] 6.3 shellcheck passes on install.sh and the backup script (backup script is .mjs — ESLint; see D3) — 831a8a4
+- [x] 6.4 Archive contains dist, node_modules, package.json, deploy — and zero .node binaries (needed an explicit prune step; see D2) — 831a8a4
 
 #### Manual
 
@@ -876,4 +876,4 @@ reasoning survives and the false claim does not.
 - [ ] 6.7 Service restart preserves data and sessions
 - [ ] 6.8 Backup restores into a working database
 - [ ] 6.9 Re-running install.sh upgrades without data loss
-- [ ] 6.10 Every corrected documentation claim is accurate as written
+- [x] 6.10 Every corrected documentation claim is accurate as written — 831a8a4

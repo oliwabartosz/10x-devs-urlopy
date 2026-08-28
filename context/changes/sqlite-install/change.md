@@ -3,7 +3,7 @@ change_id: sqlite-install
 title: Self-hosted install on a Linux VPS with SQLite instead of Supabase, behind nginx
 status: implementing
 created: 2026-08-25
-updated: 2026-08-26
+updated: 2026-08-28
 archived_at: null
 ---
 
