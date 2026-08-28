@@ -110,6 +110,9 @@ export default defineConfig({
         // No third-party origin is reachable from an offline VPS, and none is wanted on any other
         // host either. This is also what stops a stray Sentry client from phoning home.
         "connect-src 'self'",
+        // Inline style attributes need `style-src-attr 'unsafe-inline'`, which Astro refuses to
+        // emit — its allowed-directive list covers neither the *-attr nor the *-elem variants.
+        // src/middleware.ts appends it to the response header instead; see the comment there.
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

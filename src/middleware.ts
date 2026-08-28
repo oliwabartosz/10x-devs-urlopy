@@ -5,6 +5,7 @@ import { createDb, employees } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and } from "drizzle-orm";
 import { withBase } from "@/lib/base-path";
+import { withStyleAttrDirective } from "@/lib/csp";
 
 // Compared against `context.url.pathname`, which carries the mount prefix when the app is served
 // under one (`/urlopy/dashboard`, not `/dashboard`). Written through withBase so the guard cannot
@@ -51,5 +52,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  return next();
+  const response = await next();
+
+  // Astro builds the Content-Security-Policy and hashes its own inline scripts and <style>
+  // blocks, but will not emit `style-src-attr` — see the comment in src/lib/csp.ts for why that
+  // directive is needed and why it cannot live in astro.config.mjs.
+  const csp = withStyleAttrDirective(response.headers.get("content-security-policy"));
+  if (csp !== null) {
+    response.headers.set("content-security-policy", csp);
+  }
+
+  return response;
 });
