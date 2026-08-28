@@ -873,7 +873,7 @@ reasoning survives and the false claim does not.
 
 - [x] 6.5 Fresh VPS install reaches the sign-in page through nginx — 831a8a4
 - [x] 6.6 Full flow works: employee created, absence recorded, visible in grid/details/statistics — 831a8a4
-- [ ] 6.7 Service restart preserves data and sessions
+- [x] 6.7 Service restart preserves data and sessions — 831a8a4
 - [x] 6.8 Backup restores into a working database — 831a8a4
 - [x] 6.9 Re-running install.sh upgrades without data loss — 831a8a4
 - [x] 6.10 Every corrected documentation claim is accurate as written — 831a8a4
