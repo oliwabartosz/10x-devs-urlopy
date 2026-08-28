@@ -1,0 +1,20 @@
+# Nightly SQLite snapshot — rootless (systemd --user) variant.
+#
+# Template: install-user.sh writes the result to ~/.config/systemd/user/urlopy-backup.timer.
+[Unit]
+Description=Urlopy — nightly SQLite backup, rootless
+Documentation=file://@APP_ROOT@/current/INSTALL.md
+
+[Timer]
+# 03:15 local time. Off the hour on purpose: the box still runs logrotate and friends at the top
+# of the hour, and a backup that contends with them for the disk is slower for no reason.
+OnCalendar=*-*-* 03:15:00
+# Without lingering enabled, the user manager is torn down at logout and this timer stops with it.
+# Persistent=yes is what makes the snapshot happen on the next login instead of being skipped
+# silently — see the linger warning install-user.sh prints.
+Persistent=yes
+# Spread the actual start over five minutes so a fleet of these does not stampede shared storage.
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

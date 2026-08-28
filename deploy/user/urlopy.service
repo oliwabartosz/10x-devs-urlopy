@@ -1,0 +1,56 @@
+# Urlopy application service — rootless (systemd --user) variant.
+#
+# Template: install-user.sh substitutes @PLACEHOLDERS@ and writes the result to
+# ~/.config/systemd/user/urlopy.service. Edit this file, not the installed copy — a re-run of
+# install-user.sh overwrites the installed copy.
+#
+# Differences from deploy/urlopy.service, all forced by having no root:
+#   - No User=/Group=. A user unit already runs as the invoking account; setting them is an error.
+#   - No ProtectHome=. The whole install lives under $HOME here, so hiding it would hide the app.
+#   - The namespace-dependent hardening lives in the 10-sandbox.conf drop-in instead of here.
+#     The user manager can only set those up when unprivileged user namespaces are available;
+#     where they are not, the unit must still start. install-user.sh drops the file if the
+#     service refuses to come up with it and tells you which mode you ended in.
+#   - WantedBy=default.target, not multi-user.target — user units have no multi-user.target.
+[Unit]
+Description=Urlopy — absence tracking (Astro/Node + SQLite), rootless
+Documentation=file://@APP_ROOT@/current/INSTALL.md
+After=network.target
+
+[Service]
+Type=simple
+
+# `current` is a symlink to the active release under @APP_ROOT@/releases/. systemd resolves it at
+# each start, so a rollback is: re-point the symlink, `systemctl --user restart urlopy`.
+WorkingDirectory=@APP_ROOT@/current
+ExecStart=@NODE_BIN@ @APP_ROOT@/current/dist/server/entry.mjs
+
+# HOST/PORT, DATABASE_PATH and PUBLIC_ORIGIN live here. Mode 0600 — with no root there is no
+# root:group split to lean on, so the only protection is that nobody else can read the file.
+EnvironmentFile=@ENV_FILE@
+
+Restart=on-failure
+RestartSec=5s
+
+# --- Hardening that needs no namespaces ------------------------------------------------------
+# Everything below is seccomp or a process attribute, applied by the kernel on exec regardless of
+# whether the user manager can build a mount namespace. It therefore always takes effect.
+NoNewPrivileges=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# There is no nginx in this variant, so the listener is public rather than loopback — but the
+# address families it may use are still exactly these three.
+# AF_NETLINK is not optional: @astrojs/node calls os.networkInterfaces() at startup to log
+# the address it bound, and getifaddrs(3) reaches the kernel over a netlink socket. Without
+# it every boot throws an unhandled ERR_SYSTEM_ERROR (uv_interface_addresses, EAFNOSUPPORT)
+# before the first request — noisy, and one Node release away from being fatal.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# NOT set: MemoryDenyWriteExecute. V8 maps JIT pages W+X; enabling it makes node abort on start.
+# This is a deliberate omission, not an oversight — do not "harden" it in.
+
+[Install]
+WantedBy=default.target

@@ -50,7 +50,7 @@ const BUILD_ONLY = [
   "wrangler",
 ];
 
-const CONTENTS = ["dist", "node_modules", "package.json", "deploy", "install.sh", "INSTALL.md"];
+const CONTENTS = ["dist", "node_modules", "package.json", "deploy", "install.sh", "install-user.sh", "INSTALL.md"];
 
 for (const entry of CONTENTS) {
   if (!existsSync(`${root}${entry}`)) {

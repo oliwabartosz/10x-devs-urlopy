@@ -24,7 +24,7 @@ Linux VPS. Product requirements live in `@context/foundation/prd.md`; stack deci
 - `npx astro sync` - regenerate Astro types before lint/build when env or route types changed.
 - `npm run dev` - Astro dev server. (It was `wrangler dev` until the Node adapter landed; the Workers runtime is no longer what production runs.)
 - `npm run lint` - run type-checked ESLint, React Compiler, Astro JSX a11y, and Prettier rules.
-- `npm run lint:sh` - shellcheck `install.sh`.
+- `npm run lint:sh` - shellcheck `install.sh` and `install-user.sh`.
 - `npm run build` - build the Node SSR output, then `postbuild` completes the deployable artifact.
 - `npm run pack` - archive the artifact for the offline VPS. Run after `npm prune --omit=dev`.
 - `npm run format` - run Prettier with Astro and Tailwind class sorting plugins.
@@ -127,4 +127,5 @@ pre-flight lookups rather than by parsing the message.
 - **`PUBLIC_ORIGIN` is half a build-time value.** `astro.config.mjs` bakes it into `site` and `security.allowedDomains`, and `src/lib/auth/session.ts` reads it at runtime for the cookie's `Secure` flag. Changing the origin needs a rebuild, not a restart. Get it wrong and sign-in/sign-out 403 while every JSON route keeps working.
 - CI in `@.github/workflows/ci.yml` runs on `main` and lints, shellchecks, tests, builds, smoke-tests a locally-started server, and packs the offline artifact. There is no deploy job: the VPS is offline and no runner can reach it. Deployment is a documented manual copy — see `@INSTALL.md`.
 - Deployment, upgrade, rollback, backup and restore are all in `@INSTALL.md`. `install.sh` is the entry point; `deploy/` holds the systemd units, the backup script and the nginx template.
+- `install-user.sh` is the rootless sibling for a box with no `sudo`: same artifact, installed into `$HOME` with `systemctl --user` units from `deploy/user/` and no nginx. It is linted and shipped alongside `install.sh`, so a change to one usually needs the same change in the other.
 - Commit messages on this branch follow Conventional Commits (`feat(change-id): title (pN)`), driven by the `/10x-implement` workflow.

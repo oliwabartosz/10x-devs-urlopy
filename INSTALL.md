@@ -38,14 +38,18 @@ once more at install time.
 Install these before you start; the installer explicitly does **not**, because there is no package
 source to install them from.
 
-| Requirement | Why                                                                          |
-| ----------- | ---------------------------------------------------------------------------- |
+| Requirement | Why                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------- |
 | Node ≥ 24   | `node:sqlite` (`DatabaseSync`, `backup()`) is only stable from 24. Pinned in `.nvmrc` to 24.15.0. |
-| systemd     | The service and the backup timer are systemd units.                          |
-| nginx       | TLS termination, static files, and the two headers Astro's origin check needs. |
-| `runuser`   | Ships with util-linux. Used to run the database bootstrap as the service user. |
+| systemd     | The service and the backup timer are systemd units.                                               |
+| nginx       | TLS termination, static files, and the two headers Astro's origin check needs.                    |
+| `runuser`   | Ships with util-linux. Used to run the database bootstrap as the service user.                    |
 
 `install.sh` checks all of these and stops with an actionable message rather than failing halfway.
+
+It also needs **root**. If you have an account on the box but no `sudo`, skip to
+[Installing without root](#installing-without-root) — the same artifact installs into your
+home directory instead, with `systemctl --user` units and no nginx.
 
 ---
 
@@ -159,6 +163,76 @@ Open the origin and sign in as the seeded admin.
 
 ---
 
+## Installing without root
+
+`install.sh` needs root and says so on its first line of work — it creates a system account, writes
+to `/opt`, `/etc/urlopy` and `/etc/systemd/system`, and enables system units. On a box where you
+have an account but no `sudo`, use `install-user.sh` instead:
+
+```bash
+./install-user.sh --origin http://host.internal:3000
+```
+
+Everything moves into your home directory and into the per-user systemd manager:
+
+| Root install                | Rootless install          |
+| --------------------------- | ------------------------- |
+| `/opt/urlopy/`              | `~/urlopy/`               |
+| `/var/lib/urlopy/urlopy.db` | `~/urlopy/data/urlopy.db` |
+| `/etc/urlopy/env` (0640)    | `~/urlopy/env` (0600)     |
+| `/var/backups/urlopy/`      | `~/urlopy/backups/`       |
+| `/etc/systemd/system/`      | `~/.config/systemd/user/` |
+| `systemctl …`               | `systemctl --user …`      |
+| dedicated `urlopy` account  | your own account          |
+
+The flags, the idempotent re-run, the release directories and the rollback symlink all behave
+exactly as above — only the paths and the `--user` differ. `journalctl --user -u urlopy -f` is the
+log.
+
+### What you give up, and what to ask an administrator for
+
+**There is no nginx.** The Node process becomes the public listener, so it binds `0.0.0.0` and
+serves its own static files (it does this competently — the `/_astro/` assets are content-hashed
+either way). Two consequences:
+
+- **`PUBLIC_ORIGIN` must carry the port**, because nothing forwards 80 to the app:
+  `http://host.internal:3000`. Sign-in survives a mistake here — `astro.config.mjs` matches on
+  hostname and protocol only, ignoring the port — but `site` and the sitemap would be wrong, so
+  the installer warns.
+- **The security headers are gone.** `deploy/nginx/urlopy.conf` is the only thing that sets CSP,
+  `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; with no proxy, nothing does.
+  Defensible on a closed internal network, but know that it is the case.
+
+Two things genuinely need root, and both are a single command someone else can run once:
+
+```bash
+sudo firewall-cmd --add-port=3000/tcp --permanent && sudo firewall-cmd --reload
+sudo loginctl enable-linger <your-user>
+```
+
+Without the first, the app answers only from the box itself. Without the second, the user manager
+— and with it the app and the backup timer — is torn down when your last session ends, and nothing
+starts at boot. `install-user.sh` tries `enable-linger` itself (some hosts ship a polkit rule that
+permits it) and tells you plainly if it could not.
+
+### The sandbox drop-ins
+
+The hardening that needs a mount namespace (`ProtectSystem=strict`, `PrivateTmp`, the `Protect*`
+family) is not in the user units themselves but in `10-sandbox.conf` drop-ins beside them. A user
+manager can only apply those where unprivileged user namespaces are permitted, and a unit that
+refuses to start is worse than one that starts less confined — on a box where you cannot become
+root to investigate.
+
+So the installer starts the service with the drop-ins in place, and only if that fails removes
+them, retries, and reports which mode you ended in (`sandbox: yes` or `sandbox: degraded`). When
+it degrades it quotes the actual systemd error first, because the two causes need opposite
+responses: a host that forbids user namespaces is something you live with, whereas _"No such file
+or directory"_ naming a `ReadWritePaths=` target means a path is wrong — or sits under `/tmp`,
+which `PrivateTmp=` hides from the service. Re-running `install-user.sh` always re-creates the
+drop-ins, so fixing the path and re-running restores full confinement.
+
+---
+
 ## Operating
 
 ```bash
@@ -196,7 +270,7 @@ sudo systemctl start urlopy
 ```
 
 Removing the stale `-wal` / `-shm` sidecars matters: leaving them next to a replaced database file
-is how you get a database that opens and then serves the *old* contents.
+is how you get a database that opens and then serves the _old_ contents.
 
 ---
 
@@ -248,11 +322,11 @@ ls -1t /opt/urlopy/releases | tail -n +4 | xargs -r -I{} sudo rm -rf /opt/urlopy
 
 ## Troubleshooting
 
-| Symptom                                                        | Cause                                                                                     |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Symptom                                                        | Cause                                                                                                                                   |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Sign-in returns 403, everything else works                     | `PUBLIC_ORIGIN` mismatch, or nginx is not sending `Host` / `X-Forwarded-Proto`. Rebuild with the right origin; check the proxy headers. |
 | Sign-in succeeds, then bounces straight back to the login page | `PUBLIC_ORIGIN` says `https://` but the site is served over plain HTTP. The cookie is set `Secure` and the browser never sends it back. |
-| One bad password locks out the whole office                    | nginx is not setting `X-Forwarded-For`, so every request throttles under the same key.      |
-| `EACCES` on the database at startup                            | The database file is not owned by the service user. `chown -R urlopy:urlopy /var/lib/urlopy`. |
-| Service will not start, `ERR_DLOPEN_FAILED` in the log         | A native module got into `node_modules`. Rebuild the artifact on a matching machine.        |
-| `systemctl list-timers` shows the backup timer but no files    | The service user cannot write `URLOPY_BACKUP_DIR`. Check `journalctl -u urlopy-backup`.     |
+| One bad password locks out the whole office                    | nginx is not setting `X-Forwarded-For`, so every request throttles under the same key.                                                  |
+| `EACCES` on the database at startup                            | The database file is not owned by the service user. `chown -R urlopy:urlopy /var/lib/urlopy`.                                           |
+| Service will not start, `ERR_DLOPEN_FAILED` in the log         | A native module got into `node_modules`. Rebuild the artifact on a matching machine.                                                    |
+| `systemctl list-timers` shows the backup timer but no files    | The service user cannot write `URLOPY_BACKUP_DIR`. Check `journalctl -u urlopy-backup`.                                                 |

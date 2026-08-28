@@ -51,8 +51,12 @@ SystemCallFilter=@system-service
 # `-wal` and `-shm` sidecars are created next to the database, so the *directory* must be
 # writable, not just the file.
 ReadWritePaths=@DB_DIR@
-# Loopback TCP to nginx and AF_UNIX for the runtime's own plumbing. No AF_NETLINK, no raw sockets.
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# Loopback TCP to nginx and AF_UNIX for the runtime's own plumbing. No raw sockets.
+# AF_NETLINK is not optional: @astrojs/node calls os.networkInterfaces() at startup to log
+# the address it bound, and getifaddrs(3) reaches the kernel over a netlink socket. Without
+# it every boot throws an unhandled ERR_SYSTEM_ERROR (uv_interface_addresses, EAFNOSUPPORT)
+# before the first request — noisy, and one Node release away from being fatal.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 # NOT set: MemoryDenyWriteExecute. V8 maps JIT pages W+X; enabling it makes node abort on start.
 # This is a deliberate omission, not an oversight — do not "harden" it in.
 

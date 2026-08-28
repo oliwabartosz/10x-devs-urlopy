@@ -42,22 +42,22 @@ employees; there is no self-registration.
 
 ## Available Scripts
 
-| Script                  | What it does                                                          |
-| ----------------------- | --------------------------------------------------------------------- |
-| `npm run dev`           | Astro dev server                                                      |
-| `npm run build`         | Production build + the artifact `postbuild` step                      |
-| `npm run preview`       | Preview the production build                                          |
-| `npm run pack`          | Archive the offline install artifact (after `npm prune --omit=dev`)   |
-| `npm run lint`          | ESLint with type-checked rules                                        |
-| `npm run lint:fix`      | Auto-fix lint issues                                                  |
-| `npm run lint:sh`       | shellcheck `install.sh`                                               |
-| `npm run format`        | Prettier                                                              |
-| `npm test`              | Vitest (watch)                                                        |
-| `npm run test:run`      | Vitest (once)                                                         |
-| `npm run db:generate`   | Generate a migration from schema changes                              |
-| `npm run db:bootstrap`  | Migrate + seed catalogue + seed admin                                 |
-| `npm run seed:admin`    | Just the admin seed                                                   |
-| `npm run e2e`           | Playwright (still targets the deployed Workers app — see `AGENTS.md`) |
+| Script                 | What it does                                                          |
+| ---------------------- | --------------------------------------------------------------------- |
+| `npm run dev`          | Astro dev server                                                      |
+| `npm run build`        | Production build + the artifact `postbuild` step                      |
+| `npm run preview`      | Preview the production build                                          |
+| `npm run pack`         | Archive the offline install artifact (after `npm prune --omit=dev`)   |
+| `npm run lint`         | ESLint with type-checked rules                                        |
+| `npm run lint:fix`     | Auto-fix lint issues                                                  |
+| `npm run lint:sh`      | shellcheck `install.sh`                                               |
+| `npm run format`       | Prettier                                                              |
+| `npm test`             | Vitest (watch)                                                        |
+| `npm run test:run`     | Vitest (once)                                                         |
+| `npm run db:generate`  | Generate a migration from schema changes                              |
+| `npm run db:bootstrap` | Migrate + seed catalogue + seed admin                                 |
+| `npm run seed:admin`   | Just the admin seed                                                   |
+| `npm run e2e`          | Playwright (still targets the deployed Workers app — see `AGENTS.md`) |
 
 ## Project Structure
 
@@ -83,10 +83,10 @@ employees; there is no self-registration.
 
 Copy `.env.example` to `.env`. Two variables matter:
 
-| Variable        | Purpose                                                                    |
-| --------------- | -------------------------------------------------------------------------- |
-| `DATABASE_PATH` | Filesystem path to the SQLite file. Created on first run.                  |
-| `PUBLIC_ORIGIN` | The origin the browser sees. Drives the session cookie's `Secure` flag.    |
+| Variable        | Purpose                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| `DATABASE_PATH` | Filesystem path to the SQLite file. Created on first run.               |
+| `PUBLIC_ORIGIN` | The origin the browser sees. Drives the session cookie's `Secure` flag. |
 
 **`PUBLIC_ORIGIN` is half a build-time value.** `astro.config.mjs` bakes it into `site` and
 `security.allowedDomains`, so changing the origin needs a rebuild, not a restart. A mismatch shows
@@ -98,7 +98,9 @@ unreachable from an offline host — leaving it unset disables the SDK cleanly.
 ## Deployment
 
 See **[INSTALL.md](./INSTALL.md)** for the full procedure: building the artifact, copying it to an
-offline VPS, `install.sh`, the nginx block, backups, restore, upgrade and rollback.
+offline VPS, `install.sh`, the nginx block, backups, restore, upgrade and rollback — plus
+`install-user.sh`, the rootless variant that installs into `$HOME` with `systemctl --user`
+units and no nginx, for a box where you have no `sudo`.
 
 ```bash
 export PUBLIC_ORIGIN=https://urlopy.internal
