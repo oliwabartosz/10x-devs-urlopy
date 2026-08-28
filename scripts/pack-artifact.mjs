@@ -36,6 +36,13 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const BUILD_ONLY = [
   "@astrojs/cloudflare", // Workers adapter; `main` still uses it, this artifact does not
   "@esbuild",
+  // drizzle-orm declares @libsql/client as an OPTIONAL PEER, so npm installs it — and libsql
+  // ships a compiled .node per platform. Nothing here imports it: the database layer is
+  // drizzle-orm/sqlite-proxy over node:sqlite, which is the whole reason this artifact is
+  // portable at all. Verified by running bootstrap.mjs and entry.mjs, sign-in included, with
+  // both directories moved out of the tree.
+  "@libsql",
+  "libsql",
   "@img", // sharp's platform binaries
   "@rollup",
   "@tailwindcss", // includes the native `oxide` CSS engine
