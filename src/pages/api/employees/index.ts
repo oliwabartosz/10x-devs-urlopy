@@ -1,7 +1,6 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createUser, deleteUser, DuplicateEmailError } from "@/lib/auth";
 import { createDb, employees } from "@/db/index";
@@ -9,6 +8,7 @@ import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and, asc, max } from "drizzle-orm";
 import { extractDbErrorCode, SQLITE_CONSTRAINT_UNIQUE } from "@/lib/db-errors";
 import { visibleEmployeesFilter } from "@/lib/employees";
+import { reportError } from "@/lib/report";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
+    reportError(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -57,7 +57,7 @@ export const GET: APIRoute = async (context) => {
             .orderBy(asc(employees.last_name), asc(employees.first_name));
     return json(rows, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/employees" } });
+    reportError(err, { tags: { route: "GET /api/employees" } });
     return json({ error: "Database error" }, 500);
   }
 };
@@ -91,7 +91,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
+    reportError(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -122,7 +122,7 @@ export const POST: APIRoute = async (context) => {
     if (err instanceof DuplicateEmailError) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     }
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
+    reportError(err, { tags: { route: "POST /api/employees" } });
     return json({ error: "Failed to create auth user" }, 500);
   }
 
@@ -137,7 +137,7 @@ export const POST: APIRoute = async (context) => {
       .returning();
     return json(employee, 201);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees" } });
+    reportError(err, { tags: { route: "POST /api/employees" } });
     // Compensating delete, kept — but now a local statement rather than a remote admin call.
     //
     // The plan expected both rows to land in one transaction, since they are finally in the same
@@ -148,7 +148,7 @@ export const POST: APIRoute = async (context) => {
     // running at boot. Here the delete is the honest tool, and unlike the Supabase call it
     // replaces it cannot half-succeed against a remote service.
     await deleteUser(user.id).catch((compErr: unknown) => {
-      Sentry.captureException(compErr, {
+      reportError(compErr, {
         level: "warning",
         tags: { route: "POST /api/employees", action: "compensating_delete" },
       });

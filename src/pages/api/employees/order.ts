@@ -1,11 +1,11 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, and } from "drizzle-orm";
 import { reorderEmployeesStatement } from "@/lib/employee-reorder";
+import { reportError } from "@/lib/report";
 
 export const prerender = false;
 
@@ -42,7 +42,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
+    reportError(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -70,7 +70,7 @@ export const PATCH: APIRoute = async (context) => {
     await db.run(reorderEmployeesStatement(parsed.data.order));
     return json({ ok: true }, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/employees/order" } });
+    reportError(err, { tags: { route: "PATCH /api/employees/order" } });
     return json({ error: "Database error" }, 500);
   }
 };

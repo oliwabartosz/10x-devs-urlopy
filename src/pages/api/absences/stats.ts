@@ -1,12 +1,12 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { employees, absences } from "@/db/index";
 import { eq, isNull, and, gte, lt, asc } from "drizzle-orm";
 import { LIST_LIMIT, YearSchema, absenceListColumns, absenceEmployeeJoin, json, yearWindow } from "@/lib/absence-list";
+import { reportError } from "@/lib/report";
 
 // The yearly dataset behind the Statystyki tab, scoped by the caller's role on the server.
 //
@@ -46,7 +46,7 @@ export const GET: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/absences/stats" } });
+    reportError(err, { tags: { route: "GET /api/absences/stats" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -82,7 +82,7 @@ export const GET: APIRoute = async (context) => {
       "X-Result-Truncated": truncated ? "1" : "0",
     });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/absences/stats" } });
+    reportError(err, { tags: { route: "GET /api/absences/stats" } });
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };

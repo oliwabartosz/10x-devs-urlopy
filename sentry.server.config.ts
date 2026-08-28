@@ -8,5 +8,8 @@ import * as Sentry from "@sentry/astro";
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.1,
-  integrations: [Sentry.captureConsoleIntegration({ levels: ["warn", "error"] })],
+  // "error" is deliberately not captured here any more. src/lib/report.ts writes every
+  // reported error to stderr AND calls captureException, so leaving console.error in this
+  // list would raise two Sentry events for one failure on any install that has a DSN.
+  integrations: [Sentry.captureConsoleIntegration({ levels: ["warn"] })],
 });

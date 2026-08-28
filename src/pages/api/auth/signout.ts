@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { clearSessionCookie, destroySession, readSessionId } from "@/lib/auth";
 import { withBase } from "@/lib/base-path";
+import { reportError } from "@/lib/report";
 
 export const POST: APIRoute = async (context) => {
   try {
@@ -13,7 +13,7 @@ export const POST: APIRoute = async (context) => {
     clearSessionCookie(context.cookies);
     return context.redirect(withBase("/"));
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/auth/signout" } });
+    reportError(err, { tags: { route: "POST /api/auth/signout" } });
     return new Response("Internal Server Error", { status: 500 });
   }
 };

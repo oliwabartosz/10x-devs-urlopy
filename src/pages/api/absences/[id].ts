@@ -1,7 +1,6 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
@@ -18,6 +17,7 @@ import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { assertAbsenceTypeExists, assertSubstituteAllowed } from "@/lib/absence-write-target";
+import { reportError } from "@/lib/report";
 
 const AbsenceUpdateSchema = z
   .object({
@@ -83,7 +83,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -115,7 +115,7 @@ export const PATCH: APIRoute = async (context) => {
       .where(ownershipWhere)
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!existing) return json({ error: "Nie znaleziono." }, 404);
@@ -157,7 +157,7 @@ export const PATCH: APIRoute = async (context) => {
   try {
     partialDayViolation = await isPartialDayViolation(db, effectiveTypeId, effectiveIsFullDay);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
@@ -241,7 +241,7 @@ export const PATCH: APIRoute = async (context) => {
     }
     return json(rows[0], 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "PATCH /api/absences/:id" } });
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
     const code = extractDbErrorCode(err);
     // Both references are resolved above, so a foreign-key error here means the row one of those
     // lookups found was deleted before this UPDATE landed. SQLite names nothing in the error, so
@@ -274,7 +274,7 @@ export const DELETE: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/absences/:id" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -293,7 +293,7 @@ export const DELETE: APIRoute = async (context) => {
     if (deleted.length === 0) return json({ error: "Nie znaleziono." }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/absences/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/absences/:id" } });
     // No code discrimination left: the only arm here was Postgres `42501` (insufficient
     // privilege), which came from RLS. RLS never applied on the service-role connection and does
     // not exist on a local SQLite file, so every failure reaching here is a real server error.

@@ -1,7 +1,6 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
@@ -16,6 +15,7 @@ import { isWeekendDateKey } from "@/lib/absence-range";
 import { json } from "@/lib/absence-list";
 import { assertAbsenceTypeExists, resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
 import type { AbsenceBulkCreateResult } from "@/types";
+import { reportError } from "@/lib/report";
 
 // Writes N days of one absence in a single atomic statement, overwriting whatever those days
 // already held.
@@ -108,7 +108,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences/bulk" } });
+    reportError(err, { tags: { route: "POST /api/absences/bulk" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -170,7 +170,7 @@ export const POST: APIRoute = async (context) => {
   try {
     partialDayViolation = await isPartialDayViolation(db, sharedFields.absence_type_id, sharedFields.is_full_day);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences/bulk" } });
+    reportError(err, { tags: { route: "POST /api/absences/bulk" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
@@ -206,7 +206,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(absences.employee_id, targetEmployeeId), inArray(absences.date, dates)))
       .then((rows) => rows.map((r) => r.date));
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences/bulk" } });
+    reportError(err, { tags: { route: "POST /api/absences/bulk" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   const overwritten = new Set(occupiedBefore);
@@ -242,7 +242,7 @@ export const POST: APIRoute = async (context) => {
       201,
     );
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences/bulk" } });
+    reportError(err, { tags: { route: "POST /api/absences/bulk" } });
     const code = extractDbErrorCode(err);
     // Both references are resolved above, so a foreign-key error here means the row one of those
     // lookups found was deleted before this insert landed. SQLite names nothing in the error, so

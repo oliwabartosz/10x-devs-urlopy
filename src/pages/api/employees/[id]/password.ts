@@ -1,10 +1,10 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { MIN_PASSWORD_LENGTH, setUserPassword } from "@/lib/auth";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
+import { reportError } from "@/lib/report";
 
 // Moderator-initiated password reset, for the "worker forgot their password" case.
 //
@@ -62,7 +62,7 @@ export const PATCH: APIRoute = async (context) => {
   } catch (err) {
     // Never let the password reach Sentry — `setUserPassword` hashes before it touches the
     // database, and the error it can throw carries the statement, not the plaintext.
-    Sentry.captureException(err, { tags: { route } });
+    reportError(err, { tags: { route } });
     return json({ error: "Nie udało się zmienić hasła." }, 500);
   }
 };

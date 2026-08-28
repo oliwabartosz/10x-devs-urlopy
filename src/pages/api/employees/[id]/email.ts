@@ -1,10 +1,10 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { DuplicateEmailError, getUserEmail, updateUserEmail } from "@/lib/auth";
 import { resolveModeratorTarget } from "@/lib/employee-target-guard";
+import { reportError } from "@/lib/report";
 
 // A sibling of [id]/restore.ts rather than a field on [id].ts, deliberately: the address lives
 // on the `users` row (it lived in Supabase Auth before that), not in the employees table, and
@@ -37,14 +37,14 @@ export const GET: APIRoute = async (context) => {
     if (email === null) {
       // An employee row whose `user_id` names no user. The FK makes this unreachable, so if it
       // ever fires the database has been edited by hand — report it rather than returning "".
-      Sentry.captureException(new Error("Employee row has no matching users row"), { tags: { route } });
+      reportError(new Error("Employee row has no matching users row"), { tags: { route } });
       return json({ error: "Database error" }, 503);
     }
     // Only the address. Never the user row, never user_id — an island must not receive auth
     // identifiers (employee-management/reviews/impl-review-phases-2-4.md F2).
     return json({ email }, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route } });
+    reportError(err, { tags: { route } });
     return json({ error: "Database error" }, 503);
   }
 };
@@ -93,7 +93,7 @@ export const PATCH: APIRoute = async (context) => {
     if (err instanceof DuplicateEmailError) {
       return json({ error: "Konto z tym adresem email już istnieje." }, 409);
     }
-    Sentry.captureException(err, { tags: { route } });
+    reportError(err, { tags: { route } });
     return json({ error: "Failed to update auth user" }, 500);
   }
 };

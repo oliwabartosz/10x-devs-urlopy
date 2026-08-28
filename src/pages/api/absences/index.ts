@@ -1,7 +1,6 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
@@ -19,6 +18,7 @@ import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { assertAbsenceTypeExists, resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
+import { reportError } from "@/lib/report";
 
 export const GET: APIRoute = async (context) => {
   if (!context.locals.user) {
@@ -54,7 +54,7 @@ export const GET: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
+    reportError(err, { tags: { route: "GET /api/absences" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -105,7 +105,7 @@ export const GET: APIRoute = async (context) => {
       "X-Result-Truncated": truncated ? "1" : "0",
     });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "GET /api/absences" } });
+    reportError(err, { tags: { route: "GET /api/absences" } });
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };
@@ -153,7 +153,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
+    reportError(err, { tags: { route: "POST /api/absences" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (!employeeRow) {
@@ -204,7 +204,7 @@ export const POST: APIRoute = async (context) => {
   try {
     partialDayViolation = await isPartialDayViolation(db, absenceData.absence_type_id, absenceData.is_full_day);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
+    reportError(err, { tags: { route: "POST /api/absences" } });
     return json({ error: "Błąd bazy danych." }, 503);
   }
   if (partialDayViolation) {
@@ -243,7 +243,7 @@ export const POST: APIRoute = async (context) => {
       });
     return json(absenceRow, 201);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/absences" } });
+    reportError(err, { tags: { route: "POST /api/absences" } });
     const code = extractDbErrorCode(err);
     // Both references are resolved above, so a foreign-key error surviving to here means the row
     // one of them found was deleted between that lookup and this insert. SQLite names nothing in

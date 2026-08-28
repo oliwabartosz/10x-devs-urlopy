@@ -6,6 +6,7 @@ import { DATABASE_PATH } from "astro:env/server";
 import { eq, isNull, and } from "drizzle-orm";
 import { withBase } from "@/lib/base-path";
 import { withStyleDirectives } from "@/lib/csp";
+import { reportError } from "@/lib/report";
 
 // Compared against `context.url.pathname`, which carries the mount prefix when the app is served
 // under one (`/urlopy/dashboard`, not `/dashboard`). Written through withBase so the guard cannot
@@ -34,7 +35,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (rows.length > 0) userRole = rows[0].role;
     }
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "middleware" } });
+    reportError(err, { tags: { route: "middleware" } });
     return new Response("Service Unavailable", { status: 503 });
   }
 

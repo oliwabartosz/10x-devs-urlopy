@@ -1,7 +1,6 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import {
   destroyOtherSessions,
@@ -11,6 +10,7 @@ import {
   setUserPassword,
   verifyPassword,
 } from "@/lib/auth";
+import { reportError } from "@/lib/report";
 
 // CONVENTION BREAK, deliberate: this route speaks JSON + zod + `{ error }` + status codes,
 // unlike its two neighbours signin.ts and signout.ts, which take FormData and answer with a
@@ -88,12 +88,12 @@ export const POST: APIRoute = async (context) => {
     try {
       await destroyOtherSessions(user.id, readSessionId(context.cookies));
     } catch (err) {
-      Sentry.captureException(err, { level: "warning", tags: { route, action: "sign_out_others" } });
+      reportError(err, { level: "warning", tags: { route, action: "sign_out_others" } });
     }
 
     return json({ success: true }, 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route } });
+    reportError(err, { tags: { route } });
     return json({ error: "Nie udało się zmienić hasła." }, 500);
   }
 };

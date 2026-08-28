@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import {
   clearSignInFailures,
   clientIp,
@@ -11,6 +10,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { withBase } from "@/lib/base-path";
+import { reportError } from "@/lib/report";
 
 /**
  * The app's own messages, in Polish, replacing `?error=${error.message}` — which reflected
@@ -56,7 +56,7 @@ export const POST: APIRoute = async (context) => {
     setSessionCookie(context.cookies, await createSession(user.id));
     return context.redirect(withBase("/"));
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/auth/signin" } });
+    reportError(err, { tags: { route: "POST /api/auth/signin" } });
     return new Response("Internal Server Error", { status: 500 });
   }
 };

@@ -1,11 +1,11 @@
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { employees } from "@/db/index";
 import { eq, isNull, isNotNull, and } from "drizzle-orm";
 import { isProtectedAdmin } from "@/lib/employees";
+import { reportError } from "@/lib/report";
 
 export const prerender = false;
 
@@ -32,7 +32,7 @@ export const POST: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees/:id/restore" } });
+    reportError(err, { tags: { route: "POST /api/employees/:id/restore" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -56,7 +56,7 @@ export const POST: APIRoute = async (context) => {
       .where(eq(employees.id, idParsed.data))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees/:id/restore" } });
+    reportError(err, { tags: { route: "POST /api/employees/:id/restore" } });
     return json({ error: "Database error" }, 503);
   }
   if (!target) {
@@ -79,7 +79,7 @@ export const POST: APIRoute = async (context) => {
     if (rows.length === 0) return json({ error: "Employee not found" }, 404);
     return json(rows[0], 200);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "POST /api/employees/:id/restore" } });
+    reportError(err, { tags: { route: "POST /api/employees/:id/restore" } });
     return json({ error: "Database error" }, 500);
   }
 };

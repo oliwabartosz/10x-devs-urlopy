@@ -6,7 +6,6 @@ import AbsenceGrid from "@/components/absence/AbsenceGrid";
 import AbsenceDetailsSubcards from "@/components/absence/AbsenceDetailsSubcards";
 import AbsenceStats from "@/components/absence/AbsenceStats";
 import HolidayBalanceCard from "@/components/holiday/HolidayBalanceCard";
-import * as Sentry from "@sentry/astro";
 import {
   createDb,
   employees as employeesTable,
@@ -22,6 +21,7 @@ import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
 import { visibleEmployeesFilter } from "@/lib/employees";
 import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
 import { withBase } from "@/lib/base-path";
+import { reportError } from "@/lib/report";
 
 // month is 1-indexed throughout (matches URL param and Postgres DATE month)
 const monthParam = Astro.url.searchParams.get("month");
@@ -68,7 +68,7 @@ try {
     .then((r) => r.at(0) ?? null);
   currentEmployee = row;
 } catch (error) {
-  Sentry.captureException(error, { tags: { page: "dashboard", phase: "employee-lookup" } });
+  reportError(error, { tags: { page: "dashboard", phase: "employee-lookup" } });
   employeeDbError = true;
 }
 
@@ -199,7 +199,7 @@ if (currentEmployee) {
     statsYearlyEmployees = isModerator ? employeesResult : statsEmployees;
     statsAbsences = isModerator ? absencesResult : absencesResult.filter((a) => a.employee_id === selfId);
   } catch (error) {
-    Sentry.captureException(error, { tags: { page: "dashboard", phase: "data-fetch" } });
+    reportError(error, { tags: { page: "dashboard", phase: "data-fetch" } });
     dataDbError = true;
   }
 }

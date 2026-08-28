@@ -1,13 +1,13 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import * as Sentry from "@sentry/astro";
 import { z } from "zod";
 import { createDb } from "@/db/index";
 import { DATABASE_PATH } from "astro:env/server";
 import { employees, holiday_balances } from "@/db/index";
 import { and, eq, isNull } from "drizzle-orm";
 import { isProtectedAdmin } from "@/lib/employees";
+import { reportError } from "@/lib/report";
 
 const json = (data: unknown, status: number) =>
   new Response(JSON.stringify(data), {
@@ -46,7 +46,7 @@ export const DELETE: APIRoute = async (context) => {
       .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!caller) {
@@ -64,7 +64,7 @@ export const DELETE: APIRoute = async (context) => {
       .where(eq(holiday_balances.id, id))
       .then((r) => r[0]);
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
     return json({ error: "Database error" }, 503);
   }
   if (!target) {
@@ -86,7 +86,7 @@ export const DELETE: APIRoute = async (context) => {
     if (deleted.length === 0) return json({ error: "Not found" }, 404);
     return new Response(null, { status: 204 });
   } catch (err) {
-    Sentry.captureException(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
+    reportError(err, { tags: { route: "DELETE /api/holiday-balances/:id" } });
     // No code discrimination left: the only arm here was Postgres `42501` (insufficient
     // privilege), which came from RLS — bypassed on the service-role connection and nonexistent
     // on a local SQLite file. Every failure reaching here is a real server error.
