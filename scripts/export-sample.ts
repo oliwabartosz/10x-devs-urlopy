@@ -5,8 +5,8 @@
  * is verifiable in Excel and LibreOffice before any UI exists, and re-verifiable later without
  * clicking through the dashboard. The fixture year deliberately exercises every case the
  * Phase 1 unit tests cover: a full-day absence, a gated partial day, a partial day on a type
- * that forbids them, a comment, a substitute, an employee deactivated mid-year, and one hired
- * mid-year.
+ * that forbids them, a comment, a substitute, an employee deactivated mid-year, one hired
+ * mid-year, and a priority-flagged absence both with and without a comment.
  *
  * Runs under `tsx` rather than plain node — like `scripts/seed-admin.ts` and
  * `scripts/team-digest.ts` — because it imports the `@/`-aliased source modules directly. There
@@ -135,9 +135,20 @@ const absences: Absence[] = [
   absence({ employee_id: "e-gone", date: `${YEAR}-05-04`, absence_type_id: 6 }),
   // After the hire date.
   absence({ employee_id: "e-hired", date: `${YEAR}-09-14`, absence_type_id: 5 }),
+  // A flagged `urlop`: the cell reads "[P] cały dzień" and the note gains "Priorytet: tak".
+  absence({ employee_id: "e-self", date: `${YEAR}-06-08`, absence_type_id: 1, is_priority: true }),
+  // Flagged *and* commented — the composition where the prefix and the wrapped second line meet.
+  absence({
+    employee_id: "e-long",
+    date: `${YEAR}-06-09`,
+    absence_type_id: 1,
+    is_priority: true,
+    comment: "Ślub siostry — Świętochłowice",
+  }),
   // Next-year planning lands in December of this one too, so every colour appears somewhere.
   absence({ employee_id: "e-self", date: `${YEAR}-12-28`, absence_type_id: 7 }),
-  absence({ employee_id: "e-long", date: `${YEAR}-12-29`, absence_type_id: 7 }),
+  // The second eligible type, flagged, so both sides of the priority rule appear in the file.
+  absence({ employee_id: "e-long", date: `${YEAR}-12-29`, absence_type_id: 7, is_priority: true }),
 ];
 
 const outPath = resolve(process.argv[2] ?? DEFAULT_OUT);

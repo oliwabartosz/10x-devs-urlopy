@@ -9,6 +9,7 @@ import {
   exportYearOptions,
   FULL_DAY_LABEL,
   monthSheetName,
+  PRIORITY_MARKER,
   type ExportSheet,
 } from "@/lib/export-workbook";
 import { ONSITE_TRAINING_TYPE_NAME } from "@/lib/absence-types";
@@ -58,6 +59,7 @@ const absence = (over: Partial<Absence> & Pick<Absence, "employee_id" | "date">)
   start_time: null,
   end_time: null,
   comment: null,
+  is_priority: false,
   substitute_employee_id: null,
   created_at: new Date(),
   updated_at: new Date(),
@@ -184,7 +186,7 @@ describe("exportYearOptions", () => {
 });
 
 describe("absenceNote", () => {
-  const fullDay = { is_full_day: true, start_time: null, end_time: null, comment: null };
+  const fullDay = { is_full_day: true, start_time: null, end_time: null, comment: null, is_priority: false };
 
   it("reports a full day as cały dzień", () => {
     expect(absenceNote({ absence: fullDay, typeName: "urlop wypoczynkowy" })).toBe(
@@ -212,12 +214,37 @@ describe("absenceNote", () => {
     ]);
   });
 
+  it("pushes Priorytet: tak above Komentarz, matching the grid tooltip's line order", () => {
+    const note = absenceNote({
+      absence: { ...fullDay, is_priority: true, comment: "zjazd rodzinny" },
+      typeName: "urlop",
+      substituteName: "Ewa Żółć",
+    });
+    expect(note.split("\n")).toEqual([
+      "Typ: urlop",
+      "Godziny: cały dzień",
+      "Priorytet: tak",
+      "Komentarz: zjazd rodzinny",
+      "Zastępstwo: Ewa Żółć",
+    ]);
+  });
+
+  it("omits Priorytet entirely when the absence is not flagged", () => {
+    expect(absenceNote({ absence: fullDay, typeName: "urlop" })).not.toContain("Priorytet");
+  });
+
   it("reports stored hours ungated — even on a type that forbids partial days", () => {
     // Deliberately rawTimeRange, not cellTimeRange: a legacy out-of-contract row must stay
     // visible to a moderator here rather than being silently hidden. Mirrors buildTooltip.
     expect(
       absenceNote({
-        absence: { is_full_day: false, start_time: "08:00:00", end_time: "12:00:00", comment: null },
+        absence: {
+          is_full_day: false,
+          start_time: "08:00:00",
+          end_time: "12:00:00",
+          comment: null,
+          is_priority: false,
+        },
         typeName: "urlop wypoczynkowy",
       }),
     ).toBe("Typ: urlop wypoczynkowy\nGodziny: 08:00–12:00");
@@ -267,7 +294,9 @@ describe("buildExportWorkbook — sheet structure", () => {
 
   it("puts every type in the legend row in catalogue order, filled and wrapped", () => {
     const legend = build()[0].rows[1];
-    expect(legend).toHaveLength(types.length);
+    // Deliberately types.length + 1: the priority marker's key cell trails the type cells.
+    // Asserted by content just below, so a future off-by-one cannot hide behind a loose bound.
+    expect(legend).toHaveLength(types.length + 1);
     expect(legend[0]).toMatchObject({
       text: "urlop wypoczynkowy",
       fill: "#b4dceb",
@@ -276,6 +305,24 @@ describe("buildExportWorkbook — sheet structure", () => {
       border: true,
     });
     expect(legend[1].text).toBe(ONSITE_TRAINING_TYPE_NAME);
+  });
+
+  it("closes the legend row with the [P] key cell — bordered and wrapped, but unfilled", () => {
+    const legend = build()[0].rows[1];
+    const key = legend[legend.length - 1];
+    // Same wording as the grid's own legend pill; the two are meant to read identically.
+    expect(key.text).toBe("[P] priorytetowy");
+    expect(key.wrap).toBe(true);
+    expect(key.border).toBe(true);
+    // It decodes a marker, not a type, so it carries no type colour.
+    expect(key.fill).toBeUndefined();
+    expect(key.textColor).toBeUndefined();
+  });
+
+  it("puts the [P] key on the legend row of all twelve sheets", () => {
+    for (const sheet of build()) {
+      expect(sheet.rows[1].at(-1)?.text).toBe("[P] priorytetowy");
+    }
   });
 
   it("leaves row 3 as a spacer", () => {
@@ -520,6 +567,51 @@ describe("buildExportWorkbook — absence cells", () => {
     expect(cell.text).toBe(FULL_DAY_LABEL);
     expect(cell.text).not.toContain("\n");
     expect(cell.wrap).toBeUndefined();
+  });
+
+  it("prefixes a flagged absence's cell text with the marker", () => {
+    const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10", is_priority: true })] })[2];
+    const cell = dayRow(sheet, 10)[1];
+    expect(cell.text).toBe(`${PRIORITY_MARKER} ${FULL_DAY_LABEL}`);
+    // The marker rides along with, and does not displace, the type's own colour coding.
+    expect(cell.fill).toBe("#b4dceb");
+    expect(cell.textColor).toBe("#072143");
+    expect(cell.note).toContain("Priorytet: tak");
+  });
+
+  it("keeps the marker on the first line when a comment wraps onto the second", () => {
+    // The interaction the prefix has to survive: prefix + timeText + \n + comment, in that order.
+    const sheet = build({
+      absences: [absence({ employee_id: "a", date: "2026-03-10", is_priority: true, comment: "zjazd rodzinny" })],
+    })[2];
+    const cell = dayRow(sheet, 10)[1];
+    expect(cell.text).toBe(`${PRIORITY_MARKER} ${FULL_DAY_LABEL}\nzjazd rodzinny`);
+    expect(cell.text.split("\n")[0]).toBe(`${PRIORITY_MARKER} ${FULL_DAY_LABEL}`);
+    expect(cell.wrap).toBe(true);
+  });
+
+  it("prefixes the hours, not the full-day label, on a gated partial day", () => {
+    const sheet = build({
+      absences: [
+        absence({
+          employee_id: "a",
+          date: "2026-03-10",
+          absence_type_id: TRAINING_TYPE_ID,
+          is_full_day: false,
+          start_time: "08:00:00",
+          end_time: "12:00:00",
+          is_priority: true,
+        }),
+      ],
+    })[2];
+    expect(dayRow(sheet, 10)[1].text).toBe(`${PRIORITY_MARKER} 08:00–12:00`);
+  });
+
+  it("leaves an unflagged cell's text and note free of the marker", () => {
+    const sheet = build({ absences: [absence({ employee_id: "a", date: "2026-03-10" })] })[2];
+    const cell = dayRow(sheet, 10)[1];
+    expect(cell.text).toBe(FULL_DAY_LABEL);
+    expect(cell.note).not.toContain("Priorytet");
   });
 
   it("falls back to an empty, note-less cell when the type is not in the catalogue", () => {

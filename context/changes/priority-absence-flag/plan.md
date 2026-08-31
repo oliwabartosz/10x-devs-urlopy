@@ -861,36 +861,36 @@ standard procedure.
 
 #### Automated
 
-- [x] 4.1 Type checking and linting pass: `npm run lint`
-- [x] 4.2 Existing tests still pass: `npm run test`
-- [x] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Type checking and linting pass: `npm run lint` — c83b8f4
+- [x] 4.2 Existing tests still pass: `npm run test` — c83b8f4
+- [x] 4.3 Production build succeeds: `npm run build` — c83b8f4
 
 #### Manual
 
-- [x] 4.4 A flagged absence shows `[P]`; flagged plus commented shows `[P]` and `💬` together, neither clipped
-- [x] 4.5 Column width is unchanged versus a month with no flagged absences
-- [x] 4.6 A flagged absence with a substitute shows the left-hand `🔁` badge undisturbed
-- [x] 4.7 Hovering a flagged cell shows the `Priorytet: tak` tooltip line
-- [x] 4.8 The legend shows `[P] = priorytetowy`
-- [x] 4.9 The details view shows the `[P]` pill next to the type chip
-- [x] 4.10 The chip's `aria-label` includes "priorytet"
+- [x] 4.4 A flagged absence shows `[P]`; flagged plus commented shows `[P]` and `💬` together, neither clipped — c83b8f4
+- [x] 4.5 Column width is unchanged versus a month with no flagged absences — c83b8f4
+- [x] 4.6 A flagged absence with a substitute shows the left-hand `🔁` badge undisturbed — c83b8f4
+- [x] 4.7 Hovering a flagged cell shows the `Priorytet: tak` tooltip line — c83b8f4
+- [x] 4.8 The legend shows `[P] = priorytetowy` — c83b8f4
+- [x] 4.9 The details view shows the `[P]` pill next to the type chip — c83b8f4
+- [x] 4.10 The chip's `aria-label` includes "priorytet" — c83b8f4
 
 ### Phase 5: XLSX export
 
 #### Automated
 
-- [ ] 5.1 Export tests pass, including the new priority cases: `npm run test`
-- [ ] 5.2 The updated legend assertion asserts the new cell's content, not just a longer array
-- [ ] 5.3 Type checking and linting pass: `npm run lint`
-- [ ] 5.4 Production build succeeds: `npm run build`
+- [x] 5.1 Export tests pass, including the new priority cases: `npm run test`
+- [x] 5.2 The updated legend assertion asserts the new cell's content, not just a longer array
+- [x] 5.3 Type checking and linting pass: `npm run lint`
+- [x] 5.4 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 5.5 `npm run sample:xlsx` shows `[P] cały dzień` in flagged cells with the fill colour intact
-- [ ] 5.6 A flagged absence with a comment wraps correctly across two lines
-- [ ] 5.7 Hovering a flagged cell in Excel/LibreOffice shows the `Priorytet: tak` note line
-- [ ] 5.8 Row 2 shows the `[P] = priorytetowy` legend cell after the type cells
-- [ ] 5.9 Exporting from the running app matches the sample script's output
+- [x] 5.5 `npm run sample:xlsx` shows `[P] cały dzień` in flagged cells with the fill colour intact
+- [x] 5.6 A flagged absence with a comment wraps correctly across two lines
+- [x] 5.7 Hovering a flagged cell in Excel/LibreOffice shows the `Priorytet: tak` note line
+- [x] 5.8 Row 2 shows the `[P] = priorytetowy` legend cell after the type cells
+- [x] 5.9 Exporting from the running app matches the sample script's output
 
 ### Phase 6: PRD and roadmap amendment
 

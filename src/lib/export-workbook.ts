@@ -36,6 +36,14 @@ const INACTIVE_SUFFIX = " (nieakt.)";
 /** What an absence cell reads when it has no time range to show. */
 export const FULL_DAY_LABEL = "cały dzień";
 
+/**
+ * The informational priority marker, verbatim the three characters the grid chip and the grid
+ * legend render (`AbsenceGrid.tsx`). Literal ASCII, never `🅿️`: nothing has ever round-tripped an
+ * emoji through the writer into Excel, and the same three characters in every surface is what
+ * lets the two legends read identically.
+ */
+export const PRIORITY_MARKER = "[P]";
+
 export interface ExportCell {
   /** `cały dzień` for a full-day absence; `HH:MM–HH:MM` for a gated partial day. */
   text: string;
@@ -148,12 +156,16 @@ export function employeeColumnLabel(emp: EmployeeListItem): string {
  * visible to a moderator instead of being silently hidden.
  */
 export function absenceNote(input: {
-  absence: Pick<Absence, "is_full_day" | "start_time" | "end_time" | "comment">;
+  absence: Pick<Absence, "is_full_day" | "start_time" | "end_time" | "comment" | "is_priority">;
   typeName: string;
   substituteName?: string;
 }): string {
   const range = rawTimeRange(input.absence);
   const lines = [`Typ: ${input.typeName}`, `Godziny: ${range || "cały dzień"}`];
+  // Same position and wording as the grid tooltip's own priority line (`buildTooltip`), so the
+  // note reads as its spreadsheet twin. `export-grid-to-xlsx/plan.md:536` omitted this line when
+  // the flag did not exist; now that it does, omitting it would read as an oversight.
+  if (input.absence.is_priority) lines.push("Priorytet: tak");
   if (input.absence.comment) lines.push(`Komentarz: ${input.absence.comment}`);
   if (input.substituteName) lines.push(`Zastępstwo: ${input.substituteName}`);
   return lines.join("\n");
@@ -192,15 +204,19 @@ export function buildExportWorkbook(input: BuildExportWorkbookInput): ExportShee
     // Row 2 — the legend, one wrapped colour-filled cell per type in catalogue order. One row
     // rather than seven stacked ones: freezing is top-anchored, so every legend row it takes
     // comes straight out of the visible day rows below.
-    rows.push(
-      absenceTypes.map((t) => ({
+    rows.push([
+      ...absenceTypes.map((t) => ({
         text: t.name,
         fill: t.color,
         textColor: t.text_color,
         wrap: true,
         border: true,
       })),
-    );
+      // `[P]` is meaningless without a key, and a reader who only ever sees the file never sees
+      // the grid's legend. Bordered and wrapped like its neighbours, but deliberately unfilled:
+      // it decodes a marker, not a type colour. Wording is the grid legend's, verbatim.
+      { text: `${PRIORITY_MARKER} priorytetowy`, wrap: true, border: true },
+    ]);
 
     // Row 3 — spacer.
     rows.push([]);
@@ -242,11 +258,16 @@ export function buildExportWorkbook(input: BuildExportWorkbookInput): ExportShee
         // type the product forbids partial days on reads as a full day here, exactly as it
         // renders on the grid. The note below stays ungated and still reports those hours.
         const timeText = cellTimeRange(absence, type.name) || FULL_DAY_LABEL;
+        // Reverses `export-grid-to-xlsx/plan.md:47` — "no emoji or type name in the cell; type
+        // identity is carried by fill colour". `[P]` is not type identity: it is a flag no fill
+        // can encode, and it is decoded by the legend cell above exactly as a colour is. The
+        // prefix goes on the *first* line so the comment below still wraps as the second.
+        const firstLine = absence.is_priority ? `${PRIORITY_MARKER} ${timeText}` : timeText;
         row.push({
           // The comment goes in the cell as well as in the note, on its own line, so it is
           // readable without hovering — a note is invisible until pointed at, and on a printed
           // or scrolled sheet it may as well not exist.
-          text: absence.comment ? `${timeText}\n${absence.comment}` : timeText,
+          text: absence.comment ? `${firstLine}\n${absence.comment}` : firstLine,
           fill: type.color,
           textColor: type.text_color,
           border: true,
