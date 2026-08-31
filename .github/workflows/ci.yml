@@ -31,6 +31,13 @@ jobs:
         # a runner-image assumption, so this gate behaves identically here and on a laptop.
         run: npm run lint:sh
 
+      - name: Type check
+        # `npm run lint` does not type-check. ESLint's type-checked rules do no structural
+        # assignability checking, so a fixture missing a required field lints clean — that gap
+        # already shipped once (7b1507a, two Absence fixtures left incomplete by a phase whose
+        # stated gate was `npm run lint`). `astro check` is the only thing that catches it.
+        run: npm run check
+
       - name: Test
         # A real gate now. The suites used to self-skip (describe.skipIf) unless DATABASE_URL_DIRECT
         # was set, so a green run meant "skipped" — see the note that used to live here. Each test

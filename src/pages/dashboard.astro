@@ -19,6 +19,7 @@ import { eq, isNull, and, gte, lt, asc, sql } from "drizzle-orm";
 import { EmployeeManagementSheet } from "@/components/employee/EmployeeManagementSheet";
 import { AbsenceExportDialog } from "@/components/absence/AbsenceExportDialog";
 import { visibleEmployeesFilter } from "@/lib/employees";
+import { absenceListColumns } from "@/lib/absence-list";
 import type { EmployeeListItem, Absence, AbsenceType, HolidayBalanceView } from "@/types";
 import { withBase } from "@/lib/base-path";
 import { reportError } from "@/lib/report";
@@ -138,22 +139,12 @@ if (currentEmployee) {
             .where(and(isNull(employeesTable.deleted_at), visibleEmployeesFilter()))
             .orderBy(asc(employeesTable.display_order), asc(employeesTable.last_name), asc(employeesTable.first_name)),
       db
-        .select({
-          id: absencesTable.id,
-          employee_id: absencesTable.employee_id,
-          absence_type_id: absencesTable.absence_type_id,
-          date: absencesTable.date,
-          is_full_day: absencesTable.is_full_day,
-          start_time: absencesTable.start_time,
-          end_time: absencesTable.end_time,
-          comment: absencesTable.comment,
-          // Separate from `absenceListColumns`: the grid is server-rendered from this select,
-          // not from a fetch, so a column added only there leaves the chip blank.
-          is_priority: absencesTable.is_priority,
-          substitute_employee_id: absencesTable.substitute_employee_id,
-          created_at: absencesTable.created_at,
-          updated_at: absencesTable.updated_at,
-        })
+        // Shared with `GET /api/absences` rather than hand-copied. The grid is server-rendered
+        // from this select, not from a fetch, so the two lists are genuinely separate code paths
+        // over the same row shape — and a column added to only one of them leaves the chip blank
+        // with no type error. Composing from the one definition is what stops them drifting; the
+        // window below is the only thing this query adds.
+        .select(absenceListColumns)
         .from(absencesTable)
         .innerJoin(employeesTable, absencesJoin)
         .where(and(gte(absencesTable.date, firstDay), lt(absencesTable.date, firstDayNextMonth))),

@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:sh": "shellcheck install.sh install-user.sh",
+    "check": "astro check",
     "format": "prettier --write .",
     "test": "vitest",
     "test:run": "vitest run",

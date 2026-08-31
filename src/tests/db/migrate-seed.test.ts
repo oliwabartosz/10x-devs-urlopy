@@ -136,3 +136,81 @@ describe("migrate + seed on a fresh database", () => {
     expect(await createDb(path).select().from(absence_types).orderBy(absence_types.id)).toEqual(before.types);
   });
 });
+
+// The CHECK constraints and `COLLATE NOCASE` in 0000_baseline.sql are hand-written: Drizzle
+// cannot express either, so `drizzle/meta/*_snapshot.json` carries `"checkConstraints": {}` on
+// every table and drizzle-kit does not know they exist. SQLite has no
+// `ALTER TABLE ... ADD CONSTRAINT`, so any future migration that forces the 12-step
+// table-recreate path regenerates the CREATE TABLE *without* them — silently, with no type
+// error and no failing test. `0001_tiresome_dracula.sql` happened to be a plain ADD COLUMN and
+// left them intact, but the next schema change may not be.
+//
+// This suite is the standing guard for that: it asserts against the *whole* migration chain, so
+// it starts failing the day a recreate drops one. Textual presence is checked because that is
+// what a recreate destroys, and enforcement is checked because a constraint that survives
+// re-emission but stops binding is the same bug with a friendlier face.
+describe("hand-written constraints survive the whole migration chain", () => {
+  const HAND_WRITTEN_CHECKS = [
+    "absence_types_color_check",
+    "absences_time_check",
+    "holiday_balances_year_check",
+    "holiday_balances_days_nonnegative_check",
+  ];
+
+  function ddlFor(name: string): string {
+    const row = getRawHandle(path).prepare("select sql from sqlite_master where name = ?").get(name) as
+      | { sql: string }
+      | undefined;
+    if (!row) throw new Error(`sqlite_master has no entry named ${name} — table renamed or dropped?`);
+    return row.sql;
+  }
+
+  it("keeps every named CHECK constraint after all migrations are applied", async () => {
+    await migrateAndSeed(path);
+
+    const allDdl = getRawHandle(path)
+      .prepare("select sql from sqlite_master where sql is not null")
+      .all()
+      .map((r) => (r as { sql: string }).sql)
+      .join("\n");
+
+    for (const name of HAND_WRITTEN_CHECKS) {
+      expect(allDdl, `${name} is gone — did a migration take the table-recreate path?`).toContain(name);
+    }
+
+    // Not merely present in some table's DDL, but on the table it belongs to.
+    expect(ddlFor("absences")).toContain("absences_time_check");
+    expect(ddlFor("absence_types")).toContain("absence_types_color_check");
+    expect(ddlFor("users")).toContain("COLLATE NOCASE");
+  });
+
+  it("keeps the (employee_id, date) unique index", async () => {
+    await migrateAndSeed(path);
+    expect(ddlFor("absences_employee_id_date_unique")).toContain("UNIQUE INDEX");
+  });
+
+  it("still enforces absences_time_check, not just declares it", async () => {
+    await migrateAndSeed(path);
+    const handle = getRawHandle(path);
+    // Foreign keys off so the only thing that can reject the row below is the CHECK itself.
+    // Otherwise a missing employee row throws too and the test passes for the wrong reason.
+    handle.exec("PRAGMA foreign_keys = OFF");
+
+    // A full-day absence carrying a time range is exactly what the CHECK forbids. If a recreate
+    // dropped it, this insert succeeds and the row is unrepresentable in the app's own types.
+    expect(() => {
+      handle.exec(
+        "insert into absences (id, employee_id, absence_type_id, date, is_full_day, start_time, end_time, created_at, updated_at) " +
+          "values ('a-check', 'e-check', 1, '2026-03-02', 1, '08:00', '12:00', 0, 0)",
+      );
+    }).toThrow(/absences_time_check|CHECK constraint failed/i);
+
+    // The mirror case must be accepted, so the assertion above cannot pass on an unrelated error.
+    expect(() => {
+      handle.exec(
+        "insert into absences (id, employee_id, absence_type_id, date, is_full_day, start_time, end_time, created_at, updated_at) " +
+          "values ('a-ok', 'e-check', 1, '2026-03-03', 1, NULL, NULL, 0, 0)",
+      );
+    }).not.toThrow();
+  });
+});

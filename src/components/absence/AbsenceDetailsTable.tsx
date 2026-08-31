@@ -236,8 +236,18 @@ export default function AbsenceDetailsTable({
                     <span>{absenceType.name}</span>
                     {/* Inline inside the type chip rather than a badge of its own: the marker
                         qualifies the type, and the Typ column is `minmax(200px,1fr)`, so it
-                        absorbs the extra glyphs. Still no new sortable column. */}
-                    {absence.is_priority && <span>[P]</span>}
+                        absorbs the extra glyphs. Still no new sortable column.
+
+                        Unlike the grid and the export, this surface carries no legend to decode
+                        `[P]`, so the word is spelled out rather than left to the brackets: the
+                        glyph is hidden from assistive technology and an sr-only twin carries the
+                        meaning, with `title` giving sighted users the same thing on hover. */}
+                    {absence.is_priority && (
+                      <span title="priorytetowy">
+                        <span aria-hidden="true">[P]</span>
+                        <span className="sr-only">priorytetowy</span>
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="text-muted-foreground text-xs">—</span>
