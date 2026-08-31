@@ -56,6 +56,7 @@ function absence(overrides: Partial<Absence> = {}): Absence {
     start_time: null,
     end_time: null,
     comment: null,
+    is_priority: false,
     substitute_employee_id: null,
     created_at: new Date("2026-08-01T00:00:00Z"),
     updated_at: new Date("2026-08-01T00:00:00Z"),

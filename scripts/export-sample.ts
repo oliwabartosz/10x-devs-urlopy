@@ -80,6 +80,7 @@ const absence = (over: Partial<Absence> & Pick<Absence, "employee_id" | "date">)
   start_time: null,
   end_time: null,
   comment: null,
+  is_priority: false,
   substitute_employee_id: null,
   created_at: new Date(),
   updated_at: new Date(),
