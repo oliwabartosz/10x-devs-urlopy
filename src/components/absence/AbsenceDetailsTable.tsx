@@ -234,6 +234,10 @@ export default function AbsenceDetailsTable({
                   >
                     {absenceType.icon && <span className="text-[13px] leading-none">{absenceType.icon}</span>}
                     <span>{absenceType.name}</span>
+                    {/* Inline inside the type chip rather than a badge of its own: the marker
+                        qualifies the type, and the Typ column is `minmax(200px,1fr)`, so it
+                        absorbs the extra glyphs. Still no new sortable column. */}
+                    {absence.is_priority && <span>[P]</span>}
                   </span>
                 ) : (
                   <span className="text-muted-foreground text-xs">—</span>

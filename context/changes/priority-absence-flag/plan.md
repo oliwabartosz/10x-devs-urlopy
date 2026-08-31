@@ -845,35 +845,35 @@ standard procedure.
 
 #### Automated
 
-- [x] 3.1 Type checking and linting pass: `npm run lint`
-- [x] 3.2 Existing tests still pass: `npm run test`
-- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Type checking and linting pass: `npm run lint` — 2525099
+- [x] 3.2 Existing tests still pass: `npm run test` — 2525099
+- [x] 3.3 Production build succeeds: `npm run build` — 2525099
 
 #### Manual
 
-- [x] 3.4 Selecting `urlop` or `urlop planowany` shows the Priorytet checkbox; every other type hides it
-- [x] 3.5 Keyboard arrow-key type switching clears the flag (the roving path, not just click)
-- [x] 3.6 Opening an existing flagged `urlop` for edit shows the checkbox already checked
-- [x] 3.7 The checkbox is absent from the tab order when an ineligible type is selected
-- [x] 3.8 The flag persists from all three call sites: single create, drag-range create, details-subcard edit
+- [x] 3.4 Selecting `urlop` or `urlop planowany` shows the Priorytet checkbox; every other type hides it — 2525099
+- [x] 3.5 Keyboard arrow-key type switching clears the flag (the roving path, not just click) — 2525099
+- [x] 3.6 Opening an existing flagged `urlop` for edit shows the checkbox already checked — 2525099
+- [x] 3.7 The checkbox is absent from the tab order when an ineligible type is selected — 2525099
+- [x] 3.8 The flag persists from all three call sites: single create, drag-range create, details-subcard edit — 2525099
 
 ### Phase 4: Grid chip, tooltip, legend, and details view
 
 #### Automated
 
-- [ ] 4.1 Type checking and linting pass: `npm run lint`
-- [ ] 4.2 Existing tests still pass: `npm run test`
-- [ ] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Type checking and linting pass: `npm run lint`
+- [x] 4.2 Existing tests still pass: `npm run test`
+- [x] 4.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 4.4 A flagged absence shows `[P]`; flagged plus commented shows `[P]` and `💬` together, neither clipped
-- [ ] 4.5 Column width is unchanged versus a month with no flagged absences
-- [ ] 4.6 A flagged absence with a substitute shows the left-hand `🔁` badge undisturbed
-- [ ] 4.7 Hovering a flagged cell shows the `Priorytet: tak` tooltip line
-- [ ] 4.8 The legend shows `[P] = priorytetowy`
-- [ ] 4.9 The details view shows the `[P]` pill next to the type chip
-- [ ] 4.10 The chip's `aria-label` includes "priorytet"
+- [x] 4.4 A flagged absence shows `[P]`; flagged plus commented shows `[P]` and `💬` together, neither clipped
+- [x] 4.5 Column width is unchanged versus a month with no flagged absences
+- [x] 4.6 A flagged absence with a substitute shows the left-hand `🔁` badge undisturbed
+- [x] 4.7 Hovering a flagged cell shows the `Priorytet: tak` tooltip line
+- [x] 4.8 The legend shows `[P] = priorytetowy`
+- [x] 4.9 The details view shows the `[P]` pill next to the type chip
+- [x] 4.10 The chip's `aria-label` includes "priorytet"
 
 ### Phase 5: XLSX export
 

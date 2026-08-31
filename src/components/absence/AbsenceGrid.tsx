@@ -213,6 +213,7 @@ export default function AbsenceGrid({
       `Typ: ${type.name}`,
       `Godziny: ${range || "cały dzień"}`,
     ];
+    if (absence.is_priority) lines.push("Priorytet: tak");
     if (absence.comment) lines.push(`Komentarz: ${absence.comment}`);
     if (substituteName) lines.push(`Zastępstwo: ${substituteName}`);
     return lines.join("\n");
@@ -310,6 +311,12 @@ export default function AbsenceGrid({
                   <span>{type.name}</span>
                 </span>
               ))}
+              {/* `[P]` is meaningless without a key. Styled as a neighbouring type pill minus the
+                  colour dot — it decodes a marker, not a type. */}
+              <span className="border-line-strong flex items-center gap-[7px] rounded-full border bg-white px-3 py-1.5 text-xs text-black">
+                <span className="font-bold">[P]</span>
+                <span>priorytetowy</span>
+              </span>
             </div>
             {/* Both verbs stated. The second half is the prototype's own hint
                 (10xUrlopy.dc.html:101), deliberately stripped by the predecessor change pending
@@ -406,6 +413,7 @@ export default function AbsenceGrid({
                               absence.substitute_employee_id != null
                                 ? `zastępstwo: ${employeeNameMap.get(absence.substitute_employee_id) ?? ""}`
                                 : "",
+                              absence.is_priority ? "priorytet" : "",
                               absence.comment ? "komentarz" : "",
                             ]
                               .filter(Boolean)
@@ -513,9 +521,22 @@ export default function AbsenceGrid({
                                   <span>{substituteInitials}</span>
                                 </span>
                               )}
-                              {absence.comment && (
-                                <span className="absolute top-1/2 right-1 -translate-y-1/2 text-[10px] leading-none opacity-85">
-                                  💬
+                              {/* One cluster, not two independent anchors: `[P]` and 💬 share the
+                                  right-hand corner. The marker MUST live inside this absolutely
+                                  positioned box — an inline flex child contributes its full width
+                                  to the chip's intrinsic size (`overflow:hidden` resolves
+                                  `min-width:auto` to 0, which is a floor, not a cap), so it would
+                                  widen the 120px table-fixed column instead of clipping. That is
+                                  the bug grid-adjustment-offsite-training existed to fix. The
+                                  `left-1` anchor stays reserved for substitute initials. */}
+                              {(absence.is_priority || absence.comment) && (
+                                <span className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-[3px]">
+                                  {absence.is_priority && (
+                                    <span className="text-primary rounded-full bg-white/75 px-[5px] py-px text-[9px] leading-[1.4] font-bold">
+                                      [P]
+                                    </span>
+                                  )}
+                                  {absence.comment && <span className="text-[10px] leading-none opacity-85">💬</span>}
                                 </span>
                               )}
                             </div>
