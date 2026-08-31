@@ -288,6 +288,12 @@ export default function AbsenceGrid({
 
   return (
     <DndContext
+      // Explicit id, not dnd-kit's default. Without it `useUniqueId("DndDescribedBy", id)`
+      // (@dnd-kit/core) falls back to a module-level counter, which sits at a different value in
+      // the SSR module than in a freshly loaded client one — so the server and client disagree on
+      // `aria-describedby` on every drag handle and React logs a hydration mismatch it explicitly
+      // will not patch up. A literal id is identical on both sides by construction.
+      id="absence-grid"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
