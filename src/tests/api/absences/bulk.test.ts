@@ -38,6 +38,7 @@ describe("Absence bulk create (route level)", () => {
   const EMPLOYEE_GATE_RUN = ["2026-05-08"];
   const MODERATOR_RUN = ["2026-05-14"];
   const REPORTING_RUN = ["2026-05-11", "2026-05-12", "2026-05-13"];
+  const PRIORITY_OVERWRITE_RUN = ["2026-05-15"]; // Fri
 
   // One past the route's cap. `MAX_BULK_DATES` was made module-private in 1a2451b, so the boundary
   // is asserted with a literal count rather than an import — this test drifts if the cap moves,
@@ -58,6 +59,7 @@ describe("Absence bulk create (route level)", () => {
       ...EMPLOYEE_GATE_RUN,
       ...MODERATOR_RUN,
       ...REPORTING_RUN,
+      ...PRIORITY_OVERWRITE_RUN,
       ...OVER_CAP_RUN,
     ]),
   ];
@@ -88,6 +90,7 @@ describe("Absence bulk create (route level)", () => {
     start_time: null,
     end_time: null,
     comment: null,
+    is_priority: false,
     substitute_employee_id: null,
     ...overrides,
   });
@@ -96,7 +99,12 @@ describe("Absence bulk create (route level)", () => {
   // leftover row from an earlier test as if this call had written it (hours-clamp.test.ts:116-118).
   const storedFor = (targetId: string, dates: string[]) =>
     db
-      .select({ date: absences.date, absence_type_id: absences.absence_type_id, comment: absences.comment })
+      .select({
+        date: absences.date,
+        absence_type_id: absences.absence_type_id,
+        comment: absences.comment,
+        is_priority: absences.is_priority,
+      })
       .from(absences)
       .where(and(eq(absences.employee_id, targetId), inArray(absences.date, dates)))
       .orderBy(asc(absences.date));
@@ -247,6 +255,41 @@ describe("Absence bulk create (route level)", () => {
     expect(
       rows.every((r) => r.comment === "Druga tura"),
       "the overwrite must have replaced the stored rows, not merely reported doing so",
+    ).toBe(true);
+  });
+
+  // The `onConflictDoUpdate.set` trap. A column present in `.values()` but missing from `set`
+  // writes correctly on insert and silently keeps its *stale* value on every overwritten day —
+  // no type error, no failure anywhere else. The overwrite path is reachable from the UI whenever
+  // a drag crosses an existing entry, so the stale value would be a flag the moderator cleared
+  // and watched come back. Deleting `is_priority` from bulk.ts's `set` fails exactly this test.
+  it("clears is_priority on the overwrite path, not merely on insert", async () => {
+    const flagged = await post(
+      employeeAuthId,
+      bulkBody({ dates: PRIORITY_OVERWRITE_RUN, absence_type_id: vacationTypeId, is_priority: true }),
+    );
+    expect(flagged.status).toBe(201);
+
+    const afterInsert = await storedFor(employeeId, PRIORITY_OVERWRITE_RUN);
+    expect(
+      afterInsert.every((r) => r.is_priority),
+      "the insert path must store the flag",
+    ).toBe(true);
+
+    const overwrite = await post(
+      employeeAuthId,
+      bulkBody({ dates: PRIORITY_OVERWRITE_RUN, absence_type_id: vacationTypeId, is_priority: false }),
+    );
+    expect(overwrite.status).toBe(201);
+    const overwriteBody = (await overwrite.json()) as AbsenceBulkCreateResult;
+    expect(overwriteBody.overwritten_dates, "the second call must have taken the overwrite path").toEqual(
+      PRIORITY_OVERWRITE_RUN,
+    );
+
+    const afterOverwrite = await storedFor(employeeId, PRIORITY_OVERWRITE_RUN);
+    expect(
+      afterOverwrite.every((r) => !r.is_priority),
+      "the overwrite must have replaced the flag, not kept its stale value",
     ).toBe(true);
   });
 

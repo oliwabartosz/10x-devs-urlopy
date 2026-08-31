@@ -13,8 +13,9 @@ import {
   SQLITE_CONSTRAINT_FOREIGNKEY,
   SQLITE_CONSTRAINT_UNIQUE,
 } from "@/lib/db-errors";
-import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
+import { PARTIAL_DAY_TYPE_NAMES, PRIORITY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { isPriorityViolation } from "@/lib/services/absence-priority";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { assertAbsenceTypeExists, assertSubstituteAllowed } from "@/lib/absence-write-target";
 import { reportError } from "@/lib/report";
@@ -27,6 +28,7 @@ const AbsenceUpdateSchema = z
     start_time: TimeSchema.nullable(),
     end_time: TimeSchema.nullable(),
     comment: z.string().max(500).nullable(),
+    is_priority: z.boolean(),
     substitute_employee_id: z.uuid().nullable(),
   })
   .partial();
@@ -100,8 +102,17 @@ export const PATCH: APIRoute = async (context) => {
   // the type must not leave an existing partial-day range on a now-ineligible type. The two
   // time columns are read for the same reason — the hours clamp below needs the effective
   // range, and a body that patches only one end must be clamped against the stored other end.
+  //
+  // `is_priority` is read for the same reason: a body that changes only the type must not leave
+  // a stored flag on a now-ineligible type.
   let existing:
-    | { absence_type_id: number; is_full_day: boolean; start_time: string | null; end_time: string | null }
+    | {
+        absence_type_id: number;
+        is_full_day: boolean;
+        start_time: string | null;
+        end_time: string | null;
+        is_priority: boolean;
+      }
     | undefined;
   try {
     existing = await db
@@ -110,6 +121,7 @@ export const PATCH: APIRoute = async (context) => {
         is_full_day: absences.is_full_day,
         start_time: absences.start_time,
         end_time: absences.end_time,
+        is_priority: absences.is_priority,
       })
       .from(absences)
       .where(ownershipWhere)
@@ -146,12 +158,14 @@ export const PATCH: APIRoute = async (context) => {
     is_full_day: parsed.data.is_full_day === undefined,
     start_time: parsed.data.start_time === undefined,
     end_time: parsed.data.end_time === undefined,
+    is_priority: parsed.data.is_priority === undefined,
   };
 
   const effectiveTypeId = parsed.data.absence_type_id ?? existing.absence_type_id;
   const effectiveIsFullDay = parsed.data.is_full_day ?? existing.is_full_day;
   const effectiveStartTime = omitted.start_time ? existing.start_time : (parsed.data.start_time ?? null);
   const effectiveEndTime = omitted.end_time ? existing.end_time : (parsed.data.end_time ?? null);
+  const effectiveIsPriority = parsed.data.is_priority ?? existing.is_priority;
 
   let partialDayViolation: boolean;
   try {
@@ -162,6 +176,20 @@ export const PATCH: APIRoute = async (context) => {
   }
   if (partialDayViolation) {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
+  }
+
+  // Same shape, on the effective priority state. A body that changes only the type to an
+  // ineligible one on a flagged row is rejected rather than silently clearing the flag: the
+  // caller asked for something the rule forbids, and answering 400 is what makes that visible.
+  let priorityViolation: boolean;
+  try {
+    priorityViolation = await isPriorityViolation(db, effectiveTypeId, effectiveIsPriority);
+  } catch (err) {
+    reportError(err, { tags: { route: "PATCH /api/absences/:id" } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  if (priorityViolation) {
+    return json({ error: `Priorytet jest dostępny tylko dla typów: ${PRIORITY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
   // Same domain rule as POST, applied to the *effective* range.
@@ -203,6 +231,7 @@ export const PATCH: APIRoute = async (context) => {
     omitted.is_full_day ? eq(absences.is_full_day, existing.is_full_day) : undefined,
     omitted.start_time ? timePin(absences.start_time, existing.start_time) : undefined,
     omitted.end_time ? timePin(absences.end_time, existing.end_time) : undefined,
+    omitted.is_priority ? eq(absences.is_priority, existing.is_priority) : undefined,
   ].filter((c) => c !== undefined);
   const updateWhere = casConditions.length > 0 ? and(ownershipWhere, ...casConditions) : ownershipWhere;
 
@@ -225,6 +254,7 @@ export const PATCH: APIRoute = async (context) => {
         start_time: absences.start_time,
         end_time: absences.end_time,
         comment: absences.comment,
+        is_priority: absences.is_priority,
         substitute_employee_id: absences.substitute_employee_id,
         created_at: absences.created_at,
         updated_at: absences.updated_at,

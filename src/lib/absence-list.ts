@@ -30,6 +30,7 @@ export const absenceListColumns = {
   start_time: absences.start_time,
   end_time: absences.end_time,
   comment: absences.comment,
+  is_priority: absences.is_priority,
   substitute_employee_id: absences.substitute_employee_id,
   created_at: absences.created_at,
   updated_at: absences.updated_at,

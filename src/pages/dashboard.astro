@@ -147,6 +147,9 @@ if (currentEmployee) {
           start_time: absencesTable.start_time,
           end_time: absencesTable.end_time,
           comment: absencesTable.comment,
+          // Separate from `absenceListColumns`: the grid is server-rendered from this select,
+          // not from a fetch, so a column added only there leaves the chip blank.
+          is_priority: absencesTable.is_priority,
           substitute_employee_id: absencesTable.substitute_employee_id,
           created_at: absencesTable.created_at,
           updated_at: absencesTable.updated_at,

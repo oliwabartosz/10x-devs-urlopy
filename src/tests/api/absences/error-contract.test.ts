@@ -63,6 +63,9 @@ describe("Absence write error contract — statuses at the route boundary", () =
     start_time: null,
     end_time: null,
     comment: null,
+    // Required by the bulk schema (unlike the single-row route, which defaults it) — these
+    // factories drive both, so it is stated once here rather than per case.
+    is_priority: false,
     substitute_employee_id: null,
     ...overrides,
   });

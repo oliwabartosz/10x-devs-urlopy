@@ -14,8 +14,9 @@ import {
   SQLITE_CONSTRAINT_FOREIGNKEY,
   SQLITE_CONSTRAINT_UNIQUE,
 } from "@/lib/db-errors";
-import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
+import { PARTIAL_DAY_TYPE_NAMES, PRIORITY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { isPriorityViolation } from "@/lib/services/absence-priority";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { assertAbsenceTypeExists, resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
 import { reportError } from "@/lib/report";
@@ -123,6 +124,10 @@ const AbsenceCreateSchema = z
     start_time: TimeSchema.nullable(),
     end_time: TimeSchema.nullable(),
     comment: z.string().max(500).nullable(),
+    // Informational marker, allowed only on the leave types in PRIORITY_TYPE_NAMES — enforced by
+    // the handler-level guard below, since the rule is keyed off the type *name* and the body
+    // carries only an id. Defaulted so a client that predates the flag keeps writing valid rows.
+    is_priority: z.boolean().optional().default(false),
     substitute_employee_id: z.uuid().nullable(),
   })
   .refine(
@@ -211,6 +216,21 @@ export const POST: APIRoute = async (context) => {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
+  // Domain rule: the informational priority marker is allowed only for the leave types in
+  // PRIORITY_TYPE_NAMES. Same shape and same position as the partial-day guard — after
+  // `assertAbsenceTypeExists`, whose 422 would otherwise be masked by this guard's
+  // undefined-name fallback.
+  let priorityViolation: boolean;
+  try {
+    priorityViolation = await isPriorityViolation(db, absenceData.absence_type_id, absenceData.is_priority);
+  } catch (err) {
+    reportError(err, { tags: { route: "POST /api/absences" } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  if (priorityViolation) {
+    return json({ error: `Priorytet jest dostępny tylko dla typów: ${PRIORITY_TYPE_NAMES.join(", ")}` }, 400);
+  }
+
   // Domain rule: a partial-day range starts no earlier than MIN_START_TIME and runs no longer
   // than one working day. Clamped rather than rejected — the stored row goes back in the 201
   // body (`.returning(...)` below), so a corrected range is visible to the caller.
@@ -237,6 +257,7 @@ export const POST: APIRoute = async (context) => {
         start_time: absences.start_time,
         end_time: absences.end_time,
         comment: absences.comment,
+        is_priority: absences.is_priority,
         substitute_employee_id: absences.substitute_employee_id,
         created_at: absences.created_at,
         updated_at: absences.updated_at,

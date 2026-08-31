@@ -8,8 +8,9 @@ import { employees, absences } from "@/db/index";
 import { eq, isNull, and, inArray } from "drizzle-orm";
 import { DateSchema, TimeSchema } from "@/lib/validators";
 import { extractDbErrorCode, SQLITE_CONSTRAINT_CHECK, SQLITE_CONSTRAINT_FOREIGNKEY } from "@/lib/db-errors";
-import { PARTIAL_DAY_TYPE_NAMES } from "@/lib/absence-types";
+import { PARTIAL_DAY_TYPE_NAMES, PRIORITY_TYPE_NAMES } from "@/lib/absence-types";
 import { isPartialDayViolation } from "@/lib/services/absence-partial-day";
+import { isPriorityViolation } from "@/lib/services/absence-priority";
 import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
 import { json } from "@/lib/absence-list";
@@ -56,6 +57,7 @@ const AbsenceBulkCreateSchema = z
     start_time: TimeSchema.nullable(),
     end_time: TimeSchema.nullable(),
     comment: z.string().max(500).nullable(),
+    is_priority: z.boolean(),
     substitute_employee_id: z.uuid().nullable(),
   })
   .refine(
@@ -86,6 +88,7 @@ const RETURNED_COLUMNS = {
   start_time: absences.start_time,
   end_time: absences.end_time,
   comment: absences.comment,
+  is_priority: absences.is_priority,
   substitute_employee_id: absences.substitute_employee_id,
   created_at: absences.created_at,
   updated_at: absences.updated_at,
@@ -177,6 +180,19 @@ export const POST: APIRoute = async (context) => {
     return json({ error: `Godziny są dostępne tylko dla typów: ${PARTIAL_DAY_TYPE_NAMES.join(", ")}` }, 400);
   }
 
+  // 2b. Priority eligibility, likewise once on the shared type — the same guard the single-row
+  //     route calls, not a re-implementation. Every row of the run carries the same flag.
+  let priorityViolation: boolean;
+  try {
+    priorityViolation = await isPriorityViolation(db, sharedFields.absence_type_id, sharedFields.is_priority);
+  } catch (err) {
+    reportError(err, { tags: { route: "POST /api/absences/bulk" } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  if (priorityViolation) {
+    return json({ error: `Priorytet jest dostępny tylko dla typów: ${PRIORITY_TYPE_NAMES.join(", ")}` }, 400);
+  }
+
   // 3. Hour clamp, once on the shared window. The clamped values are what every one of the N rows
   //    stores — running it per row would be identical work for an identical answer, but skipping
   //    it because "the client already clamped" is precisely the failure this route exists to
@@ -227,6 +243,9 @@ export const POST: APIRoute = async (context) => {
           start_time: sharedFields.start_time,
           end_time: sharedFields.end_time,
           comment: sharedFields.comment,
+          // Explicit list: a column omitted here writes correctly on insert and silently keeps
+          // its *stale* value on every overwritten day. bulk.test.ts covers this for is_priority.
+          is_priority: sharedFields.is_priority,
           substitute_employee_id: sharedFields.substitute_employee_id,
           updated_at: new Date(),
         },
