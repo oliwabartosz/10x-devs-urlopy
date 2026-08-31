@@ -34,6 +34,8 @@ export interface AbsenceBulkCreateCommand {
   start_time: string | null;
   end_time: string | null;
   comment: string | null;
+  /** Informational priority marker; only the leave types in `PRIORITY_TYPE_NAMES` may carry it. */
+  is_priority: boolean;
   substitute_employee_id: string | null;
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE `absences` ADD `is_priority` integer DEFAULT false NOT NULL;

@@ -99,6 +99,11 @@ export const absences = sqliteTable(
     start_time: text("start_time"),
     end_time: text("end_time"),
     comment: text("comment"),
+    // Informational priority marker. Eligibility (only `urlop` / `urlop planowany`) is enforced
+    // in application code — src/lib/services/absence-priority.ts — not by a DB constraint:
+    // SQLite has no ALTER TABLE ADD CONSTRAINT, and the rule is keyed off absence_types.name.
+    // The flag carries no behaviour: no collision resolution, no balance or statistics effect.
+    is_priority: integer("is_priority", { mode: "boolean" }).notNull().default(false),
     substitute_employee_id: text("substitute_employee_id").references(() => employees.id),
     created_at: integer("created_at", { mode: "timestamp" })
       .notNull()
