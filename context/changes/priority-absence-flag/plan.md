@@ -823,6 +823,27 @@ every other `## Done` entry points at `context/archive/…` and `/10x-archive` w
 Row 6.4's title is unchanged per the Progress format contract; it is satisfied by the `## Done`
 entry rather than by a line at `roadmap.md:444`.
 
+**D2 — Phase 4: two marker-presentation calls made by the requester during manual verification.**
+Both were decided on the running app and applied in Phases 4 and 5; neither changes behaviour,
+and both are self-documented at the call site. Recorded here because the phase blocks are
+read-only under `/10x-implement`, so the written contract still specifies the superseded form and
+a later edit could "restore" it in good faith.
+
+1. **The legend reads `[P] priorytetowy`, not `[P] = priorytetowy`.** The `=` was judged
+   unnecessary. Phase 4 §4 and Phase 5 §3 both specify the `=` form (as do the Desired End State
+   and Progress rows 4.8 and 5.8). The plan's actual requirement — that the grid legend and the
+   XLSX legend read *identically* — is satisfied: `AbsenceGrid.tsx:322-325` and
+   `export-workbook.ts:218` share the no-`=` wording, the latter via the `PRIORITY_MARKER`
+   constant.
+2. **In `AbsenceDetailsTable`, `[P]` renders inline inside the type chip** (`🌴 urlop [P]`) rather
+   than as the standalone `RoleBadge`-styled pill Phase 4 §5 describes. It is an unclassed
+   `<span>` at `:238`, inheriting the chip's colour and weight, because the marker qualifies the
+   type rather than standing beside it; the `Typ` column is `minmax(200px,1fr)` and absorbs the
+   extra glyphs. Still no new sortable column, per *What We're NOT Doing*.
+
+Row titles 4.8, 4.9 and 5.8 are unchanged per the Progress format contract; they are satisfied by
+this entry rather than by the literal text they quote.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
