@@ -911,10 +911,10 @@ entry rather than by a line at `roadmap.md:444`.
 
 #### Automated
 
-- [x] 6.1 Formatting passes: `npm run format`
-- [x] 6.2 Linting passes: `npm run lint`
+- [x] 6.1 Formatting passes: `npm run format` — 70bfcfc
+- [x] 6.2 Linting passes: `npm run lint` — 70bfcfc
 
 #### Manual
 
-- [x] 6.3 `prd.md` no longer lists FR-008 as a non-goal and states the informational-only scope
-- [x] 6.4 `roadmap.md:444`'s parked entry names this change
+- [x] 6.3 `prd.md` no longer lists FR-008 as a non-goal and states the informational-only scope — 70bfcfc
+- [x] 6.4 `roadmap.md:444`'s parked entry names this change — 70bfcfc

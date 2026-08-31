@@ -1,7 +1,7 @@
 ---
 change_id: priority-absence-flag
 title: Priority-absence flag with [P] emoji for urlop and urlop planowany
-status: implementing
+status: implemented
 created: 2026-08-31
 updated: 2026-08-31
 archived_at: null
