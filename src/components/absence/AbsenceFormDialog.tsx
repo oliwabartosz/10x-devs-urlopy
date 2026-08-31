@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeRangeDial } from "@/components/absence/TimeRangeDial";
-import { typeAllowsPartialDay } from "@/lib/absence-types";
+import { typeAllowsPartialDay, typeAllowsPriority } from "@/lib/absence-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
 import { FULL_DAY_HOURS } from "@/lib/hours";
@@ -168,6 +168,11 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   const existingAllowsPartialDay = typeAllowsPartialDay(
     absenceTypes.find((t) => t.id === existingAbsence?.absence_type_id)?.name,
   );
+  // Same defensiveness for the priority marker: a stored row whose type is not priority-eligible
+  // opens unflagged, so the form can never resubmit a combination the API rejects.
+  const existingAllowsPriority = typeAllowsPriority(
+    absenceTypes.find((t) => t.id === existingAbsence?.absence_type_id)?.name,
+  );
 
   const [absenceTypeId, setAbsenceTypeId] = useState<number | null>(existingAbsence?.absence_type_id ?? null);
   const [isFullDay, setIsFullDay] = useState(existingAllowsPartialDay ? (existingAbsence?.is_full_day ?? true) : true);
@@ -176,6 +181,9 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   );
   const [endTime, setEndTime] = useState(
     existingAllowsPartialDay ? (existingAbsence?.end_time?.slice(0, 5) ?? "") : "",
+  );
+  const [isPriority, setIsPriority] = useState(
+    existingAllowsPriority ? (existingAbsence?.is_priority ?? false) : false,
   );
   const [comment, setComment] = useState(existingAbsence?.comment ?? "");
   const [substituteEmployeeId, setSubstituteEmployeeId] = useState<string | null>(
@@ -229,6 +237,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
 
   const selectedType = absenceTypes.find((t) => t.id === absenceTypeId);
   const canBePartialDay = typeAllowsPartialDay(selectedType?.name);
+  const canBePriority = typeAllowsPriority(selectedType?.name);
 
   const saveDisabled = absenceTypeId === null || isSubmitting || (!isFullDay && (!startTime || !endTime));
 
@@ -254,6 +263,10 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   // Shared by the click and the keyboard path so arrow-key selection cannot bypass the
   // partial-day reset below. Only the training types (PARTIAL_DAY_TYPE_NAMES) may be
   // partial-day; any other type reverts to full-day and drops the entered range.
+  //
+  // The priority reset lives here for the same reason, and here *only*: this function is what
+  // `useRovingRadioGroup` calls, so putting it in the button's onClick would leave arrow-key
+  // selection carrying a flag onto an ineligible type.
   const selectType = (index: number) => {
     const type = absenceTypes[index];
     setAbsenceTypeId(type.id);
@@ -261,6 +274,9 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
       setIsFullDay(true);
       setStartTime("");
       setEndTime("");
+    }
+    if (!typeAllowsPriority(type.name)) {
+      setIsPriority(false);
     }
   };
 
@@ -379,6 +395,10 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
       start_time: isFullDay ? null : startTime,
       end_time: isFullDay ? null : endTime,
       comment: comment || null,
+      // `canBePriority &&` rather than the raw state: the reset in `selectType` already clears it,
+      // and this makes a stale `true` unable to leave the client even if a future edit reorders
+      // that reset. The API rejects the combination either way; this keeps it from being asked.
+      is_priority: canBePriority && isPriority,
       substitute_employee_id: substituteEmployeeId,
     };
     try {
@@ -483,7 +503,8 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
             {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
           </DialogTitle>
           <DialogDescription>
-            Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny.
+            Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny. Urlop i urlop planowany można
+            dodatkowo oznaczyć jako priorytetowy.
           </DialogDescription>
           {/* `capitalize` only on the single-day heading, which starts with a weekday name. The
               range heading starts with a digit, and capitalizing it would title-case the month. */}
@@ -681,6 +702,30 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
                 </div>
               )}
             </>
+          )}
+
+          {/* Unmounted, not hidden — the opposite of the confirm-step wrapper above, and
+              deliberately so. That one uses `display:none` to preserve the roving tab indices a
+              user already moved; this control has no such state, so an ineligible type should
+              take it out of the accessibility tree and the tab order entirely rather than leave
+              a checkbox the user can reach but not legally use. */}
+          {canBePriority && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is-priority"
+                checked={isPriority}
+                onChange={(e) => {
+                  setIsPriority(e.target.checked);
+                }}
+                // Cloned from „Cały dzień" above, native control included: see the note there for
+                // why this is not a Radix Checkbox.
+                className="accent-primary focus-visible:ring-ring/50 h-4 w-4 cursor-pointer rounded-[4px] focus-visible:ring-[3px] focus-visible:outline-none"
+              />
+              <Label htmlFor="is-priority" className="cursor-pointer">
+                Priorytet
+              </Label>
+            </div>
           )}
 
           <div className="grid gap-1.5">

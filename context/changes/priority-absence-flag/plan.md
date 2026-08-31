@@ -829,33 +829,33 @@ standard procedure.
 
 #### Automated
 
-- [x] 2.1 Unit and route tests pass: `npm run test`
-- [x] 2.2 The new guard tests fail when the guard call is deleted from each of the three routes
-- [x] 2.3 The bulk-overwrite test fails when `is_priority` is removed from `onConflictDoUpdate.set`
-- [x] 2.4 Type checking and linting pass: `npm run lint`
-- [x] 2.5 Production build succeeds: `npm run build`
+- [x] 2.1 Unit and route tests pass: `npm run test` — d6e16c9
+- [x] 2.2 The new guard tests fail when the guard call is deleted from each of the three routes — d6e16c9
+- [x] 2.3 The bulk-overwrite test fails when `is_priority` is removed from `onConflictDoUpdate.set` — d6e16c9
+- [x] 2.4 Type checking and linting pass: `npm run lint` — d6e16c9
+- [x] 2.5 Production build succeeds: `npm run build` — d6e16c9
 
 #### Manual
 
-- [x] 2.6 POST with `is_priority: true` and an ineligible type returns 400 with the Polish message naming both eligible types
-- [x] 2.7 POST with an unknown `absence_type_id` and `is_priority: true` returns 422, not 400
-- [x] 2.8 `GET /api/absences?year=…` returns `is_priority` on every row
+- [x] 2.6 POST with `is_priority: true` and an ineligible type returns 400 with the Polish message naming both eligible types — d6e16c9
+- [x] 2.7 POST with an unknown `absence_type_id` and `is_priority: true` returns 422, not 400 — d6e16c9
+- [x] 2.8 `GET /api/absences?year=…` returns `is_priority` on every row — d6e16c9
 
 ### Phase 3: Form dialog
 
 #### Automated
 
-- [ ] 3.1 Type checking and linting pass: `npm run lint`
-- [ ] 3.2 Existing tests still pass: `npm run test`
-- [ ] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Type checking and linting pass: `npm run lint`
+- [x] 3.2 Existing tests still pass: `npm run test`
+- [x] 3.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 Selecting `urlop` or `urlop planowany` shows the Priorytet checkbox; every other type hides it
-- [ ] 3.5 Keyboard arrow-key type switching clears the flag (the roving path, not just click)
-- [ ] 3.6 Opening an existing flagged `urlop` for edit shows the checkbox already checked
-- [ ] 3.7 The checkbox is absent from the tab order when an ineligible type is selected
-- [ ] 3.8 The flag persists from all three call sites: single create, drag-range create, details-subcard edit
+- [x] 3.4 Selecting `urlop` or `urlop planowany` shows the Priorytet checkbox; every other type hides it
+- [x] 3.5 Keyboard arrow-key type switching clears the flag (the roving path, not just click)
+- [x] 3.6 Opening an existing flagged `urlop` for edit shows the checkbox already checked
+- [x] 3.7 The checkbox is absent from the tab order when an ineligible type is selected
+- [x] 3.8 The flag persists from all three call sites: single create, drag-range create, details-subcard edit
 
 ### Phase 4: Grid chip, tooltip, legend, and details view
 
