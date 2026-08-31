@@ -412,16 +412,16 @@ uruchomieniową: żaden slice jej nie pokrywa, bo nie wynika z PRD — wynika z 
 (docelowy VPS nie ma dostępu do sieci). Dla użytkownika końcowego nie zmienia się nic poza
 mechanizmem logowania. Szczegóły: `context/changes/sqlite-install/plan.md`, `INSTALL.md`.
 
-| Change ID              | Czego dotyczy                                                            | Status                        |
-| ---------------------- | ------------------------------------------------------------------------ | ----------------------------- |
-| ci-cd-code-review      | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)     | archived 2026-07-06           |
-| code-review-evals      | promptfoo jako harness ewaluacyjny dla agenta code-review                | archived 2026-08-17           |
-| crud-integrity         | Bootstrap Vitest + testy integralności CRUD i 409 (test-plan §3, faza 1) | archived 2026-08-12           |
-| tool-loop-agent        | Agent z pętlą narzędziową (ćwiczenie M4)                                 | archived 2026-08-12           |
-| team-status-digest     | Poranny digest statusu projektu — `scripts/team-digest.ts` (M5L1)        | archived 2026-08-12           |
-| e2e-auth-locators      | Naprawa lokatorów logowania w `tests/e2e/setup/auth.setup.ts`            | archived 2026-08-12           |
-| dev-vars-rename        | (ma slice S-10) — konsolidacja `.dev.vars` → `.env.dev`                  | archived 2026-08-17           |
-| bootstrap-verification | Log weryfikacji ze scaffoldingu (`/10x-bootstrapper`) — nie jest zmianą  | artefakt, nie do archiwizacji |
+| Change ID              | Czego dotyczy                                                                                                                              | Status                                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
+| ci-cd-code-review      | Pipeline CI/CD + AI code review na PR-ach (`packages/code-reviewer`)                                                                       | archived 2026-07-06                   |
+| code-review-evals      | promptfoo jako harness ewaluacyjny dla agenta code-review                                                                                  | archived 2026-08-17                   |
+| crud-integrity         | Bootstrap Vitest + testy integralności CRUD i 409 (test-plan §3, faza 1)                                                                   | archived 2026-08-12                   |
+| tool-loop-agent        | Agent z pętlą narzędziową (ćwiczenie M4)                                                                                                   | archived 2026-08-12                   |
+| team-status-digest     | Poranny digest statusu projektu — `scripts/team-digest.ts` (M5L1)                                                                          | archived 2026-08-12                   |
+| e2e-auth-locators      | Naprawa lokatorów logowania w `tests/e2e/setup/auth.setup.ts`                                                                              | archived 2026-08-12                   |
+| dev-vars-rename        | (ma slice S-10) — konsolidacja `.dev.vars` → `.env.dev`                                                                                    | archived 2026-08-17                   |
+| bootstrap-verification | Log weryfikacji ze scaffoldingu (`/10x-bootstrapper`) — nie jest zmianą                                                                    | artefakt, nie do archiwizacji         |
 | sqlite-install         | Instalacja self-hosted na offline'owym VPS: SQLite zamiast Supabase, własna autoryzacja zamiast Supabase Auth, Node za nginx, `install.sh` | in progress (branch `sqlite-install`) |
 
 ## Backlog Handoff
@@ -441,7 +441,6 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Parked
 
-- **FR-008: plan urlopów z oznaczeniem priorytetu** — Why parked: PRD §Non-Goals: nice-to-have, poza głównym MVP flow.
 - **Moduł planu urlopów** — Why parked: PRD §Non-Goals: poza zakresem MVP.
 - **Złożony workflow zatwierdzania urlopów** — Why parked: PRD §Non-Goals.
 - **Integracje zewnętrzne (inne platformy firmowe)** — Why parked: PRD §Non-Goals.
@@ -450,6 +449,7 @@ Brak. PRD: "No open questions at this time." Wywiad nie ujawnił żadnych cross-
 
 ## Done
 
+- **FR-008: oznaczenie priorytetu urlopu (`[P]`) dla typów `urlop` i `urlop planowany`** — Implemented 2026-08-31 → `context/changes/priority-absence-flag/` (jeszcze niezarchiwizowane; `/10x-archive` przeniesie folder i uzupełni ścieżkę). 44/44 wierszy Progress. 6 faz: kolumna `absences.is_priority` + migracja `0001` + moduł reguły nazwanej po typie, bramka 400 na trzech trasach zapisu i wszystkich sześciu listach kolumn, checkbox „Priorytet" w dialogu, chip/tooltip/legenda/widok szczegółów, eksport XLSX, korekta dokumentów foundation. Commity: `ba0e0ca`, `d6e16c9`, `2525099`, `c83b8f4`, `cecdace` (+ `7b1507a`, `f2a9f38`). Zakres **wyłącznie informacyjny** — brak rozstrzygania kolizji, brak wpływu na saldo urlopu, brak w statystykach; to ta granica odblokowała pozycję po trzech parkowaniach (`context/archive/2026-08-07-huge-ui-ux-improvement/research.md:183-187`). Moduł planu urlopów pozostaje zaparkowany. Lesson: —.
 - **S-24: (moderator) pobrać całą siatkę nieobecności za wybrany rok jako plik XLSX — każdy miesiąc na osobnej karcie, z kolorami, godzinami i komentarzami** — Implemented + impl-reviewed 2026-08-24, archived 2026-08-25 → `context/archive/2026-08-24-export-grid-to-xlsx/`. 33/33 wierszy Progress. 4 fazy: czysty model workbooka, adapter `hucre` + pobieranie w przeglądarce (dynamiczny import, ~39 KiB gzip, jedno miejsce importu), dialog eksportu moderatora, korekty dokumentów foundation. Impl-review NEEDS ATTENTION — 5 ostrzeżeń + 3 obserwacje, wszystkie naprawione w `218afb8` i `ff17d2c` (przerwany eksport nadal pobierał plik; `revokeObjectURL` niezaplanowany na ścieżce wyjątku; `hucre` wymaga Node ≥ 24 przy pinie 22.14.0 — podniesione do 24.15.0 w `.nvmrc` i obu zadaniach CI). Siedem odstępstw od planu spisanych w `plan.md` → `## Deviations from the plan` (D1–D7), m.in. zamrożenie tylko kolumny dat zamiast 4 wierszy oraz cztery zmiany dołączone do `5453a4b` (zawężenie `YearSchema`, naprawa rocznych sum w `AbsenceStats`). Report: `reviews/impl-review.md`. Lesson: —.
 - **S-23: (moderator) zobaczyć statystyki wszystkich pracowników; pracownik widzi wyłącznie własne statystyki** — Archived 2026-08-21 → `context/archive/2026-08-21-statistics-for-moderators/`. Lesson: —.
 - **S-22: moderator zmienia e-mail pracownika oraz jego wymiar urlopu (bieżący, zaległy, korekta); każdy pracownik może zmienić własne hasło, klikając swój e-mail w lewym górnym rogu.** — Archived 2026-08-21 → `context/archive/2026-08-12-workers-data-edit/`. Lesson: —.

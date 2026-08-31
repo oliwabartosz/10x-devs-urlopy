@@ -86,8 +86,9 @@ Secondary persona: moderator / szefostwo, ktore moze edytowac wpisy wszystkich p
 
 ### Leave Planning
 
-- FR-008: Pracownik can enter leave plans with a priority marker. Priority: nice-to-have
-  > Socratic: Counter-argument considered: "Not in primary flow." Resolution: kept as nice-to-have and outside the primary MVP flow.
+- FR-008: Pracownik can mark an absence of type `urlop` or `urlop planowany` as priority; the marker `[P]` is shown on the monthly grid chip, in the cell tooltip and legend, in the absence details view, and in the XLSX export. Priority: nice-to-have — **delivered 2026-08-31** by `context/changes/priority-absence-flag/`.
+  > Socratic: Counter-argument considered: "Not in primary flow." Resolution: originally kept as nice-to-have and outside the primary MVP flow; amended 2026-08-31, when the marker shipped on its own, decoupled from the leave-plan module that stays a non-goal.
+  > Scope (load-bearing, read before planning anything on top of this): the marker is **informational only**. It resolves no collision between absences, has no effect on the holiday balance, and appears in no statistic. That boundary is what made the item shippable after it had been parked three times on one unanswered question — "what does priority do when two absences collide?" (`context/archive/2026-08-07-huge-ui-ux-improvement/research.md:183-187`). The answer this requirement records is: nothing. Eligibility is limited to the two leave types above and is enforced in application code, not by a database constraint.
 
 ## Non-Functional Requirements
 
@@ -133,7 +134,7 @@ Uzytkownicy loguja sie przez email i haslo.
 
 ## Non-Goals
 
-- The leave plan module is not required for the primary MVP flow; it remains nice-to-have unless pulled into scope later.
+- The leave plan module is not required for the primary MVP flow; it remains nice-to-have unless pulled into scope later. This does not cover FR-008's priority marker, which was delivered separately on 2026-08-31 as an informational flag on ordinary absence entries.
 - No external integrations with other workplace platforms in the MVP.
 - No native mobile application in the MVP; the first version is web-only.
 - No full leave-planning module in the primary MVP flow.

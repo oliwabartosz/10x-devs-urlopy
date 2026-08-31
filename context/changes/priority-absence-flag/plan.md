@@ -808,6 +808,21 @@ standard procedure.
   `plan.md:84,517`
 - `context/foundation/lessons.md` — "Repo-wide claims are load-bearing"
 
+## Deviations from the plan
+
+**D1 — Phase 6: the roadmap's FR-008 entry was moved out of `## Parked` into `## Done`, not marked
+delivered in place.** Phase 6's contract said "the entry is marked delivered, referencing
+`context/changes/priority-absence-flag/`", and Progress row 6.4 anchors on `roadmap.md:444`'s
+*parked* entry. Marking it delivered in place left a shipped item sitting under a `## Parked`
+heading — the same stale-document drift Phase 6 exists to prevent. On the requester's call the
+entry was removed from `## Parked` (the `Moduł planu urlopów` bullet directly below it already
+covers what genuinely remains parked) and a `## Done` entry was added at the top of that section,
+naming the change folder, 44/44 Progress rows, the six phases, the seven commits and the
+informational-only scope boundary. That entry records that the folder is not archived yet, since
+every other `## Done` entry points at `context/archive/…` and `/10x-archive` writes that path.
+Row 6.4's title is unchanged per the Progress format contract; it is satisfied by the `## Done`
+entry rather than by a line at `roadmap.md:444`.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
@@ -879,27 +894,27 @@ standard procedure.
 
 #### Automated
 
-- [x] 5.1 Export tests pass, including the new priority cases: `npm run test`
-- [x] 5.2 The updated legend assertion asserts the new cell's content, not just a longer array
-- [x] 5.3 Type checking and linting pass: `npm run lint`
-- [x] 5.4 Production build succeeds: `npm run build`
+- [x] 5.1 Export tests pass, including the new priority cases: `npm run test` — cecdace
+- [x] 5.2 The updated legend assertion asserts the new cell's content, not just a longer array — cecdace
+- [x] 5.3 Type checking and linting pass: `npm run lint` — cecdace
+- [x] 5.4 Production build succeeds: `npm run build` — cecdace
 
 #### Manual
 
-- [x] 5.5 `npm run sample:xlsx` shows `[P] cały dzień` in flagged cells with the fill colour intact
-- [x] 5.6 A flagged absence with a comment wraps correctly across two lines
-- [x] 5.7 Hovering a flagged cell in Excel/LibreOffice shows the `Priorytet: tak` note line
-- [x] 5.8 Row 2 shows the `[P] = priorytetowy` legend cell after the type cells
-- [x] 5.9 Exporting from the running app matches the sample script's output
+- [x] 5.5 `npm run sample:xlsx` shows `[P] cały dzień` in flagged cells with the fill colour intact — cecdace
+- [x] 5.6 A flagged absence with a comment wraps correctly across two lines — cecdace
+- [x] 5.7 Hovering a flagged cell in Excel/LibreOffice shows the `Priorytet: tak` note line — cecdace
+- [x] 5.8 Row 2 shows the `[P] = priorytetowy` legend cell after the type cells — cecdace
+- [x] 5.9 Exporting from the running app matches the sample script's output — cecdace
 
 ### Phase 6: PRD and roadmap amendment
 
 #### Automated
 
-- [ ] 6.1 Formatting passes: `npm run format`
-- [ ] 6.2 Linting passes: `npm run lint`
+- [x] 6.1 Formatting passes: `npm run format`
+- [x] 6.2 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 6.3 `prd.md` no longer lists FR-008 as a non-goal and states the informational-only scope
-- [ ] 6.4 `roadmap.md:444`'s parked entry names this change
+- [x] 6.3 `prd.md` no longer lists FR-008 as a non-goal and states the informational-only scope
+- [x] 6.4 `roadmap.md:444`'s parked entry names this change
