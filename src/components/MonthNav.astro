@@ -1,12 +1,20 @@
 ---
+import { RotateCcw } from "lucide-react";
+
 interface Props {
   prevMonthUrl: string;
   nextMonthUrl: string;
+  /**
+   * Where "back to today" points. Null (or absent) when the browsed month already *is* the
+   * current one, and the control is then not rendered at all — an `<a>` cannot be disabled, and
+   * the repo's rule for an inapplicable affordance is to unmount it rather than show it inert.
+   */
+  currentMonthUrl?: string | null;
   year: number;
   month: number;
 }
 
-const { prevMonthUrl, nextMonthUrl, year, month } = Astro.props;
+const { prevMonthUrl, nextMonthUrl, currentMonthUrl, year, month } = Astro.props;
 
 const monthLabel = new Intl.DateTimeFormat("pl-PL", {
   month: "long",
@@ -22,4 +30,20 @@ const navButton =
   <a href={prevMonthUrl} class:list={navButton} aria-label="Poprzedni miesiąc">‹</a>
   <h1 class="text-primary min-w-[220px] text-center text-2xl font-bold capitalize">{monthLabel}</h1>
   <a href={nextMonthUrl} class:list={navButton} aria-label="Następny miesiąc">›</a>
+  {
+    /* Outside the `‹ heading ›` triplet on purpose: the heading's min-width guarantees the arrows
+       do not shift between long and short month names, and a control appearing between them
+       would undo it. `title` and `aria-label` are paired the way every other icon-only control
+       here does it — the tooltip is the visible half, the label the assistive one. */
+    currentMonthUrl && (
+      <a
+        href={currentMonthUrl}
+        class:list={navButton}
+        title="Wróć do bieżącego miesiąca"
+        aria-label="Wróć do bieżącego miesiąca"
+      >
+        <RotateCcw className="size-4" />
+      </a>
+    )
+  }
 </div>

@@ -597,39 +597,39 @@ files, so a revert restores them from git; nothing is destroyed outside version 
 
 #### Automated
 
-- [x] 1.1 Linting passes: `npm run lint`
-- [x] 1.2 Formatting is clean: `npm run format`
-- [x] 1.3 No app-absolute path bypasses `withBase()`
-- [x] 1.4 Production build succeeds and emits `dist/client/icon.svg`
-- [x] 1.5 Offline artifact packs: `npm run pack`
-- [x] 1.6 Sign-in copy assertions still pass
+- [x] 1.1 Linting passes: `npm run lint` — 9eed7df
+- [x] 1.2 Formatting is clean: `npm run format` — 9eed7df
+- [x] 1.3 No app-absolute path bypasses `withBase()` — 9eed7df
+- [x] 1.4 Production build succeeds and emits `dist/client/icon.svg` — 9eed7df
+- [x] 1.5 Offline artifact packs: `npm run pack` — 9eed7df
+- [x] 1.6 Sign-in copy assertions still pass — 9eed7df
 
 #### Manual
 
-- [x] 1.7 The new mark appears in the browser tab on all three pages
-- [x] 1.8 The mark is legible at favicon size
-- [x] 1.9 Both login pages show the mark in the navy tile with card geometry unchanged
-- [x] 1.10 The chosen tile treatment is recorded in the phase notes
-- [x] 1.11 Default page title reads `Nieobecności`
+- [x] 1.7 The new mark appears in the browser tab on all three pages — 9eed7df
+- [x] 1.8 The mark is legible at favicon size — 9eed7df
+- [x] 1.9 Both login pages show the mark in the navy tile with card geometry unchanged — 9eed7df
+- [x] 1.10 The chosen tile treatment is recorded in the phase notes — 9eed7df
+- [x] 1.11 Default page title reads `Nieobecności` — 9eed7df
 
 ### Phase 2: "Wróć do bieżącego miesiąca"
 
 #### Automated
 
-- [ ] 2.1 Linting and type-checked rules pass: `npm run lint`
-- [ ] 2.2 Unit tests pass: `npm run test`
-- [ ] 2.3 Production build succeeds: `npm run build`
-- [ ] 2.4 E2E suite passes against localhost
+- [x] 2.1 Linting and type-checked rules pass: `npm run lint`
+- [x] 2.2 Unit tests pass: `npm run test`
+- [x] 2.3 Production build succeeds: `npm run build`
+- [x] 2.4 E2E suite passes against localhost
 
 #### Manual
 
-- [ ] 2.5 Button absent from the DOM on the current month
-- [ ] 2.6 Button appears after navigating away; hover text reads correctly
-- [ ] 2.7 Clicking it lands on the current month and year
-- [ ] 2.8 Active tab and subcard survive the click
-- [ ] 2.9 Month heading still does not shift horizontally
-- [ ] 2.10 Button styling is indistinguishable from `‹` and `›`
-- [ ] 2.11 Button is Tab-reachable and activates on Enter
+- [x] 2.5 Button absent from the DOM on the current month
+- [x] 2.6 Button appears after navigating away; hover text reads correctly
+- [x] 2.7 Clicking it lands on the current month and year
+- [x] 2.8 Active tab and subcard survive the click
+- [x] 2.9 Month heading still does not shift horizontally
+- [x] 2.10 Button styling is indistinguishable from `‹` and `›`
+- [x] 2.11 Button is Tab-reachable and activates on Enter
 
 ### Phase 3: The `choroba` sub-caption
 

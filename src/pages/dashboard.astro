@@ -215,6 +215,20 @@ const nextMonthUrl =
     ? `?month=${nextMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
     : `?month=${nextMonthStr}&tab=${currentTab}`;
 
+// "Back to today". Built from the same server-local `now` the month default above reads, so this
+// is exactly the month an absent `?month=` resolves to. Null when the browsed month already is
+// the current one — MonthNav then renders no control rather than an inert one.
+//
+// The param is emitted explicitly rather than dropped: omitting it would land on the same month,
+// but keeping it makes the URL self-describing and identical in shape to its two siblings.
+const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+const currentMonthUrl =
+  currentMonthStr === monthStr
+    ? null
+    : currentTab === "details"
+      ? `?month=${currentMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
+      : `?month=${currentMonthStr}&tab=${currentTab}`;
+
 // Tab nav URLs preserve the current month
 const gridTabUrl = `?month=${monthStr}&tab=grid`;
 const detailsTabUrl = `?month=${monthStr}&tab=details&subcard=today`;
@@ -260,7 +274,13 @@ const tabOff = `${tabBase} bg-white text-muted-foreground hover:text-primary`;
       ) : currentEmployee ? (
         <div class="mx-auto max-w-[1480px] px-8 pt-7 pb-14">
           <div class="mb-5 flex items-center justify-between gap-4">
-            <MonthNav prevMonthUrl={prevMonthUrl} nextMonthUrl={nextMonthUrl} year={year} month={month} />
+            <MonthNav
+              prevMonthUrl={prevMonthUrl}
+              nextMonthUrl={nextMonthUrl}
+              currentMonthUrl={currentMonthUrl}
+              year={year}
+              month={month}
+            />
 
             <nav class="border-line flex overflow-hidden rounded-[10px] border bg-white">
               <a href={gridTabUrl} class:list={currentTab === "grid" ? tabOn : tabOff}>
