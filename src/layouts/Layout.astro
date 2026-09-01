@@ -9,7 +9,7 @@ interface Props {
   title?: string;
 }
 
-const { title = "10x Astro Starter" } = Astro.props;
+const { title = "Nieobecności" } = Astro.props;
 
 // Async since the SQLite port: the banner now reports on the install's own state (database
 // reachable, technical admin seeded) rather than on the presence of two environment variables.
@@ -21,7 +21,7 @@ const missingConfigs = await getMissingConfigs();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/png" href={withBase("/favicon.png")} />
+    <link rel="icon" type="image/svg+xml" href={withBase("/icon.svg")} />
     <title>{title}</title>
   </head>
   <body>

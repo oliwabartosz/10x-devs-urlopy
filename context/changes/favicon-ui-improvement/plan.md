@@ -47,13 +47,13 @@ by design; URLs are query-only relative strings computed in Astro
 
 **Absence types.** The catalogue is 100% database-driven (`src/db/schema.ts:68-82`, seeded from
 `src/db/seed.ts:18-32`); there is no `description` column and no code-side label map anywhere. The
-schema comment at `:76-78` states the principle — *"Types stay data, never a name-keyed code map"* —
+schema comment at `:76-78` states the principle — _"Types stay data, never a name-keyed code map"_ —
 while `src/lib/absence-types.ts` is the sanctioned exception, already carrying two such rules with a
 header documenting the drift hazard. The rendered label is lowercase `choroba`.
 
 **Test surface.** No `.astro` component tests exist. The E2E suite has 8 `choroba` references in
 `tests/e2e/absence-grid-range.spec.ts`, and the locator policy forbids testids
-(`tests/e2e/e2e-rules.md:5-7`) — rendered copy *is* the test contract.
+(`tests/e2e/e2e-rules.md:5-7`) — rendered copy _is_ the test contract.
 
 ## Desired End State
 
@@ -61,11 +61,11 @@ header documenting the drift hazard. The rendered label is lowercase `choroba`.
   app's own navy and gold. Both login pages show the same mark, at 80px, in place of the calendar
   glyph — sourced from one file so favicon and login mark cannot drift.
 - On the dashboard, a third button sits to the right of the next-month arrow whenever the user has
-  navigated away from the current month. Hovering it reads *"Wróć do bieżącego miesiąca"*; clicking
+  navigated away from the current month. Hovering it reads _"Wróć do bieżącego miesiąca"_; clicking
   it reloads the dashboard on today's month and year with the active tab and subcard intact. On the
   current month the button is not in the DOM.
 - In the add-absence dialog's type picker, `choroba` carries a small gray second line reading
-  *zwolnienie lub opieka*. No other surface changes.
+  _zwolnienie lub opieka_. No other surface changes.
 - `dist/client/` no longer carries ~2.5 MB of scaffold artifacts.
 
 Verify by: loading `/auth/signin` (mark in the tab and in the tile), navigating the dashboard two
@@ -83,8 +83,8 @@ months back and clicking the return button, and opening the add-absence dialog.
   `/_astro/` only, so replacing `favicon.png` in place is subject to browser heuristic caching. A new
   filename sidesteps it entirely.
 - **The month heading must not shift.** A verified success criterion from
-  `context/archive/2026-08-07-huge-ui-ux-improvement/plan.md:278` — *"Month nav heading does not shift
-  horizontally when stepping between months"* — which is why the new control goes outside the
+  `context/archive/2026-08-07-huge-ui-ux-improvement/plan.md:278` — _"Month nav heading does not shift
+  horizontally when stepping between months"_ — which is why the new control goes outside the
   `‹ heading ›` triplet.
 - **Unmount, do not disable.** Three prior changes settled this
   (`priority-absence-flag/plan.md:434-436`, `grid-multicheck/research.md:391-394`,
@@ -100,7 +100,7 @@ months back and clicking the return button, and opening the add-absence dialog.
   `package.json`, `deploy`, the installers and `INSTALL.md`).
 - **This is consistent with a recorded brand decision, not a reversal of one.**
   `context/archive/2026-08-06-main-page-redesign/frame.md:22` and `plan.md:125-127` chose to adopt the
-  WRIFboard *visual style* while keeping our own identity — *"not the mockup's market chart"*. A palm
+  WRIFboard _visual style_ while keeping our own identity — _"not the mockup's market chart"_. A palm
   on an island is exactly that: the same visual language, a subject appropriate to a leave app.
 
 ## What We're NOT Doing
@@ -124,7 +124,7 @@ months back and clicking the return button, and opening the add-absence dialog.
 - **Not deleting the 42 source-tree `.scaffold` files** listed above, and **not deleting
   `public/.assetsignore`** — see the deviation note in Phase 0.
 - **No client-side navigation.** The month control is an `<a href>`, consistent with
-  `huge-ui-ux-improvement/plan.md:238-239` (*"a restyle of anchors, not a move to client state"*).
+  `huge-ui-ux-improvement/plan.md:238-239` (_"a restyle of anchors, not a move to client state"_).
 
 ## Implementation Approach
 
@@ -278,7 +278,7 @@ it is the fallback any new page inherits.
 **Intent**: Hold the mark inline as SVG markup for the login tile, so the tile and the favicon are
 authored once. Extracting a component reverses the decision at
 `huge-ui-ux-improvement/plan.md:309-310` (which accepted duplicating ~20 lines across the two login
-pages) — the balance tipped because that decision weighed duplicating a one-line lucide *import*,
+pages) — the balance tipped because that decision weighed duplicating a one-line lucide _import_,
 whereas this is a multi-path SVG body that would have to be kept in sync by hand.
 
 **Contract**: Takes an optional `class` prop forwarded to the root `<svg>` so the caller sets the
@@ -375,7 +375,7 @@ current-month string built from the `now` already in scope at `:29`, and a `curr
 `null` when it equals the existing `monthStr` (`:199`). When non-null it follows the identical
 query-only relative form as its siblings — including the `currentTab === "details"` branch that
 carries `&subcard=${currentSubcard}` forward. Query-only relative URLs inherit the mount prefix
-automatically, which is why `withBase()` is deliberately *not* used here. Pass it into `<MonthNav>`
+automatically, which is why `withBase()` is deliberately _not_ used here. Pass it into `<MonthNav>`
 at `:263`.
 
 Note that `?month=<current>` is emitted explicitly rather than omitting the param: the app would
@@ -394,7 +394,7 @@ self-describing and identical in shape to the two sibling links.
 #### Manual Verification:
 
 - On `/dashboard` with no `month` param the button is absent from the DOM, not merely invisible
-- After stepping back two months the button appears; hovering it shows *"Wróć do bieżącego miesiąca"*
+- After stepping back two months the button appears; hovering it shows _"Wróć do bieżącego miesiąca"_
 - Clicking it lands on the current month and year
 - The active tab survives the click on all three tabs, and on `Szczegóły` the active subcard survives too
 - Stepping between a long month name and a short one still does not shift the heading horizontally
@@ -409,7 +409,7 @@ self-describing and identical in shape to the two sibling links.
 
 ### Overview
 
-Add *zwolnienie lub opieka* as a gray second line under `choroba` in the add-absence dialog's type
+Add _zwolnienie lub opieka_ as a gray second line under `choroba` in the add-absence dialog's type
 picker, sourced from a name-keyed map beside the two rules that already live there.
 
 ### Changes Required:
@@ -424,11 +424,11 @@ picker, sourced from a name-keyed map beside the two rules that already live the
 **Contract**: A `SICK_LEAVE_TYPE_NAME = "choroba"` constant (verbatim from `src/db/seed.ts:25`), a
 `TYPE_CAPTIONS` readonly map keyed by seed name, and a `captionFor(typeName): string | undefined`
 accessor that tolerates `null`/`undefined` like its two siblings. Extend the module header comment:
-it currently says the file carries *"two independent rules"* — that count and the rename-mirroring
+it currently says the file carries _"two independent rules"_ — that count and the rename-mirroring
 warning must both cover the new one.
 
 This is the **fourth** sanctioned name-keyed exception. The alternative — a nullable `description`
-column on `absence_types` — honours the *"types stay data"* principle at `src/db/schema.ts:76-78`
+column on `absence_types` — honours the _"types stay data"_ principle at `src/db/schema.ts:76-78`
 more directly, but pulls in a drizzle migration (with the SQLite CHECK/`COLLATE NOCASE`
 regeneration hazard `CLAUDE.md` warns about), `src/db/seed.ts`, `scripts/export-sample.ts` and roughly
 five test files, for one string. Recorded here so the trade is explicit rather than accidental.
@@ -492,7 +492,7 @@ claims by running the suite rather than by reading.
 
 #### Manual Verification:
 
-- The add-absence dialog shows *zwolnienie lub opieka* in gray beneath `choroba`
+- The add-absence dialog shows _zwolnienie lub opieka_ in gray beneath `choroba`
 - The caption does **not** turn bold when `choroba` is the selected type
 - The caption appears on `choroba` only — no other type gains a second line
 - The picker's two-column layout still aligns; the taller row is even and nothing overflows the dialog
@@ -522,7 +522,7 @@ repo.
 1. `npm run dev`, load `/auth/signin` — the palm mark is in the tab and in the navy tile; the card
    geometry has not moved; the sign-in form is untouched.
 2. Sign in, land on `/dashboard` — no return button is present on the current month.
-3. Click `‹` twice — the return button appears; hover it and read *"Wróć do bieżącego miesiąca"*.
+3. Click `‹` twice — the return button appears; hover it and read _"Wróć do bieżącego miesiąca"_.
 4. Click it — the dashboard is back on the current month; the button is gone again.
 5. Repeat step 3–4 on the `Szczegóły` tab with a non-default subcard — both survive the round trip.
 6. Step between `luty` and `wrzesień` — the heading does not move horizontally.
@@ -583,34 +583,34 @@ files, so a revert restores them from git; nothing is destroyed outside version 
 
 #### Automated
 
-- [x] 0.1 Linting passes: `npm run lint`
-- [x] 0.2 Unit tests pass: `npm run test`
-- [x] 0.3 Production build succeeds: `npm run build`
-- [x] 0.4 No deleted file survives in the build output
-- [x] 0.5 Offline artifact still packs: `npm run pack`
+- [x] 0.1 Linting passes: `npm run lint` — 3c45191
+- [x] 0.2 Unit tests pass: `npm run test` — 3c45191
+- [x] 0.3 Production build succeeds: `npm run build` — 3c45191
+- [x] 0.4 No deleted file survives in the build output — 3c45191
+- [x] 0.5 Offline artifact still packs: `npm run pack` — 3c45191
 
 #### Manual
 
-- [x] 0.6 Dashboard and both login pages render unchanged; old favicon still in the tab
+- [x] 0.6 Dashboard and both login pages render unchanged; old favicon still in the tab — 3c45191
 
 ### Phase 1: The palm-on-island brand mark
 
 #### Automated
 
-- [ ] 1.1 Linting passes: `npm run lint`
-- [ ] 1.2 Formatting is clean: `npm run format`
-- [ ] 1.3 No app-absolute path bypasses `withBase()`
-- [ ] 1.4 Production build succeeds and emits `dist/client/icon.svg`
-- [ ] 1.5 Offline artifact packs: `npm run pack`
-- [ ] 1.6 Sign-in copy assertions still pass
+- [x] 1.1 Linting passes: `npm run lint`
+- [x] 1.2 Formatting is clean: `npm run format`
+- [x] 1.3 No app-absolute path bypasses `withBase()`
+- [x] 1.4 Production build succeeds and emits `dist/client/icon.svg`
+- [x] 1.5 Offline artifact packs: `npm run pack`
+- [x] 1.6 Sign-in copy assertions still pass
 
 #### Manual
 
-- [ ] 1.7 The new mark appears in the browser tab on all three pages
-- [ ] 1.8 The mark is legible at favicon size
-- [ ] 1.9 Both login pages show the mark in the navy tile with card geometry unchanged
-- [ ] 1.10 The chosen tile treatment is recorded in the phase notes
-- [ ] 1.11 Default page title reads `Nieobecności`
+- [x] 1.7 The new mark appears in the browser tab on all three pages
+- [x] 1.8 The mark is legible at favicon size
+- [x] 1.9 Both login pages show the mark in the navy tile with card geometry unchanged
+- [x] 1.10 The chosen tile treatment is recorded in the phase notes
+- [x] 1.11 Default page title reads `Nieobecności`
 
 ### Phase 2: "Wróć do bieżącego miesiąca"
 

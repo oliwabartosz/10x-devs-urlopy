@@ -1,0 +1,51 @@
+---
+/**
+ * The app's brand mark: a palm on an island inside an open ring.
+ *
+ * TWIN FILE: `public/icon.svg` holds the same shapes and is what `<link rel="icon">` points at.
+ * Edit both together — nothing enforces that they match, because one is a build-time asset and
+ * the other is markup.
+ *
+ * The two differ in exactly one respect, deliberately. Here the navy parts (ring, island) are
+ * `currentColor`, so the caller sets them with a text colour; in `public/icon.svg` they are the
+ * literal `#072143`, because a `public/` asset cannot read CSS variables. This matters: on the
+ * login tile the mark sits on `bg-primary`, where a navy ring and a navy island are invisible and
+ * only the palm survives. Callers on that tile pass `text-white`.
+ *
+ * The gold is a literal in both files rather than `var(--accent)`, so the two stay comparable
+ * by eye and the mark keeps its palette wherever it is dropped.
+ *
+ * Decorative by default: every current call site sits beside the `Nieobecności` wordmark, which
+ * already supplies the accessible name, so the SVG is `aria-hidden`.
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<svg viewBox="0 0 512 512" class:list={className} fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <!-- The open ring: 328 degrees of arc, with a 32-degree gap in the upper-right quadrant
+       (26 to 58 degrees) where the escaping frond crosses. -->
+  <path
+    d="M 382.1 54.2 A 238 238 0 1 0 469.9 151.7"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="19"
+    stroke-linecap="round"></path>
+
+  <!-- Island: a flat-bottomed mound sitting clear of the ring on all sides. -->
+  <path d="M 128 430 C 152 386, 200 368, 256 368 C 312 368, 360 386, 384 430 Z" fill="currentColor"></path>
+
+  <!-- Palm. The upper-right frond crosses the ring gap and leaves the circle — the structural
+       analogue of the escaping arrow in the mark this borrows its language from. -->
+  <g fill="#c5ac75">
+    <path d="M 232 388 C 240 320, 254 256, 298 204 L 318 222 C 282 270, 270 330, 266 388 Z"></path>
+    <path d="M 308 206 Q 370 104 488 62 Q 418 184 308 206 Z"></path>
+    <path d="M 308 206 Q 404 186 452 250 Q 386 236 308 206 Z"></path>
+    <path d="M 308 206 Q 342 118 296 62 Q 272 130 308 206 Z"></path>
+    <path d="M 308 206 Q 232 112 156 96 Q 246 158 308 206 Z"></path>
+    <path d="M 308 206 Q 212 168 140 224 Q 226 224 308 206 Z"></path>
+  </g>
+</svg>

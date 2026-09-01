@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import LoginCardForm from "@/components/auth/LoginCardForm";
-import { CalendarCheck } from "lucide-react";
+import BrandMark from "@/components/BrandMark.astro";
 import { withBase } from "@/lib/base-path";
 
 // Authenticated users should never see the login card — the sign-in endpoint
@@ -20,7 +20,7 @@ const error = Astro.url.searchParams.get("error");
         <div
           class="bg-primary mb-4 inline-flex size-20 items-center justify-center rounded-2xl shadow-lg shadow-slate-200"
         >
-          <CalendarCheck className="size-10 text-white" />
+          <BrandMark class="size-10 text-white" />
         </div>
         <h1 class="text-primary text-2xl font-bold">Nieobecności</h1>
         <p class="text-muted-foreground mt-2">Zaloguj się, aby uzyskać dostęp do panelu</p>

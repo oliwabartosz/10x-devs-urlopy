@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Nieobecności">
+  <!--
+    The app's brand mark: a palm on an island inside an open ring.
+
+    Borrowed structure, not colour, from the WRIFboard mark (see
+    context/changes/favicon-ui-improvement/reference-icon.webp) — navy carries the static frame,
+    gold carries the single element that escapes the ring. Palette is the app's own
+    (primary #072143, accent #c5ac75), NOT the reference image's gold; see the plan's
+    Key Decisions.
+
+    Fronds are filled, tapered leaves rather than round-capped strokes: uniform strokes radiating
+    from one point read as a dandelion, not a palm.
+
+    NOTE: XML comments cannot contain a double hyphen, so CSS token names are written without
+    their leading dashes above. A malformed comment makes the whole file unparseable, and nothing
+    in the build catches it — Astro copies public/ verbatim. Validate with xmllint before shipping.
+
+    TWIN FILE: src/components/BrandMark.astro holds the same shapes inline for the login tile.
+    Edit both together. There the navy parts are currentColor so the caller can flip them to white
+    on the navy tile; here they are literal, because a public/ asset cannot read CSS variables.
+  -->
+
+  <!-- The open ring: 328 degrees of arc, with a 32-degree gap in the upper-right quadrant
+       (26 to 58 degrees) where the escaping frond crosses. The gap is deliberately only ~10
+       degrees wider than the frond on each side: a wide gap reads as a broken ring, not as
+       something passing through it. -->
+  <path
+    d="M 382.1 54.2 A 238 238 0 1 0 469.9 151.7"
+    fill="none"
+    stroke="#072143"
+    stroke-width="19"
+    stroke-linecap="round"
+  />
+
+  <!-- Island: a flat-bottomed mound sitting clear of the ring on all sides, so there is water
+       around it rather than a filled lower half. -->
+  <path d="M 128 430 C 152 386, 200 368, 256 368 C 312 368, 360 386, 384 430 Z" fill="#072143" />
+
+  <!-- Palm. Trunk leans right out of the island; the upper-right frond crosses the ring gap and
+       leaves the circle — the structural analogue of the reference's escaping arrow. -->
+  <g fill="#c5ac75">
+    <path d="M 232 388 C 240 320, 254 256, 298 204 L 318 222 C 282 270, 270 330, 266 388 Z" />
+    <path d="M 308 206 Q 370 104 488 62 Q 418 184 308 206 Z" />
+    <path d="M 308 206 Q 404 186 452 250 Q 386 236 308 206 Z" />
+    <path d="M 308 206 Q 342 118 296 62 Q 272 130 308 206 Z" />
+    <path d="M 308 206 Q 232 112 156 96 Q 246 158 308 206 Z" />
+    <path d="M 308 206 Q 212 168 140 224 Q 226 224 308 206 Z" />
+  </g>
+</svg>
