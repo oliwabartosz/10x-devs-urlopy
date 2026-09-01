@@ -617,27 +617,27 @@ never call it, and `POST /api/absences/bulk` is untouched.
 
 #### Automated
 
-- [x] 3.1 Type checking and linting pass: `npm run lint`
-- [x] 3.2 Full suite green: `npm run test:run`
-- [x] 3.3 Build succeeds: `npm run build`
+- [x] 3.1 Type checking and linting pass: `npm run lint` — ded83bf
+- [x] 3.2 Full suite green: `npm run test:run` — ded83bf
+- [x] 3.3 Build succeeds: `npm run build` — ded83bf
 
 #### Manual
 
-- [x] 3.4 Employee: drag over three own occupied weekdays → `Usuń` appears, names all three with types and hours, deletes exactly those cells
-- [x] 3.5 Entirely free run → no `Usuń` button, `Zapisz` unchanged
-- [x] 3.6 Mixed run → confirmation lists only the occupied days
-- [x] 3.7 `Anuluj` on the delete confirmation returns to the filled-in form and `Zapisz` still writes the range
-- [x] 3.8 Moderator on a colleague's column: same flow works, colleague's name still in the header
-- [x] 3.9 Two-tab staleness: blocking warning names the already-deleted day, reload waits for `Odśwież`
-- [x] 3.10 Server stopped mid-flow: error toast appears, dialog returns to the form
-- [x] 3.11 Monthly stats, Szczegóły subcards and balance card all reflect reduced usage after the reload
+- [x] 3.4 Employee: drag over three own occupied weekdays → `Usuń` appears, names all three with types and hours, deletes exactly those cells — ded83bf
+- [x] 3.5 Entirely free run → no `Usuń` button, `Zapisz` unchanged — ded83bf
+- [x] 3.6 Mixed run → confirmation lists only the occupied days — ded83bf
+- [x] 3.7 `Anuluj` on the delete confirmation returns to the filled-in form and `Zapisz` still writes the range — ded83bf
+- [x] 3.8 Moderator on a colleague's column: same flow works, colleague's name still in the header — ded83bf
+- [x] 3.9 Two-tab staleness: blocking warning names the already-deleted day, reload waits for `Odśwież` — ded83bf
+- [x] 3.10 Server stopped mid-flow: error toast appears, dialog returns to the form — ded83bf
+- [x] 3.11 Monthly stats, Szczegóły subcards and balance card all reflect reduced usage after the reload — ded83bf
 
 ### Phase 4: E2E Spec and Rules Registration
 
 #### Automated
 
-- [ ] 4.1 Linting passes: `npm run lint`
-- [ ] 4.2 Full unit suite still green: `npm run test:run`
+- [x] 4.1 Linting passes: `npm run lint`
+- [x] 4.2 Full unit suite still green: `npm run test:run`
 
 #### Manual
 

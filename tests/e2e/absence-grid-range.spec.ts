@@ -8,7 +8,13 @@
  * training entry replaced by a full-day type loses its hours. The confirmation must appear,
  * must name the affected day and what it currently holds, and „Anuluj" must write nothing.
  *
+ * Risk: the range delete removes N rows at once and is the only destructive multi-row path in
+ * the app. Its core claim is *which rows go* — the selected run and nothing else. A where-clause
+ * that lost its date bound, or a client that sent `rangeDays` instead of `occupiedDays`, would
+ * both still look right in the dialog and take neighbouring days with them.
+ *
  * Ref: context/changes/grid-multicheck/plan.md — Phase 6
+ * Ref: context/changes/grid-bulk-delete/plan.md — Phase 4
  * Exemplar: tests/e2e/absence-form-dialog.spec.ts
  */
 import { test, expect, type Page } from "@playwright/test";
@@ -25,6 +31,14 @@ const MONTH_FROM = "2027-03-01";
 const MONTH_TO = "2027-03-31";
 
 const RANGE_HEADING = "Dodaj nieobecność na zakres dni";
+const DELETE_CONFIRM_HEADING = "Usuń nieobecności z zakresu dni";
+
+// Distinct days inside the same month, so the helpers above (which are scoped to MONTH) all keep
+// working while a failure still names which test left a row behind. 1 March 2027 is a Monday, so
+// 15/22 are Mondays too and every date below is a weekday.
+const DELETE_RUN = ["2027-03-15", "2027-03-16", "2027-03-17"];
+const DELETE_NEIGHBOUR = "2027-03-18"; // seeded, adjacent, deliberately never selected
+const CANCEL_RUN = ["2027-03-22", "2027-03-23"];
 
 // Mirrors playwright.config.ts's baseURL. Needed on state-changing `page.request.*` calls — see
 // `deleteOwnAbsences`.
@@ -199,4 +213,106 @@ test("a range crossing an entry confirms before overwriting, and Anuluj writes n
   const after = await listOwnAbsences(page, employeeId);
   expect(after.map((row) => row.date)).toEqual([TARGET_DATE]);
   expect(after.map((row) => row.id)).toEqual(seeded.map((row) => row.id));
+});
+
+/**
+ * Seed a run of days through the range gesture itself — one drag, one save, N rows.
+ *
+ * Through the UI rather than the API for the reason the overwrite test already records: no
+ * endpoint reports absence type ids, so a request-level seed cannot name a type. Using the create
+ * gesture rather than N single-cell clicks keeps the setup to one interaction per run.
+ */
+async function seedRunViaRange(page: Page, employeeId: string, from: string, to: string, type: string) {
+  await dragRange(page, employeeId, from, to);
+  await page.getByRole("radio", { name: type }).click();
+  await page.getByRole("button", { name: "Zapisz" }).click();
+  await expect(cell(page, employeeId, from).getByRole("img")).toBeVisible({ timeout: 20_000 });
+}
+
+/** Seed one day through the ordinary single-cell path. */
+async function seedDayViaClick(page: Page, employeeId: string, date: string, type: string) {
+  await expect(async () => {
+    await cell(page, employeeId, date).click();
+    await expect(page.getByRole("heading", { name: "Dodaj nieobecność", exact: true })).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 20_000 });
+  await page.getByRole("radio", { name: type }).click();
+  await page.getByRole("button", { name: "Zapisz" }).click();
+  await expect(cell(page, employeeId, date).getByRole("img")).toBeVisible({ timeout: 20_000 });
+}
+
+test("a range delete removes exactly the selected days and leaves the neighbour untouched", async ({ page }) => {
+  await openGrid(page);
+  const employeeId = await ownEmployeeId(page);
+  await deleteOwnAbsences(page, employeeId);
+  await openGrid(page);
+
+  await seedRunViaRange(page, employeeId, DELETE_RUN[0], DELETE_RUN[2], "choroba");
+  await seedDayViaClick(page, employeeId, DELETE_NEIGHBOUR, "choroba");
+
+  const seeded = await listOwnAbsences(page, employeeId);
+  expect(seeded.map((row) => row.date).sort()).toEqual([...DELETE_RUN, DELETE_NEIGHBOUR].sort());
+  const neighbourBefore = seeded.find((row) => row.date === DELETE_NEIGHBOUR);
+  expect(neighbourBefore).toBeDefined();
+
+  // Drag the same run again. `Usuń` is rendered only because the run holds entries — over free
+  // days it is absent entirely, which the second test below relies on in reverse.
+  await dragRange(page, employeeId, DELETE_RUN[0], DELETE_RUN[2]);
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Usuń", exact: true }).click();
+
+  // The confirm step is the *same* Radix dialog with a different heading — a delete confirmed under
+  // "Dodaj nieobecność na zakres dni" would misdescribe the action.
+  await expect(page.getByRole("heading", { name: DELETE_CONFIRM_HEADING, exact: true })).toBeVisible();
+  await expect(dialog.getByText("Czy na pewno chcesz usunąć 3 wpisy?")).toBeVisible();
+
+  // Each affected day named, not counted — the inherited constraint the overwrite confirmation
+  // also carries. Scoped per row for the same reason: "15 marca" also appears in the range summary
+  // above, so a loose text check would pass for the wrong reason.
+  await expect(dialog.getByRole("listitem")).toHaveCount(3);
+  const firstRow = dialog.getByRole("listitem").filter({ hasText: "15 marca" });
+  await expect(firstRow).toHaveCount(1);
+  await expect(firstRow.getByText("choroba", { exact: true })).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Usuń wpisy" }).click();
+
+  // `toHaveCount(0)` rather than `not.toBeVisible()`: it retries across the reload the delete
+  // triggers, so it is both the wait and the assertion.
+  await expect(cell(page, employeeId, DELETE_RUN[0]).getByRole("img")).toHaveCount(0, { timeout: 20_000 });
+
+  // The claim, against stored rows rather than the DOM: the three selected days are gone and the
+  // adjacent day still holds its original row — not a deleted-and-recreated one.
+  const after = await listOwnAbsences(page, employeeId);
+  expect(after.map((row) => row.date)).toEqual([DELETE_NEIGHBOUR]);
+  expect(after[0].id, "the neighbouring row must survive with its original id").toBe(neighbourBefore?.id);
+});
+
+test("Anuluj on the delete confirmation deletes nothing", async ({ page }) => {
+  await openGrid(page);
+  const employeeId = await ownEmployeeId(page);
+  await deleteOwnAbsences(page, employeeId);
+  await openGrid(page);
+
+  await seedRunViaRange(page, employeeId, CANCEL_RUN[0], CANCEL_RUN[1], "choroba");
+
+  const seeded = await listOwnAbsences(page, employeeId);
+  expect(seeded.map((row) => row.date).sort()).toEqual([...CANCEL_RUN].sort());
+
+  await dragRange(page, employeeId, CANCEL_RUN[0], CANCEL_RUN[1]);
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Usuń", exact: true }).click();
+  await expect(page.getByRole("heading", { name: DELETE_CONFIRM_HEADING, exact: true })).toBeVisible();
+  await expect(dialog.getByText("Czy na pewno chcesz usunąć 2 wpisy?")).toBeVisible();
+
+  // „Anuluj" steps back to the form rather than closing — the user is declining the delete, not
+  // abandoning the dialog. The heading reverting is what proves the step machine went back.
+  await dialog.getByRole("button", { name: "Anuluj" }).click();
+  await expect(page.getByRole("heading", { name: RANGE_HEADING, exact: true })).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Anuluj" }).click();
+  await expect(page.getByRole("heading", { name: RANGE_HEADING, exact: true })).not.toBeVisible();
+
+  // Nothing deleted: both rows survive with their original ids.
+  const after = await listOwnAbsences(page, employeeId);
+  expect(after.map((row) => row.date).sort()).toEqual([...CANCEL_RUN].sort());
+  expect(after.map((row) => row.id).sort()).toEqual(seeded.map((row) => row.id).sort());
 });
