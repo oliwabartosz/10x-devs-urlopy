@@ -591,27 +591,27 @@ never call it, and `POST /api/absences/bulk` is untouched.
 
 #### Automated
 
-- [x] 1.1 New suite passes: `npm run test:run -- src/tests/api/absences/delete.test.ts`
-- [x] 1.2 Full suite still green: `npm run test:run`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 New suite passes: `npm run test:run -- src/tests/api/absences/delete.test.ts` — 84622ed
+- [x] 1.2 Full suite still green: `npm run test:run` — 84622ed
+- [x] 1.3 Linting passes: `npm run lint` — 84622ed
 
 #### Manual
 
-- [x] 1.4 Deleting a single absence from the grid dialog still works unchanged in `npm run dev`
+- [x] 1.4 Deleting a single absence from the grid dialog still works unchanged in `npm run dev` — 84622ed
 
 ### Phase 2: `DELETE /api/absences/bulk`
 
 #### Automated
 
-- [ ] 2.1 New suite passes: `npm run test:run -- src/tests/api/absences/bulk-delete.test.ts`
-- [ ] 2.2 Full suite green: `npm run test:run`
-- [ ] 2.3 Type checking and linting pass: `npm run lint`
-- [ ] 2.4 Build succeeds: `npm run build`
+- [x] 2.1 New suite passes: `npm run test:run -- src/tests/api/absences/bulk-delete.test.ts`
+- [x] 2.2 Full suite green: `npm run test:run`
+- [x] 2.3 Type checking and linting pass: `npm run lint`
+- [x] 2.4 Build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 Hand-issued `curl -X DELETE` against three occupied dates returns the expected report and empties exactly those days
-- [ ] 2.6 The same request as a non-moderator against a colleague's `employee_id` leaves the colleague's rows in place
+- [x] 2.5 Hand-issued `curl -X DELETE` against three occupied dates returns the expected report and empties exactly those days
+- [x] 2.6 The same request as a non-moderator against a colleague's `employee_id` leaves the colleague's rows in place
 
 ### Phase 3: `Usuń` on the Range Dialog
 

@@ -49,6 +49,33 @@ export interface AbsenceBulkCreateResult {
   overwritten_dates: string[];
 }
 
+// DELETE /api/absences/bulk — the second verb on the same gesture. One employee, N dates, no
+// shared fields: a delete carries nothing but which days to remove.
+export interface AbsenceBulkDeleteCommand {
+  /** Moderator-only; ignored for an employee, who always deletes from their own column. */
+  employee_id?: string;
+  /**
+   * `YYYY-MM-DD`, no duplicates, at most one rendered month's worth.
+   *
+   * Weekends are *not* excluded, unlike {@link AbsenceBulkCreateCommand.dates}. A weekend row can
+   * only exist as legacy or hand-crafted data, and refusing to delete it would make it undeletable
+   * through the UI.
+   */
+  dates: string[];
+}
+
+// Best-effort with a per-day report, the delete analogue of `created_dates` / `overwritten_dates`.
+// `deleted_dates` and `missing_dates` partition the requested `dates` exactly — every requested day
+// appears in exactly one of them — so a caller learns which days its confirmation named that turned
+// out to be already gone. That difference is the staleness signal the dialog reports on.
+//
+// No `absences` array, unlike the create result: there is nothing left to render.
+export interface AbsenceBulkDeleteResult {
+  deleted_dates: string[];
+  /** Requested days that held no row for this employee — the staleness signal. */
+  missing_dates: string[];
+}
+
 export type HolidayBalance = typeof holiday_balances.$inferSelect;
 
 // API response shape: stored fields + computed Used + derived Left. When no row exists

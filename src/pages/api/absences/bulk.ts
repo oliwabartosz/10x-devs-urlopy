@@ -15,7 +15,7 @@ import { clampAbsenceHours, clampRejectionMessage } from "@/lib/absence-hours";
 import { isWeekendDateKey } from "@/lib/absence-range";
 import { json } from "@/lib/absence-list";
 import { assertAbsenceTypeExists, resolveAbsenceWriteTarget } from "@/lib/absence-write-target";
-import type { AbsenceBulkCreateResult } from "@/types";
+import type { AbsenceBulkCreateResult, AbsenceBulkDeleteResult } from "@/types";
 import { reportError } from "@/lib/report";
 
 // Writes N days of one absence in a single atomic statement, overwriting whatever those days
@@ -31,6 +31,10 @@ import { reportError } from "@/lib/report";
 // policy backstops a hand-crafted body (RLS was already bypassed on the service-role connection
 // and does not exist at all on SQLite), and the server has had no weekday rule at any layer until
 // now.
+//
+// `DELETE` below is the second verb on the same gesture — the range dialog's `Usuń` — and shares
+// this route file for the reason `[id].ts` co-locates its own methods. It re-validates the same
+// body shape with one deliberate exception, the weekday rule; see its own comment for why.
 
 /**
  * Ceiling on one request's date list.
@@ -75,6 +79,26 @@ const AbsenceBulkCreateSchema = z
   // SQLite raises a plain SQLITE_ERROR — so it has to be caught before the insert regardless, and
   // the gesture cannot produce a duplicate, so one arriving means a caller bug worth surfacing
   // rather than quietly papering over.
+  .refine((d) => new Set(d.dates).size === d.dates.length, {
+    message: "Lista dni zawiera duplikaty.",
+  });
+
+// The delete body carries no shared fields at all — only who and which days. Everything the create
+// schema validates about the *content* of an absence has nothing to remove here.
+const AbsenceBulkDeleteSchema = z
+  .object({
+    employee_id: z.uuid().optional(),
+    // Same DateSchema as the create path, for the same reason: SQLite's TEXT column rejects
+    // nothing, so an impossible day like 2026-02-31 would otherwise reach the statement and come
+    // back as a 500-shaped failure instead of a 400.
+    dates: z
+      .array(DateSchema)
+      .min(1, "Podaj co najmniej jeden dzień.")
+      .max(MAX_BULK_DATES, `Zakres nie może obejmować więcej niż ${MAX_BULK_DATES.toString()} dni.`),
+  })
+  // Rejected rather than de-duplicated, matching the create schema. A duplicate is harmless to a
+  // DELETE ... IN (...), but the gesture cannot produce one, so one arriving means a caller bug
+  // worth surfacing — and the two verbs answering the same body differently would be worse.
   .refine((d) => new Set(d.dates).size === d.dates.length, {
     message: "Lista dni zawiera duplikaty.",
   });
@@ -271,6 +295,119 @@ export const POST: APIRoute = async (context) => {
     // the whole point of this route. A duplicate *within* one body is caught by the schema.
     if (code === SQLITE_CONSTRAINT_CHECK)
       return json({ error: "Nieprawidłowa kombinacja godzin i trybu całodniowego." }, 400);
+    return json({ error: "Błąd bazy danych." }, 500);
+  }
+};
+
+/**
+ * Removes the absences a selected run of days holds, for one employee, in one statement.
+ *
+ * The second verb on the same gesture as {@link POST}: the range dialog's `Usuń`. Best-effort with
+ * a per-day report rather than all-or-nothing — the single-row route's 404-on-no-match convention
+ * does not extend to N dates, so a day that held nothing is reported as missing instead of failing
+ * the request.
+ *
+ * The prologue below is POST's, deliberately step for step, so the two verbs on this route cannot
+ * drift apart in who they let through.
+ */
+export const DELETE: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return json({ error: "Brak autoryzacji." }, 401);
+  }
+
+  const db = createDb(DATABASE_PATH);
+
+  // `is_system` is selected for the same reason POST selects it: the technical admin is seeded as a
+  // moderator, so the caller's own row is one of the two ways an admin absence could be reached.
+  let employeeRow: { id: string; role: "employee" | "moderator"; is_system: boolean } | undefined;
+  try {
+    employeeRow = await db
+      .select({ id: employees.id, role: employees.role, is_system: employees.is_system })
+      .from(employees)
+      .where(and(eq(employees.user_id, context.locals.user.id), isNull(employees.deleted_at)))
+      .then((r) => r[0]);
+  } catch (err) {
+    reportError(err, { tags: { route: "DELETE /api/absences/bulk" } });
+    return json({ error: "Błąd bazy danych." }, 503);
+  }
+  // A deactivated caller has an authenticated session but no live employee row. This is what
+  // excludes them; there is no separate check further down.
+  if (!employeeRow) {
+    return json({ error: "Nie znaleziono rekordu pracownika." }, 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await context.request.json();
+  } catch {
+    return json({ error: "Nieprawidłowe dane żądania." }, 400);
+  }
+
+  const parsed = AbsenceBulkDeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
+  }
+
+  const { employee_id: requestedEmployeeId, dates: requestedDates } = parsed.data;
+
+  // Sorted so both report lists read in calendar order regardless of how the caller listed them.
+  const dates = [...requestedDates].sort();
+
+  // Whose column this delete lands on, and whether it is allowed to. `substituteEmployeeId: null`
+  // makes gate 4 a no-op — a delete names no substitute — leaving gates 1-3: target resolution, the
+  // 404 for an unknown or soft-deleted target, and the 403 for the protected admin.
+  //
+  // There is deliberately **no ownership ternary here**, unlike `DELETE /api/absences/:id`. The
+  // shared guard silently ignores a non-moderator's `employee_id` and resolves to the caller's own
+  // id, so `employee_id = targetEmployeeId` in the where-clause below *is* the ownership gate — and,
+  // because the guard already refused the protected admin, the `is_system` gate as well. A row
+  // belonging to someone else simply does not match, and is therefore reported as missing rather
+  // than refused: the N-date analogue of the single-row route's 404-on-no-match.
+  const writeTarget = await resolveAbsenceWriteTarget(
+    db,
+    employeeRow,
+    { employeeId: requestedEmployeeId, substituteEmployeeId: null },
+    "DELETE /api/absences/bulk",
+  );
+  if (writeTarget instanceof Response) {
+    return writeTarget;
+  }
+  const { targetEmployeeId } = writeTarget;
+
+  // Three deliberate asymmetries with POST, none of them omissions:
+  //
+  // 1. **No weekend guard.** POST refuses a weekend loudly because a weekend absence must never be
+  //    *created*. A weekend row can only exist as legacy or hand-crafted data, and refusing to
+  //    delete it would make it undeletable through the UI — the same class of bug as a row no write
+  //    path can reach. A weekend date that holds nothing simply lands in `missing_dates`.
+  // 2. **No pre-read.** POST reads the occupied dates before its upsert because afterwards every
+  //    day looks occupied. RETURNING answers the same question from the write itself, so the report
+  //    costs one round trip instead of two and has no unprotected gap to disclaim.
+  // 3. **No transaction**, as everywhere else in this repo: a single statement is already atomic.
+  try {
+    const removed = await db
+      .delete(absences)
+      .where(and(eq(absences.employee_id, targetEmployeeId), inArray(absences.date, dates)))
+      .returning({ date: absences.date });
+
+    const deletedDates = removed.map((r) => r.date).sort();
+    const deleted = new Set(deletedDates);
+
+    return json(
+      {
+        deleted_dates: deletedDates,
+        // Partitions `dates` with `deleted_dates` exactly: every requested day is in one list or
+        // the other. This is the staleness signal — a day the client's confirmation named that
+        // turned out to be already gone.
+        missing_dates: dates.filter((d) => !deleted.has(d)),
+      } satisfies AbsenceBulkDeleteResult,
+      200,
+    );
+  } catch (err) {
+    reportError(err, { tags: { route: "DELETE /api/absences/bulk" } });
+    // One arm, unlike POST's three. `absences` is a leaf table — nothing references it — so
+    // SQLITE_CONSTRAINT_FOREIGNKEY is unraisable here, and no CHECK or unique index can be violated
+    // by removing a row. Same reasoning `[id].ts` records for its own DELETE.
     return json({ error: "Błąd bazy danych." }, 500);
   }
 };
