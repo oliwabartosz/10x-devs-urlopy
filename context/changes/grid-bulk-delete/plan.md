@@ -636,11 +636,11 @@ never call it, and `POST /api/absences/bulk` is untouched.
 
 #### Automated
 
-- [x] 4.1 Linting passes: `npm run lint`
-- [x] 4.2 Full unit suite still green: `npm run test:run`
+- [x] 4.1 Linting passes: `npm run lint` — 5f5be82
+- [x] 4.2 Full unit suite still green: `npm run test:run` — 5f5be82
 
 #### Manual
 
-- [ ] 4.3 `BASE_URL=http://localhost:4321 npm run e2e` passes both new cases
-- [ ] 4.4 Both pre-existing range specs still pass unchanged
-- [ ] 4.5 Recorded that E2E does not run in CI, so this spec is developer-run coverage
+- [x] 4.3 `BASE_URL=http://localhost:4321 npm run e2e` passes both new cases
+- [x] 4.4 Both pre-existing range specs still pass unchanged
+- [x] 4.5 Recorded that E2E does not run in CI, so this spec is developer-run coverage
