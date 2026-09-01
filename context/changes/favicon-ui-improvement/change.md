@@ -1,7 +1,7 @@
 ---
 change_id: favicon-ui-improvement
 title: New palm-on-island favicon and app icon, plus month-bar and absence-type copy tweaks
-status: implementing
+status: implemented
 created: 2026-09-01
 updated: 2026-09-01
 archived_at: null

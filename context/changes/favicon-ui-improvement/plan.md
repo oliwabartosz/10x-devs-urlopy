@@ -635,15 +635,15 @@ files, so a revert restores them from git; nothing is destroyed outside version 
 
 #### Automated
 
-- [x] 3.1 Linting passes: `npm run lint`
-- [x] 3.2 Unit tests pass, including the new `absence-types` block
-- [x] 3.3 Production build succeeds: `npm run build`
-- [x] 3.4 E2E suite passes with the added assertion
+- [x] 3.1 Linting passes: `npm run lint` — df4457c
+- [x] 3.2 Unit tests pass, including the new `absence-types` block — df4457c
+- [x] 3.3 Production build succeeds: `npm run build` — df4457c
+- [x] 3.4 E2E suite passes with the added assertion — df4457c
 
 #### Manual
 
-- [x] 3.5 Gray caption renders beneath `choroba` in the type picker
-- [x] 3.6 Caption does not turn bold when `choroba` is selected
-- [x] 3.7 No other type gains a second line
-- [x] 3.8 Two-column picker layout still aligns; nothing overflows
-- [x] 3.9 Legend, details, grid cells, stats and XLSX are unchanged
+- [x] 3.5 Gray caption renders beneath `choroba` in the type picker — df4457c
+- [x] 3.6 Caption does not turn bold when `choroba` is selected — df4457c
+- [x] 3.7 No other type gains a second line — df4457c
+- [x] 3.8 Two-column picker layout still aligns; nothing overflows — df4457c
+- [x] 3.9 Legend, details, grid cells, stats and XLSX are unchanged — df4457c
