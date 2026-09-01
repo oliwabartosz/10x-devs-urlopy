@@ -24,6 +24,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed:admin": "tsx scripts/seed-admin.ts",
+    "seed:e2e": "tsx scripts/seed-e2e.ts",
     "db:bootstrap": "node --env-file-if-exists=.env --import tsx scripts/bootstrap.ts",
     "pack": "node scripts/pack-artifact.mjs",
     "digest": "tsx scripts/team-digest.ts",

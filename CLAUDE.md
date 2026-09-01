@@ -21,6 +21,10 @@ read it alongside this file. The install and operations story is in `INSTALL.md`
 - `npm run lint:sh` — shellcheck `install.sh`
 - `npm run format` — Prettier (includes prettier-plugin-astro + prettier-plugin-tailwindcss)
 - `npm run db:bootstrap` — migrate, seed the absence-type catalogue, seed the admin
+- `npm run seed:e2e` — seed the Playwright account from `E2E_USER_*`. Needed once per database:
+  those credentials were minted against Supabase, so on a fresh SQLite file the E2E suite fails
+  at sign-in. Run the suite with `BASE_URL=http://localhost:4321 npm run e2e` — the config's
+  default `baseURL` is still `main`'s deployment.
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
 

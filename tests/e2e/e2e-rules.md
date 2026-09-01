@@ -59,9 +59,18 @@ click-then-assert over trusting `networkidle` alone.
 
 ## Scope
 
-- Target: `BASE_URL` env var (default: production Workers deployment).
-- Do NOT point `BASE_URL` at `wrangler dev` — TLS rejects the Supabase cert.
-- `astro dev` lacks Workers runtime; use only if the test needs no DB.
+- Target: `BASE_URL` env var. On this branch that is a locally-run server —
+  `npm run dev` on `http://localhost:4321`, which talks to the SQLite file at `DATABASE_PATH`.
+- **`BASE_URL` is not optional.** `playwright.config.ts` still defaults to the Workers deployment
+  `main` targets, so a bare `npm run e2e` silently runs against production.
+- Run `npm run seed:e2e` once per database before the first run. `E2E_USER_EMAIL` /
+  `E2E_USER_PASSWORD` in `.env` were minted against Supabase and exist in no local SQLite file;
+  without the seed the whole suite dies in `auth.setup.ts` with „Nieprawidłowy adres email lub
+  hasło.", which reads as a wrong password rather than a missing account.
+- The account must be an ordinary employee, never the `is_system` admin: specs read their own
+  employee id off the grid, and `AbsenceGrid.tsx` does not render the admin's column.
+- E2E does not run in CI (`ci.yml` only greps the sign-in copy strings), so this suite is
+  developer-run coverage — run it by hand before merging a change that touches these flows.
 
 ## Project-specific locators
 
