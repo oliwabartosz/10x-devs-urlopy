@@ -603,34 +603,34 @@ never call it, and `POST /api/absences/bulk` is untouched.
 
 #### Automated
 
-- [x] 2.1 New suite passes: `npm run test:run -- src/tests/api/absences/bulk-delete.test.ts`
-- [x] 2.2 Full suite green: `npm run test:run`
-- [x] 2.3 Type checking and linting pass: `npm run lint`
-- [x] 2.4 Build succeeds: `npm run build`
+- [x] 2.1 New suite passes: `npm run test:run -- src/tests/api/absences/bulk-delete.test.ts` — 392a95c
+- [x] 2.2 Full suite green: `npm run test:run` — 392a95c
+- [x] 2.3 Type checking and linting pass: `npm run lint` — 392a95c
+- [x] 2.4 Build succeeds: `npm run build` — 392a95c
 
 #### Manual
 
-- [x] 2.5 Hand-issued `curl -X DELETE` against three occupied dates returns the expected report and empties exactly those days
-- [x] 2.6 The same request as a non-moderator against a colleague's `employee_id` leaves the colleague's rows in place
+- [x] 2.5 Hand-issued `curl -X DELETE` against three occupied dates returns the expected report and empties exactly those days — 392a95c
+- [x] 2.6 The same request as a non-moderator against a colleague's `employee_id` leaves the colleague's rows in place — 392a95c
 
 ### Phase 3: `Usuń` on the Range Dialog
 
 #### Automated
 
-- [ ] 3.1 Type checking and linting pass: `npm run lint`
-- [ ] 3.2 Full suite green: `npm run test:run`
-- [ ] 3.3 Build succeeds: `npm run build`
+- [x] 3.1 Type checking and linting pass: `npm run lint`
+- [x] 3.2 Full suite green: `npm run test:run`
+- [x] 3.3 Build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 Employee: drag over three own occupied weekdays → `Usuń` appears, names all three with types and hours, deletes exactly those cells
-- [ ] 3.5 Entirely free run → no `Usuń` button, `Zapisz` unchanged
-- [ ] 3.6 Mixed run → confirmation lists only the occupied days
-- [ ] 3.7 `Anuluj` on the delete confirmation returns to the filled-in form and `Zapisz` still writes the range
-- [ ] 3.8 Moderator on a colleague's column: same flow works, colleague's name still in the header
-- [ ] 3.9 Two-tab staleness: blocking warning names the already-deleted day, reload waits for `Odśwież`
-- [ ] 3.10 Server stopped mid-flow: error toast appears, dialog returns to the form
-- [ ] 3.11 Monthly stats, Szczegóły subcards and balance card all reflect reduced usage after the reload
+- [x] 3.4 Employee: drag over three own occupied weekdays → `Usuń` appears, names all three with types and hours, deletes exactly those cells
+- [x] 3.5 Entirely free run → no `Usuń` button, `Zapisz` unchanged
+- [x] 3.6 Mixed run → confirmation lists only the occupied days
+- [x] 3.7 `Anuluj` on the delete confirmation returns to the filled-in form and `Zapisz` still writes the range
+- [x] 3.8 Moderator on a colleague's column: same flow works, colleague's name still in the header
+- [x] 3.9 Two-tab staleness: blocking warning names the already-deleted day, reload waits for `Odśwież`
+- [x] 3.10 Server stopped mid-flow: error toast appears, dialog returns to the form
+- [x] 3.11 Monthly stats, Szczegóły subcards and balance card all reflect reduced usage after the reload
 
 ### Phase 4: E2E Spec and Rules Registration
 

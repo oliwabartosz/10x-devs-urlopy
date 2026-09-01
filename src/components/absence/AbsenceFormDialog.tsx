@@ -25,7 +25,13 @@ import { rawTimeRange } from "@/lib/absence-grid-cell";
 import { pluralPl } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 import type { OccupiedRangeDay, RangeDay } from "@/lib/absence-range";
-import type { Absence, AbsenceBulkCreateCommand, AbsenceType, EmployeeListItem } from "@/types";
+import type {
+  Absence,
+  AbsenceBulkCreateCommand,
+  AbsenceBulkDeleteCommand,
+  AbsenceType,
+  EmployeeListItem,
+} from "@/types";
 import { withBase } from "@/lib/base-path";
 
 /**
@@ -122,9 +128,13 @@ interface AbsenceFormDialogRangeProps extends AbsenceFormDialogBaseProps {
 
 /**
  * A discriminated union rather than an optional second date, so the type system rules out the
- * combination that has no meaning: a range plus an `existingAbsence`. Range mode is always
- * create-only — there is no "edit these five days" — and that is what keeps the branching inside
- * the component small enough to be worth having one component instead of two.
+ * combination that has no meaning: a range plus an `existingAbsence`. Range mode never *edits* —
+ * there is no "edit these five days" — and that is what keeps the branching inside the component
+ * small enough to be worth having one component instead of two.
+ *
+ * Range mode does now *delete*, but that arm reads `occupiedDays`, not `existingAbsence`: the days
+ * it removes are the ones the drag already covered, which is a set rather than a row. So the union
+ * is unchanged — a range still has no single "existing absence" to point at.
  *
  * `mode` is optional on the single arm so every existing single-day call site stays valid.
  */
@@ -152,14 +162,41 @@ async function unannouncedOverwrites(res: Response, announced: OccupiedRangeDay[
   }
 }
 
+/**
+ * The days the confirmation named that the server found nothing to delete on.
+ *
+ * The exact inverse of {@link unannouncedOverwrites}, and stale for the same reason: `occupiedDays`
+ * is computed from the grid as it was rendered, so a day someone else deleted in the meantime is
+ * still listed in the confirmation. `missing_dates` is what the delete found absent. Where the
+ * overwrite case reports rows destroyed without being shown, this reports rows shown that were
+ * already gone.
+ *
+ * Only the occupied days are ever sent, so every `missing_dates` entry is by construction one the
+ * confirmation named; the `shown` filter is belt-and-braces against a future caller widening the
+ * request to the whole range, where free days would otherwise read as staleness.
+ *
+ * A malformed or unreadable body yields `[]`: the delete succeeded either way.
+ */
+async function alreadyDeleted(res: Response, announced: OccupiedRangeDay[]): Promise<string[]> {
+  try {
+    const body = (await res.json()) as { missing_dates?: unknown };
+    if (!Array.isArray(body.missing_dates)) return [];
+    const shown = new Set(announced.map((d) => d.key));
+    return body.missing_dates.filter((d): d is string => typeof d === "string" && shown.has(d));
+  } catch {
+    return [];
+  }
+}
+
 export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   const { open, onOpenChange, absenceTypes, employees, currentEmployee, targetEmployee } = props;
 
   const isRange = props.mode === "range";
-  // Range mode is create-only, so `existingAbsence` is null there by construction. Every seeding
+  // Range mode never edits, so `existingAbsence` is null there by construction. Every seeding
   // expression below already reads through it, which is what makes the range form open blank
-  // without a second code path — and what keeps the delete button's existing `existingAbsence &&`
-  // guard sufficient rather than needing a mode check of its own.
+  // without a second code path — and what keeps the *single-day* delete button's `existingAbsence &&`
+  // guard sufficient rather than needing a mode check of its own. The range delete is a separate
+  // render behind `isRange && occupiedDays.length > 0`; it never consults `existingAbsence`.
   const existingAbsence = props.mode === "range" ? null : props.existingAbsence;
   const rangeDays = props.mode === "range" ? props.rangeDays : [];
   const occupiedDays = props.mode === "range" ? props.occupiedDays : [];
@@ -205,6 +242,12 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   // fight over the focus trap, and the confirmation is a step of this decision, not a new one.
   // Always "form" in single-day mode, where nothing can move it.
   const [step, setStep] = useState<"form" | "confirm">("form");
+
+  // Which verb the confirm step is confirming. The step machine now has two consumers — the
+  // overwrite warning and the range delete — and they share one body, one footer and one day list,
+  // so the copy has to know which question it is asking. Set explicitly at both entrances rather
+  // than defaulted, so a stale value can never describe the wrong action.
+  const [pendingAction, setPendingAction] = useState<"save" | "delete">("save");
 
   const dateStr =
     props.mode === "range"
@@ -377,10 +420,19 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
   // approve nothing in particular.
   const handleSave = async () => {
     if (isRange && step === "form" && occupiedDays.length > 0) {
+      setPendingAction("save");
       setStep("confirm");
       return;
     }
     await submitAbsence();
+  };
+
+  // Pressing „Usuń" in range mode. Always confirms — unlike „Zapisz", which writes straight through
+  // over empty days, a delete has nothing to do *but* destroy, so there is no case where skipping
+  // the confirmation would save a pointless click.
+  const handleRangeDeleteRequest = () => {
+    setPendingAction("delete");
+    setStep("confirm");
   };
 
   const submitAbsence = async () => {
@@ -485,6 +537,63 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
     }
   };
 
+  // The range counterpart of `handleDelete`. Sends **only the occupied days**, never `rangeDays`:
+  // the free days are already known to hold nothing, and asking about them would fill
+  // `missing_dates` with noise that drowns the staleness signal below.
+  const handleRangeDelete = async () => {
+    if (!isRange || occupiedDays.length === 0) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(withBase("/api/absences/bulk"), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: targetEmployee.id,
+          dates: occupiedDays.map((d) => d.key),
+        } satisfies AbsenceBulkDeleteCommand),
+      });
+      if (res.ok) {
+        // The confirmation named every day the grid knew was occupied when the page rendered; the
+        // server reports which of them held nothing by the time the delete ran. The difference is
+        // someone else's delete landing since the page loaded. The reload below would swallow a
+        // plain toast, so this one holds the refresh behind an acknowledgement.
+        const stale = await alreadyDeleted(res, occupiedDays);
+        if (stale.length > 0) {
+          const labels = stale
+            .map((key) => occupiedDays.find((d) => d.key === key)?.date)
+            .map((date, i) => date?.toLocaleDateString("pl-PL", { day: "numeric", month: "long" }) ?? stale[i])
+            .join(", ");
+          toast.warning(`Część wpisów została już usunięta przez kogoś innego: ${labels}.`, {
+            duration: Infinity,
+            action: {
+              label: "Odśwież",
+              onClick: () => {
+                window.location.reload();
+              },
+            },
+          });
+          // Deliberately stays `isSubmitting`: the delete already landed, so a second press must
+          // not repeat it. Acknowledging the toast is the only way forward.
+          return;
+        }
+        window.location.reload();
+      } else {
+        const data = (await res.json()) as { error?: string };
+        toast.error(data.error ?? "Nie udało się usunąć. Spróbuj ponownie.");
+        setIsSubmitting(false);
+        // Back to the form on failure, for the same reason `submitAbsence` does it: a confirm step
+        // describing a delete that did not happen offers a retry whose error is hidden behind it.
+        setStep("form");
+      }
+    } catch {
+      toast.error("Nie udało się usunąć. Spróbuj ponownie.");
+      setIsSubmitting(false);
+      setStep("form");
+    }
+  };
+
+  const isDeleteConfirm = step === "confirm" && pendingAction === "delete";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Escape and an overlay click are the two dismissals the disabled `Anuluj` buttons do not
@@ -500,11 +609,18 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
       >
         <DialogHeader>
           <DialogTitle className="text-primary text-xl">
-            {isRange ? "Dodaj nieobecność na zakres dni" : existingAbsence ? "Edytuj nieobecność" : "Dodaj nieobecność"}
+            {isDeleteConfirm
+              ? "Usuń nieobecności z zakresu dni"
+              : isRange
+                ? "Dodaj nieobecność na zakres dni"
+                : existingAbsence
+                  ? "Edytuj nieobecność"
+                  : "Dodaj nieobecność"}
           </DialogTitle>
           <DialogDescription>
-            Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny. Urlop i urlop planowany można
-            dodatkowo oznaczyć jako priorytetowy.
+            {isDeleteConfirm
+              ? "Usunięcia nie można cofnąć. Sprawdź listę dni poniżej przed potwierdzeniem."
+              : "Wybierz typ nieobecności i zakres. Dla wpisu godzinowego podaj obie godziny. Urlop i urlop planowany można dodatkowo oznaczyć jako priorytetowy."}
           </DialogDescription>
           {/* `capitalize` only on the single-day heading, which starts with a weekday name. The
               range heading starts with a digit, and capitalizing it would title-case the month. */}
@@ -518,10 +634,23 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
 
         {step === "confirm" && (
           <div className="grid gap-3 py-2">
+            {/* Only the lead paragraph branches; the day list below is shared verbatim, because
+                both verbs are destroying the same rows and the user needs the same facts to judge
+                either one. */}
             <p className="text-sm text-black">
-              Czy na pewno chcesz nadpisać {occupiedDays.length.toString()}{" "}
-              {pluralPl(occupiedDays.length, "istniejący wpis", "istniejące wpisy", "istniejących wpisów")}? Poniższe
-              dni zostaną zastąpione, a ich dotychczasowe godziny przepadną.
+              {pendingAction === "delete" ? (
+                <>
+                  Czy na pewno chcesz usunąć {occupiedDays.length.toString()}{" "}
+                  {pluralPl(occupiedDays.length, "wpis", "wpisy", "wpisów")}? Poniższe dni zostaną usunięte z
+                  kalendarza.
+                </>
+              ) : (
+                <>
+                  Czy na pewno chcesz nadpisać {occupiedDays.length.toString()}{" "}
+                  {pluralPl(occupiedDays.length, "istniejący wpis", "istniejące wpisy", "istniejących wpisów")}?
+                  Poniższe dni zostaną zastąpione, a ich dotychczasowe godziny przepadną.
+                </>
+              )}
             </p>
             {/* Each affected day named, not just counted. Replacing a partial-day training entry
                 with a full-day urlop destroys its hours, and „3 wpisy" says neither which three nor
@@ -825,10 +954,16 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
               >
                 Anuluj
               </Button>
-              {/* Reuses `isSubmitting`, so a double-press cannot fire two bulk writes. */}
-              <Button type="button" variant="destructive" onClick={submitAbsence} disabled={isSubmitting}>
-                {isSubmitting ? "Zapisywanie…" : "Nadpisz i zapisz"}
-              </Button>
+              {/* Reuses `isSubmitting`, so a double-press cannot fire two bulk requests. */}
+              {pendingAction === "delete" ? (
+                <Button type="button" variant="destructive" onClick={handleRangeDelete} disabled={isSubmitting}>
+                  {isSubmitting ? "Usuwanie…" : "Usuń wpisy"}
+                </Button>
+              ) : (
+                <Button type="button" variant="destructive" onClick={submitAbsence} disabled={isSubmitting}>
+                  {isSubmitting ? "Zapisywanie…" : "Nadpisz i zapisz"}
+                </Button>
+              )}
             </>
           ) : (
             <>
@@ -837,6 +972,20 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
                   type="button"
                   variant="destructive"
                   onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="mr-auto"
+                >
+                  Usuń
+                </Button>
+              )}
+              {/* Hidden, not disabled, when the run holds nothing — the same rule the single-day
+                  arm above follows (`existingAbsence &&`), so one convention covers both modes:
+                  withhold the affordance rather than render a no-op. */}
+              {isRange && occupiedDays.length > 0 && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleRangeDeleteRequest}
                   disabled={isSubmitting}
                   className="mr-auto"
                 >
