@@ -1,10 +1,10 @@
 ---
 change_id: grid-bulk-delete
 title: Enable bulk delete of absences in the grid
-status: implementing
+status: archived
 created: 2026-09-01
 updated: 2026-09-01
-archived_at: null
+archived_at: 2026-09-01T12:02:24Z
 ---
 
 ## Notes
