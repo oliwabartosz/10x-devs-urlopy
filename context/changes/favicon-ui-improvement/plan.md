@@ -616,34 +616,34 @@ files, so a revert restores them from git; nothing is destroyed outside version 
 
 #### Automated
 
-- [x] 2.1 Linting and type-checked rules pass: `npm run lint`
-- [x] 2.2 Unit tests pass: `npm run test`
-- [x] 2.3 Production build succeeds: `npm run build`
-- [x] 2.4 E2E suite passes against localhost
+- [x] 2.1 Linting and type-checked rules pass: `npm run lint` — d604217
+- [x] 2.2 Unit tests pass: `npm run test` — d604217
+- [x] 2.3 Production build succeeds: `npm run build` — d604217
+- [x] 2.4 E2E suite passes against localhost — d604217
 
 #### Manual
 
-- [x] 2.5 Button absent from the DOM on the current month
-- [x] 2.6 Button appears after navigating away; hover text reads correctly
-- [x] 2.7 Clicking it lands on the current month and year
-- [x] 2.8 Active tab and subcard survive the click
-- [x] 2.9 Month heading still does not shift horizontally
-- [x] 2.10 Button styling is indistinguishable from `‹` and `›`
-- [x] 2.11 Button is Tab-reachable and activates on Enter
+- [x] 2.5 Button absent from the DOM on the current month — d604217
+- [x] 2.6 Button appears after navigating away; hover text reads correctly — d604217
+- [x] 2.7 Clicking it lands on the current month and year — d604217
+- [x] 2.8 Active tab and subcard survive the click — d604217
+- [x] 2.9 Month heading still does not shift horizontally — d604217
+- [x] 2.10 Button styling is indistinguishable from `‹` and `›` — d604217
+- [x] 2.11 Button is Tab-reachable and activates on Enter — d604217
 
 ### Phase 3: The `choroba` sub-caption
 
 #### Automated
 
-- [ ] 3.1 Linting passes: `npm run lint`
-- [ ] 3.2 Unit tests pass, including the new `absence-types` block
-- [ ] 3.3 Production build succeeds: `npm run build`
-- [ ] 3.4 E2E suite passes with the added assertion
+- [x] 3.1 Linting passes: `npm run lint`
+- [x] 3.2 Unit tests pass, including the new `absence-types` block
+- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.4 E2E suite passes with the added assertion
 
 #### Manual
 
-- [ ] 3.5 Gray caption renders beneath `choroba` in the type picker
-- [ ] 3.6 Caption does not turn bold when `choroba` is selected
-- [ ] 3.7 No other type gains a second line
-- [ ] 3.8 Two-column picker layout still aligns; nothing overflows
-- [ ] 3.9 Legend, details, grid cells, stats and XLSX are unchanged
+- [x] 3.5 Gray caption renders beneath `choroba` in the type picker
+- [x] 3.6 Caption does not turn bold when `choroba` is selected
+- [x] 3.7 No other type gains a second line
+- [x] 3.8 Two-column picker layout still aligns; nothing overflows
+- [x] 3.9 Legend, details, grid cells, stats and XLSX are unchanged

@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeRangeDial } from "@/components/absence/TimeRangeDial";
-import { typeAllowsPartialDay, typeAllowsPriority } from "@/lib/absence-types";
+import { captionFor, typeAllowsPartialDay, typeAllowsPriority } from "@/lib/absence-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { clampAbsenceHours, MIN_START_TIME } from "@/lib/absence-hours";
 import { FULL_DAY_HOURS } from "@/lib/hours";
@@ -695,6 +695,7 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
             >
               {absenceTypes.map((type, index) => {
                 const selected = type.id === absenceTypeId;
+                const caption = captionFor(type.name);
                 return (
                   <button
                     key={type.id}
@@ -719,7 +720,14 @@ export function AbsenceFormDialog(props: AbsenceFormDialogProps) {
                     >
                       {type.icon}
                     </span>
-                    <span className="min-w-0 flex-1">{type.name}</span>
+                    <span className="min-w-0 flex-1">
+                      {type.name}
+                      {/* `font-normal` is load-bearing: the selected button bolds its whole
+                          subtree, which would otherwise swallow the caption's hierarchy. */}
+                      {caption && (
+                        <span className="text-muted-foreground block text-[11px] font-normal">{caption}</span>
+                      )}
+                    </span>
                     <span className={cn("text-[13px] font-bold", selected ? "text-primary" : "text-transparent")}>
                       ✓
                     </span>

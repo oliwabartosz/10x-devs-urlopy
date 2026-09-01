@@ -11,6 +11,10 @@
  * Escape must dismiss only the dial — if either breaks, the pointer path silently disagrees
  * with the typed one.
  *
+ * Risk: `choroba` covers both a sick note and care leave, which the bare label does not say. The
+ * picker must carry the clarifying caption, and it must reach the radio's accessible name — that
+ * name is the only contract the rest of the suite binds to, since this codebase has no testids.
+ *
  * Risk: the dial's hard stops are the change's headline behaviour — a handle that could reach
  * a value the server then rewrites would reproduce the very symptom this change removes. The
  * 06:00 floor and the 8 h cap must be unreachable from either handle, not merely corrected
@@ -50,6 +54,24 @@ async function openPartialDayDialog(page: import("@playwright/test").Page) {
   await page.getByRole("radio", { name: "szkolenie w miejscu pracy" }).click();
   await expect(page.getByRole("checkbox", { name: "Cały dzień" })).toBeVisible();
 }
+
+test("the choroba radio carries the clarifying caption in its accessible name", async ({ page }) => {
+  await openPartialDayDialog(page);
+
+  // Asserted on the accessible name rather than on the text node, because the name is what the
+  // rest of the suite resolves `choroba` by — six locators in absence-grid-range.spec.ts match it
+  // by substring. If the caption ever stops being rendered inside the button, those keep passing
+  // while this one fails, which is the point of stating it here.
+  const sick = page.getByRole("radio", { name: "choroba" });
+  await expect(sick).toHaveCount(1);
+  await expect(sick).toHaveAccessibleName(/choroba\s+zwolnienie lub opieka/);
+
+  // No other type gains one: the caption is additive, not a label map.
+  await expect(page.getByRole("radio", { name: "zwolnienie lub opieka" })).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Anuluj" }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+});
 
 test("form dialog reveals time-range inputs when partial-day is selected", async ({ page }) => {
   await openPartialDayDialog(page);
