@@ -27,14 +27,17 @@ const navButton =
 ---
 
 <div class="flex items-center gap-4">
-  <a href={prevMonthUrl} class:list={navButton} aria-label="Poprzedni miesiąc">‹</a>
+  <a href={prevMonthUrl} class:list={navButton} title="Poprzedni miesiąc" aria-label="Poprzedni miesiąc">‹</a>
   <h1 class="text-primary min-w-[220px] text-center text-2xl font-bold capitalize">{monthLabel}</h1>
-  <a href={nextMonthUrl} class:list={navButton} aria-label="Następny miesiąc">›</a>
+  <a href={nextMonthUrl} class:list={navButton} title="Następny miesiąc" aria-label="Następny miesiąc">›</a>
   {
     /* Outside the `‹ heading ›` triplet on purpose: the heading's min-width guarantees the arrows
        do not shift between long and short month names, and a control appearing between them
-       would undo it. `title` and `aria-label` are paired the way every other icon-only control
-       here does it — the tooltip is the visible half, the label the assistive one. */
+       would undo it. `title` and `aria-label` carry the same string here: the tooltip is the
+       visible half, the label the assistive one. Both arrows above pair them too, so all three
+       buttons in the row behave alike on hover. (Elsewhere the two can differ deliberately —
+       `EmployeeManagementSheet.tsx:163-164` gives `aria-label` the row's employee name and leaves
+       `title` generic — but nothing distinguishes these three.) */
     currentMonthUrl && (
       <a
         href={currentMonthUrl}

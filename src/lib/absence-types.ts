@@ -36,7 +36,7 @@ export function typeAllowsPriority(typeName: string | null | undefined): boolean
 }
 
 // --- Picker captions -------------------------------------------------------------------------
-// Name verbatim from src/db/seed.ts:25.
+// Name verbatim from src/db/seed.ts:28.
 export const SICK_LEAVE_TYPE_NAME = "choroba";
 
 /**

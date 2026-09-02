@@ -206,14 +206,16 @@ const prevMonthDate = new Date(year, month - 2, 1); // month-2 because month is 
 const nextMonthDate = new Date(year, month, 1);
 const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
 const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
-const prevMonthUrl =
+
+// One builder for all three month-nav links, so a fourth param cannot be added to two of them and
+// forgotten on the third. Query-only and relative on purpose: that form inherits the mount prefix
+// on its own, which is why `withBase()` is deliberately not used here.
+const monthUrl = (m: string) =>
   currentTab === "details"
-    ? `?month=${prevMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
-    : `?month=${prevMonthStr}&tab=${currentTab}`;
-const nextMonthUrl =
-  currentTab === "details"
-    ? `?month=${nextMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
-    : `?month=${nextMonthStr}&tab=${currentTab}`;
+    ? `?month=${m}&tab=${currentTab}&subcard=${currentSubcard}`
+    : `?month=${m}&tab=${currentTab}`;
+const prevMonthUrl = monthUrl(prevMonthStr);
+const nextMonthUrl = monthUrl(nextMonthStr);
 
 // "Back to today". Built from the same server-local `now` the month default above reads, so this
 // is exactly the month an absent `?month=` resolves to. Null when the browsed month already is
@@ -222,12 +224,7 @@ const nextMonthUrl =
 // The param is emitted explicitly rather than dropped: omitting it would land on the same month,
 // but keeping it makes the URL self-describing and identical in shape to its two siblings.
 const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-const currentMonthUrl =
-  currentMonthStr === monthStr
-    ? null
-    : currentTab === "details"
-      ? `?month=${currentMonthStr}&tab=${currentTab}&subcard=${currentSubcard}`
-      : `?month=${currentMonthStr}&tab=${currentTab}`;
+const currentMonthUrl = currentMonthStr === monthStr ? null : monthUrl(currentMonthStr);
 
 // Tab nav URLs preserve the current month
 const gridTabUrl = `?month=${monthStr}&tab=grid`;

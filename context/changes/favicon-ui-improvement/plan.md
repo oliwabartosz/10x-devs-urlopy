@@ -271,6 +271,13 @@ default title.
 (`index.astro:16`, `auth/signin.astro:11` and `dashboard.astro:230` all pass an explicit title), but
 it is the fallback any new page inherits.
 
+**Deviation landed in 9eed7df**: `dashboard.astro`'s **explicit** title was also changed, from
+`"Urlopy — Ewidencja nieobecności"` to `"Nieobecności — Ewidencja"`. Not contracted above — the
+contract covers only `Layout.astro`'s default. Kept because it harmonizes the last "Urlopy"-era page
+title with the `Nieobecności — …` prefix the two login pages already use, and because nothing asserts
+on it (the CI copy greps target the sign-in body only). Recorded here rather than reverted, per the
+impl review's F1.
+
 #### 3. The shared mark component
 
 **File**: `src/components/BrandMark.astro` (new)

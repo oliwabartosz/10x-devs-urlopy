@@ -66,7 +66,10 @@ test("the choroba radio carries the clarifying caption in its accessible name", 
   await expect(sick).toHaveCount(1);
   await expect(sick).toHaveAccessibleName(/choroba\s+zwolnienie lub opieka/);
 
-  // No other type gains one: the caption is additive, not a label map.
+  // This caption reaches exactly one radio — it is not being appended to every type. The stronger
+  // claim, that no *other* type has a caption at all, is the unit test's
+  // (src/tests/lib/absence-types.test.ts, "returns undefined for every seeded type that has no
+  // caption"); a second type gaining a different caption would leave this assertion green.
   await expect(page.getByRole("radio", { name: "zwolnienie lub opieka" })).toHaveCount(1);
 
   await page.getByRole("button", { name: "Anuluj" }).click();

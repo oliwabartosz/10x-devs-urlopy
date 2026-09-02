@@ -25,7 +25,19 @@ interface Props {
 const { class: className } = Astro.props;
 ---
 
-<svg viewBox="0 0 512 512" class:list={className} fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+<!-- `width`/`height` of 1em are a floor, not the intended size: a caller that forgets `class` gets
+     a glyph-sized mark instead of the 300x150 CSS default for a replaced element, or a blob
+     stretched by whatever flex container it landed in. Every real call site overrides both with a
+     `size-*` utility. `shrink-0` is here for the same reason — the two current tiles are flex. -->
+<svg
+  viewBox="0 0 512 512"
+  width="1em"
+  height="1em"
+  class:list={["shrink-0", className]}
+  fill="none"
+  aria-hidden="true"
+  xmlns="http://www.w3.org/2000/svg"
+>
   <!-- The open ring: 328 degrees of arc, with a 32-degree gap in the upper-right quadrant
        (26 to 58 degrees) where the escaping frond crosses. -->
   <path

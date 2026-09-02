@@ -272,6 +272,7 @@ it was used for the measurements in §1.4 — but it is not a repo dependency).
 `src/components/MonthNav.astro` in full:
 
 ```astro
+---
 const monthLabel = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" })
   .format(new Date(year, month - 1));
 
