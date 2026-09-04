@@ -7,9 +7,10 @@ export of the whole year. The UI is Polish and branded "Nieobecności".
 Self-hosted: one Node process, one SQLite file, nginx in front. No database server, no cloud
 account, no network access required on the host.
 
-> **Branch note.** `main` still deploys to Cloudflare Workers against Supabase. The
-> `sqlite-install` branch — described here — is the self-hosted target. Supabase and Cloudflare
-> packages remain in `package.json` but are unused on this branch.
+> **History note.** This app ran on Cloudflare Workers against Supabase until August 2026. The
+> Workers adapter, the Supabase client and CLI, `wrangler` and the `supabase/` Postgres migrations
+> were removed once the self-hosted target landed; `git log` still has them if you need the old
+> deployment story. The `cloudflare-supabase` branch preserves that state.
 
 ## Tech Stack
 
