@@ -7,10 +7,10 @@
  *
  * Why this is a script and not a `tar` one-liner in INSTALL.md: `npm prune --omit=dev` does not
  * produce a portable tree on its own. It leaves 728 MB containing ten compiled `*.node` binaries —
- * sharp, rollup, lightningcss, @tailwindcss/oxide — because the Astro starter puts `astro`,
- * `@tailwindcss/vite`, `@astrojs/cloudflare` and `wrangler` in `dependencies` rather than
- * `devDependencies`. Every one of them is build-time only, but npm has no way to know that, so
- * the exclusion list below is maintained by hand and verified by actually running the result.
+ * sharp, rollup, lightningcss, @tailwindcss/oxide — because the Astro starter puts `astro` and
+ * `@tailwindcss/vite` in `dependencies` rather than `devDependencies`. Every one of them is
+ * build-time only, but npm has no way to know that, so the exclusion list below is maintained by
+ * hand and verified by actually running the result.
  *
  * A compiled module in the archive would make it valid only on a machine matching the builder's
  * platform, architecture, libc and Node ABI — and the failure would appear on the VPS at startup
@@ -34,7 +34,6 @@ const root = fileURLToPath(new URL("..", import.meta.url));
  * failing obscurely, and this entry has to come out.
  */
 const BUILD_ONLY = [
-  "@astrojs/cloudflare", // Workers adapter; `main` still uses it, this artifact does not
   "@esbuild",
   // drizzle-orm declares @libsql/client as an OPTIONAL PEER, so npm installs it — and libsql
   // ships a compiled .node per platform. Nothing here imports it: the database layer is
@@ -49,12 +48,10 @@ const BUILD_ONLY = [
   "esbuild",
   "lightningcss-linux-x64-gnu",
   "lightningcss-linux-x64-musl",
-  "miniflare", // Workers local runtime, pulled in by wrangler
   "rollup",
   "sharp",
   "typescript",
   "vite",
-  "wrangler",
 ];
 
 const CONTENTS = ["dist", "node_modules", "package.json", "deploy", "install.sh", "install-user.sh", "INSTALL.md"];

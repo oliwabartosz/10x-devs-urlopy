@@ -21,9 +21,9 @@ Normally you cannot move `node_modules` between machines: any dependency with a 
 lets the shipped `node_modules` move between any two Linux x64 machines running Node 24.
 
 The tree on disk is a different story, and worth being precise about: `npm prune --omit=dev`
-leaves **ten** native binaries behind (sharp, rollup, lightningcss, `@tailwindcss/oxide`), because
-the Astro starter declares `astro`, `@tailwindcss/vite`, `@astrojs/cloudflare` and `wrangler` as
-`dependencies`. Every one of those is used only while building. `npm run pack` excludes them and
+leaves native binaries behind (sharp, rollup, lightningcss, `@tailwindcss/oxide`), because the
+Astro starter declares `astro` and `@tailwindcss/vite` as `dependencies`. Every one of those is
+used only while building. `npm run pack` excludes them and
 then greps the finished tarball to prove none survived — so the archive really does contain zero
 compiled modules, verified rather than assumed.
 
@@ -95,10 +95,10 @@ That writes `urlopy-<timestamp>.tar.gz` (~98 MiB) containing `dist/`, `node_modu
 `package.json`, `deploy/`, `install.sh` and this file — and **fails** if a single compiled
 `*.node` binary made it in.
 
-> `npm prune --omit=dev` is not enough on its own. It leaves a 728 MiB tree with ten native
-> binaries in it (sharp, rollup, lightningcss, `@tailwindcss/oxide`), because the Astro starter
-> puts `astro`, `@tailwindcss/vite`, `@astrojs/cloudflare` and `wrangler` in `dependencies` rather
-> than `devDependencies`. All of them are build-time only. `scripts/pack-artifact.mjs` carries the
+> `npm prune --omit=dev` is not enough on its own. It leaves a tree with native binaries in it
+> (sharp, rollup, lightningcss, `@tailwindcss/oxide`), because the Astro starter puts `astro` and
+> `@tailwindcss/vite` in `dependencies` rather than `devDependencies`. All of them are build-time
+> only. `scripts/pack-artifact.mjs` carries the
 > hand-maintained exclusion list and the check that proves it worked — read the comment at the top
 > of that file before changing it.
 

@@ -20,17 +20,11 @@ pnpm-debug.log*
 .env
 .env.production
 
-# cloudflare
-.wrangler/
-
 # macOS-specific files
 .DS_Store
 
 # jetbrains setting folder
 .idea/
-
-# supabase local query scratchpad
-supabase/snippets/
 
 # LibreOffice temp files
 .xdp-*

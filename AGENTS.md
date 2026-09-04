@@ -5,15 +5,15 @@ credential auth, and a SQLite database, served by a Node process behind nginx on
 Linux VPS. Product requirements live in `@context/foundation/prd.md`; stack decisions live in
 `@context/foundation/tech-stack.md`; the install and operations story lives in `@INSTALL.md`.
 
-> **Branch note.** `main` still targets Cloudflare Workers + Supabase; the `sqlite-install` branch
-> is what this file describes. The `@supabase/*`, `@astrojs/cloudflare`, `wrangler` and
-> `@sentry/cloudflare` packages are still in `package.json` and `supabase/` is still on disk —
-> unused on this branch, removed in a follow-up change after the demo.
+> **History note.** This app targeted Cloudflare Workers + Supabase until August 2026. The
+> `@supabase/*`, `@astrojs/cloudflare`, `@sentry/cloudflare`, `wrangler` and `postgres` packages,
+> `wrangler.jsonc` and the `supabase/` directory are gone; `@sentry/astro` is the only Sentry
+> package left and is still in use. The `cloudflare-supabase` branch preserves the old state.
 
 ## Hard Rules
 
 - Do not write to `context/archive/`; archived changes are immutable.
-- Do not edit generated or ignored output: `.astro/`, `dist/`, `.wrangler/`, or `node_modules/`.
+- Do not edit generated or ignored output: `.astro/`, `dist/`, or `node_modules/`.
 - Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. Browser-level tests run on Playwright: `npm run e2e` (`playwright.config.ts`). Do not invent commands beyond these.
 - **`npm run e2e` targets the local dev server** — `playwright.config.ts` defaults `baseURL` to `http://localhost:4321`, so start `npm run dev` first (and `npm run seed:e2e` once per database). A run writes to the SQLite file at `DATABASE_PATH` and must still clean up after itself. Read `tests/e2e/e2e-rules.md` before writing one. Override the target with `BASE_URL`.
 - The suites under `src/tests/` no longer self-skip. Each test file creates and disposes of its own temp SQLite database (`src/tests/helpers/setup.ts`), so there is nothing to configure — a green run means passed, not skipped.

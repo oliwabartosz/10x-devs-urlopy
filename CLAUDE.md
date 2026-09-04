@@ -4,11 +4,11 @@ This file provides guidance to AI Agent when working with code in this repositor
 conventions (database layer, Drizzle ORM, migration discipline, UI) are documented in `AGENTS.md` —
 read it alongside this file. The install and operations story is in `INSTALL.md`.
 
-> **Branch note.** `main` still deploys to Cloudflare Workers against Supabase. The
-> `sqlite-install` branch — what this file describes — runs a Node server against a local SQLite
-> file on a self-hosted VPS. `@supabase/*`, `@astrojs/cloudflare`, `wrangler`, `@sentry/cloudflare`,
-> `wrangler.jsonc` and `supabase/` are still on disk but unused here; removing them is a follow-up
-> change after the demo.
+> **History note.** This app ran on Cloudflare Workers against Supabase until August 2026; it now
+> runs a Node server against a local SQLite file on a self-hosted VPS. `@supabase/*`,
+> `@astrojs/cloudflare`, `@sentry/cloudflare`, `wrangler`, `postgres`, `wrangler.jsonc` and
+> `supabase/` have been removed. `@sentry/astro` stays — it is the one Sentry package still
+> imported. The `cloudflare-supabase` branch preserves the old deployment.
 
 ## Commands
 
