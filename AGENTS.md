@@ -15,7 +15,7 @@ Linux VPS. Product requirements live in `@context/foundation/prd.md`; stack deci
 - Do not write to `context/archive/`; archived changes are immutable.
 - Do not edit generated or ignored output: `.astro/`, `dist/`, `.wrangler/`, or `node_modules/`.
 - Tests run on Vitest (`vitest.config.ts`): `npm test` (watch), `npm run test:run` (once), `npm run test:coverage`. Browser-level tests run on Playwright: `npm run e2e` (`playwright.config.ts`). Do not invent commands beyond these.
-- **`npm run e2e` still targets the deployed Workers app**, not a local server — `playwright.config.ts` defaults `baseURL` to the production Worker. Retargeting it at a local Node server is possible now and deliberately deferred; until then an E2E run writes to the **production** database and must clean up after itself. Read `tests/e2e/e2e-rules.md` before writing one. Override the target with `BASE_URL`.
+- **`npm run e2e` targets the local dev server** — `playwright.config.ts` defaults `baseURL` to `http://localhost:4321`, so start `npm run dev` first (and `npm run seed:e2e` once per database). A run writes to the SQLite file at `DATABASE_PATH` and must still clean up after itself. Read `tests/e2e/e2e-rules.md` before writing one. Override the target with `BASE_URL`.
 - The suites under `src/tests/` no longer self-skip. Each test file creates and disposes of its own temp SQLite database (`src/tests/helpers/setup.ts`), so there is nothing to configure — a green run means passed, not skipped.
 
 ## Commands
@@ -102,13 +102,13 @@ tests when you touch a read or write path; do not assume it.
 Driver errors are normalised in the proxy callback (`SqliteDriverError` in `src/db/index.ts`)
 before Drizzle wraps them, so `src/lib/db-errors.ts` stays a pure mapping. `node:sqlite` throws
 `code: 'ERR_SQLITE_ERROR'` for everything and carries the discriminator on `errcode` — SQLite's
-*extended* result code. The codes routes branch on:
+_extended_ result code. The codes routes branch on:
 
-| Constant                      | Value  | Maps to                          |
-| ----------------------------- | ------ | -------------------------------- |
-| `SQLITE_CONSTRAINT_UNIQUE`    | `2067` | 409 duplicate                    |
-| `SQLITE_CONSTRAINT_FOREIGNKEY` | `787`  | 422 unknown reference            |
-| `SQLITE_CONSTRAINT_CHECK`     | `275`  | 400 failed CHECK                 |
+| Constant                       | Value  | Maps to               |
+| ------------------------------ | ------ | --------------------- |
+| `SQLITE_CONSTRAINT_UNIQUE`     | `2067` | 409 duplicate         |
+| `SQLITE_CONSTRAINT_FOREIGNKEY` | `787`  | 422 unknown reference |
+| `SQLITE_CONSTRAINT_CHECK`      | `275`  | 400 failed CHECK      |
 
 No five-digit Postgres SQLSTATE (`23505`, `23503`, `23514`) should appear anywhere in `src/`.
 A foreign-key violation names nothing, which is why unknown references are resolved with

@@ -19,9 +19,10 @@ function loadEnvFile(path: string) {
 
 loadEnvFile(".env");
 
-// Default: production deployment. Override with BASE_URL env var for staging/local.
-// NOTE: wrangler dev cannot connect to Supabase (TLS issue) — don't point BASE_URL there.
-const baseURL = process.env.BASE_URL ?? "https://urlopy.oliwa-bartosz.workers.dev";
+// Default: the local dev server (`npm run dev`), which talks to the SQLite file at
+// DATABASE_PATH. Override with BASE_URL to point the suite at a deployed instance —
+// note that a run writes to whatever database the target owns.
+const baseURL = process.env.BASE_URL ?? "http://localhost:4321";
 
 export default defineConfig({
   testDir: "./tests/e2e",

@@ -59,10 +59,10 @@ click-then-assert over trusting `networkidle` alone.
 
 ## Scope
 
-- Target: `BASE_URL` env var. On this branch that is a locally-run server —
-  `npm run dev` on `http://localhost:4321`, which talks to the SQLite file at `DATABASE_PATH`.
-- **`BASE_URL` is not optional.** `playwright.config.ts` still defaults to the Workers deployment
-  `main` targets, so a bare `npm run e2e` silently runs against production.
+- Target: `playwright.config.ts` defaults `baseURL` to `http://localhost:4321` — the locally-run
+  `npm run dev` server, which talks to the SQLite file at `DATABASE_PATH`. Start it before the run.
+- **`BASE_URL` overrides the target.** Point it at a deployed instance only deliberately: a run
+  writes to whatever database that instance owns.
 - Run `npm run seed:e2e` once per database before the first run. `E2E_USER_EMAIL` /
   `E2E_USER_PASSWORD` in `.env` were minted against Supabase and exist in no local SQLite file;
   without the seed the whole suite dies in `auth.setup.ts` with „Nieprawidłowy adres email lub
@@ -107,9 +107,9 @@ carry no accessible name and no stable text, so`getByText("+")` above cannot dis
 - **State-changing `page.request.*` calls need an `Origin` header.** Astro's
   `security.checkOrigin` rejects a `POST`/`PATCH`/`DELETE` whose `Origin` does not match the site
   with 403 _"Cross-site DELETE form submissions are forbidden"_; `page.request.*` sends none,
-  unlike a real browser fetch. Pass `{ headers: { Origin: process.env.BASE_URL ?? <deployed URL> } }`
-  **and assert the status** — an API cleanup that fails silently leaves rows in the production
-  database, since this suite runs against the deployed app.
+  unlike a real browser fetch. Pass `{ headers: { Origin: process.env.BASE_URL ?? "http://localhost:4321" } }`
+  **and assert the status** — an API cleanup that fails silently leaves rows behind in whatever
+  database the target owns.
 - Form dialog: `getByRole("dialog")` scoped to `getByRole("heading", { name: … })`.
 - Tab navigation: `getByRole("link", { name: "Siatka" })` — reliable dashboard-loaded signal.
 - Signin form (`LoginCardForm.tsx`): `getByLabel("Użytkownik / ID")` for email,
