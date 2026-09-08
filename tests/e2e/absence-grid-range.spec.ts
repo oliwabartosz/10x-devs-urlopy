@@ -42,7 +42,7 @@ const CANCEL_RUN = ["2027-03-22", "2027-03-23"];
 
 // Mirrors playwright.config.ts's baseURL. Needed on state-changing `page.request.*` calls — see
 // `deleteOwnAbsences`.
-const ORIGIN = process.env.BASE_URL ?? "https://urlopy.oliwa-bartosz.workers.dev";
+const ORIGIN = process.env.BASE_URL ?? "http://localhost:4321";
 
 interface AbsenceRow {
   id: string;
